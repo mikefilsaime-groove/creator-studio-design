@@ -35,6 +35,26 @@ export type CreatorStudioDesignAuth = {
   logout(): Promise<CreatorStudioDesignAuthStatus>;
 };
 
+/**
+ * Local tools-dev escape hatch for working on the application while the
+ * production pairing service is unavailable. Packaged entrypoints never select
+ * this implementation; they always use the fail-closed server-backed flow.
+ */
+export function createCreatorStudioDesignDevelopmentAuth(): CreatorStudioDesignAuth {
+  const active = async (): Promise<CreatorStudioDesignAuthStatus> => ({
+    active: true,
+    message: "Local development access is enabled.",
+    offline: true,
+    state: "active",
+  });
+  return {
+    logout: active,
+    pollPairing: active,
+    startPairing: active,
+    status: active,
+  };
+}
+
 type AuthOptions = {
   storage: CreatorStudioDesignCredentialStorage;
   baseUrl?: string;

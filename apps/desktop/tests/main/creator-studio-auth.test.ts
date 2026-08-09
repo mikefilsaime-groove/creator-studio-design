@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createCreatorStudioDesignAuth,
+  createCreatorStudioDesignDevelopmentAuth,
   verifyCreatorStudioDesignLease,
   type CreatorStudioDesignCredentialStorage,
 } from "../../src/main/creator-studio-auth.js";
@@ -43,6 +44,18 @@ function memoryStorage(initial: Awaited<ReturnType<CreatorStudioDesignCredential
 }
 
 describe("Creator Studio Design authentication", () => {
+  it("provides an explicit local-development unlock without credentials or network calls", async () => {
+    const auth = createCreatorStudioDesignDevelopmentAuth();
+
+    await expect(auth.status()).resolves.toEqual(expect.objectContaining({
+      active: true,
+      offline: true,
+      state: "active",
+    }));
+    await expect(auth.startPairing()).resolves.toEqual(expect.objectContaining({ active: true }));
+    await expect(auth.logout()).resolves.toEqual(expect.objectContaining({ active: true }));
+  });
+
   it("keeps pairing secrets and the app access token out of renderer-visible status", async () => {
     const now = Date.now();
     const { jwk, lease } = signedLease(now);

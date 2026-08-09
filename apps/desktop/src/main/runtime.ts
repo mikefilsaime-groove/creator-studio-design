@@ -44,6 +44,7 @@ import {
 } from "./update-preflight.js";
 import {
   createCreatorStudioDesignAuth,
+  createCreatorStudioDesignDevelopmentAuth,
   createEncryptedFileCredentialStorage,
 } from "./creator-studio-auth.js";
 
@@ -366,6 +367,11 @@ export type DesktopRuntime = {
 };
 
 export type DesktopRuntimeOptions = {
+  /**
+   * Explicit tools-dev-only access used when the production pairing backend is
+   * not available. The packaged entrypoint never passes this option.
+   */
+  creatorStudioAuthBypass?: boolean;
   // Per-process secret shared with the daemon at startup (over its
   // sidecar IPC) so the main process can mint HMAC tokens for the
   // `dialog:pick-and-import` flow. The secret stays in main-process
@@ -2407,24 +2413,31 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
       throw new Error("host IPC is only available to the main Creator Studio Design window");
     }
   };
-  const creatorStudioAuth = createCreatorStudioDesignAuth({
-    baseUrl: process.env.CREATORSTUDIO_DESIGN_AUTH_BASE_URL,
-    storage: createEncryptedFileCredentialStorage({
-      filePath: join(app.getPath("userData"), "creator-studio-design-auth.enc"),
-      encrypt(plaintext) {
-        if (!safeStorage.isEncryptionAvailable()) {
-          throw new Error("Secure operating-system credential storage is unavailable.");
-        }
-        return safeStorage.encryptString(plaintext);
-      },
-      decrypt(ciphertext) {
-        if (!safeStorage.isEncryptionAvailable()) {
-          throw new Error("Secure operating-system credential storage is unavailable.");
-        }
-        return safeStorage.decryptString(ciphertext);
-      },
-    }),
-  });
+  if (options.creatorStudioAuthBypass) {
+    console.warn(
+      "[creator-studio-design] local development authentication bypass is active; packaged builds remain gated",
+    );
+  }
+  const creatorStudioAuth = options.creatorStudioAuthBypass
+    ? createCreatorStudioDesignDevelopmentAuth()
+    : createCreatorStudioDesignAuth({
+      baseUrl: process.env.CREATORSTUDIO_DESIGN_AUTH_BASE_URL,
+      storage: createEncryptedFileCredentialStorage({
+        filePath: join(app.getPath("userData"), "creator-studio-design-auth.enc"),
+        encrypt(plaintext) {
+          if (!safeStorage.isEncryptionAvailable()) {
+            throw new Error("Secure operating-system credential storage is unavailable.");
+          }
+          return safeStorage.encryptString(plaintext);
+        },
+        decrypt(ciphertext) {
+          if (!safeStorage.isEncryptionAvailable()) {
+            throw new Error("Secure operating-system credential storage is unavailable.");
+          }
+          return safeStorage.decryptString(ciphertext);
+        },
+      }),
+    });
   ipcMain.handle("creator-studio-design:auth:status", async (event) => {
     requireMainWindowSender(event);
     return creatorStudioAuth.status();
