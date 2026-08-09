@@ -68,6 +68,7 @@ import {
 } from "./sidecar-client.js";
 import { rewriteCliArgsForDefaultStart } from "./cli-args.js";
 import { ensureDaemonGateForDesktop } from "./desktop-auth-gate.js";
+import { prepareBrandedElectronBinary } from "./branded-electron.js";
 import { loadWorkspaceLocalEnv } from "./local-env.js";
 import { resolveSharedPortsFromRunningState } from "./shared-ports.js";
 
@@ -616,6 +617,18 @@ async function spawnDesktopRuntime(config: ToolDevConfig, options: CliOptions): 
   try {
     await buildDesktop(config, logHandle);
     await logHandle.write(`[tools-dev] launching desktop at ${new Date().toISOString()}\n`);
+    let electronBinaryPath = config.apps.desktop.electronBinaryPath;
+    try {
+      electronBinaryPath = await prepareBrandedElectronBinary({
+        cacheRoot: config.toolsDevRoot,
+        iconPath: path.join(config.workspaceRoot, "tools/pack/resources/mac/icon.icns"),
+        sourceBinaryPath: electronBinaryPath,
+      });
+    } catch (error) {
+      await logHandle.write(
+        `[tools-dev] Creator Studio Design Electron bundle branding failed; using the stock development binary: ${formatError(error)}\n`,
+      );
+    }
     const spawnEnv: NodeJS.ProcessEnv = {
       ...process.env,
       ...env,
@@ -645,7 +658,7 @@ async function spawnDesktopRuntime(config: ToolDevConfig, options: CliOptions): 
     }
     const spawned = await spawnBackgroundProcess({
       args: [config.apps.desktop.mainEntryPath, ...stampArgs],
-      command: config.apps.desktop.electronBinaryPath,
+      command: electronBinaryPath,
       cwd: config.workspaceRoot,
       detached: true,
       env: spawnEnv,
