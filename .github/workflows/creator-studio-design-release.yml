@@ -98,12 +98,15 @@ jobs:
           zip_path="$(node -p "JSON.parse(require('fs').readFileSync(process.env.BUILD_JSON_PATH)).zipPath")"
           payload_path="$(node -p "JSON.parse(require('fs').readFileSync(process.env.BUILD_JSON_PATH)).payloadPath")"
           dmg_name="creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}.dmg"
+          latest_dmg_name="creator-studio-design-mac-${RELEASE_ARCH}.dmg"
           zip_name="creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}.zip"
           payload_name="creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}-payload.zip"
           cp "$dmg_path" "$RUNNER_TEMP/release-assets/$dmg_name"
+          cp "$dmg_path" "$RUNNER_TEMP/release-assets/$latest_dmg_name"
           cp "$zip_path" "$RUNNER_TEMP/release-assets/$zip_name"
           cp "$payload_path" "$RUNNER_TEMP/release-assets/$payload_name"
           (cd "$RUNNER_TEMP/release-assets" && shasum -a 256 "$dmg_name" > "$dmg_name.sha256")
+          (cd "$RUNNER_TEMP/release-assets" && shasum -a 256 "$latest_dmg_name" > "$latest_dmg_name.sha256")
           (cd "$RUNNER_TEMP/release-assets" && shasum -a 256 "$zip_name" > "$zip_name.sha256")
           (cd "$RUNNER_TEMP/release-assets" && shasum -a 256 "$payload_name" > "$payload_name.sha256")
       - uses: actions/upload-artifact@v6
@@ -160,12 +163,14 @@ jobs:
           $assetDir = Join-Path $env:RUNNER_TEMP "release-assets"
           New-Item -ItemType Directory -Force -Path $assetDir | Out-Null
           $installerName = "creator-studio-design-$env:RELEASE_VERSION-win-x64-setup.exe"
+          $latestInstallerName = "creator-studio-design-win-x64-setup.exe"
           $zipName = "creator-studio-design-$env:RELEASE_VERSION-win-x64-portable.zip"
           $payloadName = "creator-studio-design-$env:RELEASE_VERSION-win-x64-payload.7z"
           Copy-Item $build.installerPath (Join-Path $assetDir $installerName)
+          Copy-Item $build.installerPath (Join-Path $assetDir $latestInstallerName)
           Copy-Item $build.portableZipPath (Join-Path $assetDir $zipName)
           Copy-Item $build.payloadPath (Join-Path $assetDir $payloadName)
-          foreach ($name in @($installerName, $zipName, $payloadName)) {
+          foreach ($name in @($installerName, $latestInstallerName, $zipName, $payloadName)) {
             $hash = (Get-FileHash (Join-Path $assetDir $name) -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $name" | Set-Content (Join-Path $assetDir "$name.sha256")
           }
@@ -205,9 +210,12 @@ jobs:
             --json > "$RUNNER_TEMP/linux-build.json"
           source_path="$(node -p "JSON.parse(require('fs').readFileSync('$RUNNER_TEMP/linux-build.json')).appImagePath")"
           asset_name="creator-studio-design-${RELEASE_VERSION}-linux-x64.AppImage"
+          latest_asset_name="creator-studio-design-linux-x64.AppImage"
           mkdir -p "$RUNNER_TEMP/release-assets"
           cp "$source_path" "$RUNNER_TEMP/release-assets/$asset_name"
+          cp "$source_path" "$RUNNER_TEMP/release-assets/$latest_asset_name"
           (cd "$RUNNER_TEMP/release-assets" && sha256sum "$asset_name" > "$asset_name.sha256")
+          (cd "$RUNNER_TEMP/release-assets" && sha256sum "$latest_asset_name" > "$latest_asset_name.sha256")
       - uses: actions/upload-artifact@v6
         with:
           name: creator-studio-design-linux-x64

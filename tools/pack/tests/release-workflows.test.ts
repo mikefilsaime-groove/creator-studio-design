@@ -32,10 +32,13 @@ describe("release workflows", () => {
 
     expect(workflow).toContain("name: Creator Studio Design release");
     expect(workflow).toContain("creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}.dmg");
+    expect(workflow).toContain("creator-studio-design-mac-${RELEASE_ARCH}.dmg");
     expect(workflow).toContain("creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}-payload.zip");
     expect(workflow).toContain("creator-studio-design-$env:RELEASE_VERSION-win-x64-setup.exe");
+    expect(workflow).toContain("creator-studio-design-win-x64-setup.exe");
     expect(workflow).toContain("creator-studio-design-$env:RELEASE_VERSION-win-x64-payload.7z");
     expect(workflow).toContain("creator-studio-design-${RELEASE_VERSION}-linux-x64.AppImage");
+    expect(workflow).toContain("creator-studio-design-linux-x64.AppImage");
     expect(workflow).toContain("releases/latest/download/metadata.json");
     expect(workflow).toContain("gh release create");
     expect(workflow).toContain("channel: 'stable'");
