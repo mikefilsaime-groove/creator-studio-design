@@ -12,7 +12,7 @@
  * only covers real daemon work.
  *
  * @see apps/packaged/src/prewarm.ts
- * @see https://github.com/nexu-io/open-design/issues/5835
+ * @see https://github.com/mikefilsaime-groove/creator-studio-design/issues/5835
  */
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

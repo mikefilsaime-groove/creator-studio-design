@@ -1,7 +1,7 @@
 /**
  * @module host
  *
- * Public barrel for `@open-design/host` — the Open Design renderer host-bridge
+ * Public barrel for `@open-design/host` — the Creator Studio Design renderer host-bridge
  * protocol. Re-exports the exact prior flat surface from the cohesive sibling
  * modules: the wire protocol (constants + types), bridge detection/validation,
  * adapter-result normalizers, and the renderer-facing action wrappers. This
@@ -63,6 +63,9 @@ export type {
   OpenDesignHostUpdaterMenuLabels,
   OpenDesignHostUpdaterOpenDialogRequest,
   OpenDesignHostUpdaterOpenDialogListener,
+  CreatorStudioDesignAuthState,
+  CreatorStudioDesignAuthStatus,
+  CreatorStudioDesignAuthBridge,
   OpenDesignHostBridge,
   OpenDesignHostGlobalScope,
 } from "./protocol.js";

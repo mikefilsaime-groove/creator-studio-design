@@ -827,6 +827,47 @@ export function App() {
   );
 }
 
+const CREATOR_STUDIO_AGENT_IDS = new Set(['claude', 'codex']);
+
+function loadCreatorStudioConfig() {
+  const current = loadConfig();
+  const agentId = current.agentId != null && CREATOR_STUDIO_AGENT_IDS.has(current.agentId)
+    ? current.agentId
+    : null;
+  const agentModels = Object.fromEntries(
+    Object.entries(current.agentModels ?? {}).filter(([id]) => CREATOR_STUDIO_AGENT_IDS.has(id)),
+  );
+  const agentCliEnv = Object.fromEntries(
+    Object.entries(current.agentCliEnv ?? {}).filter(([id]) => CREATOR_STUDIO_AGENT_IDS.has(id)),
+  );
+  const agentCliEnvIntent = Object.fromEntries(
+    Object.entries(current.agentCliEnvIntent ?? {}).filter(([id]) => CREATOR_STUDIO_AGENT_IDS.has(id)),
+  );
+  const next = {
+    ...current,
+    agentCliEnv,
+    agentCliEnvIntent,
+    agentId,
+    agentModels,
+    apiKey: '',
+    apiProviderBaseUrl: null,
+    apiProtocolConfigs: {},
+    baseUrl: '',
+    byokImageModel: '',
+    byokPendingProviderKey: undefined,
+    byokProviderConfigDrafts: {},
+    byokSpeechModel: '',
+    byokSpeechVoice: '',
+    byokVideoModel: '',
+    mediaProviders: {},
+    mode: 'daemon' as const,
+    model: '',
+    pet: current.pet == null ? undefined : { ...current.pet, enabled: false },
+  };
+  saveConfig(next);
+  return next;
+}
+
 function AppInner() {
   const { t } = useI18n();
   const iframeKeepAlivePool = useIframeKeepAlivePool();
@@ -887,7 +928,7 @@ function AppInner() {
   // Observability marker. `apps/web/src/observability/white-screen.ts`
   // keys its "app actually mounted" success condition on this attribute
   // because the dynamic-import loading shell (`<div class="od-loading-shell">
-  // Loading Open Design…</div>`) is itself >MIN_VISIBLE_TEXT and would
+  // Loading Creator Studio Design…</div>`) is itself >MIN_VISIBLE_TEXT and would
   // otherwise be mistaken for a real mount. Survives subsequent render
   // crashes — once App has mounted at least once, it's no longer a white
   // screen (subsequent failures show up as `$exception`).
@@ -917,7 +958,7 @@ function AppInner() {
       root.classList.remove('is-window-blurred');
     };
   }, [clientType, hostPlatform]);
-  const [config, setConfig] = useState<AppConfig>(() => loadConfig());
+  const [config, setConfig] = useState<AppConfig>(() => loadCreatorStudioConfig());
   const configRef = useRef(config);
   configRef.current = config;
   const latestPersistedConfigRef = useRef(config);

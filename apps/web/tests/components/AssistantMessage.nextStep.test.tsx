@@ -98,7 +98,7 @@ describe('AssistantMessage next-step affordance', () => {
     expect(screen.queryByTestId('next-step-actions')).toBeNull();
   });
 
-  it('reaches Contribute (share to Open Design) through the More → Share cascade', () => {
+  it('reaches Contribute (share to Creator Studio Design) through the More → Share cascade', () => {
     const onShareToOpenDesign = vi.fn();
     render(
       <AssistantMessage

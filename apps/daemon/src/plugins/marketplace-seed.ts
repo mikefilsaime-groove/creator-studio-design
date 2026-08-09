@@ -3,7 +3,7 @@ import { safeExternalFetch } from './plugin-asset-cache.js';
 import path from 'node:path';
 
 export const OFFICIAL_MARKETPLACE_ID = 'official';
-export const OFFICIAL_PLUGIN_SOURCE_REPO = 'github:nexu-io/open-design@main';
+export const OFFICIAL_PLUGIN_SOURCE_REPO = 'github:mikefilsaime-groove/creator-studio-design@main';
 
 export interface MarketplaceSeedEntry {
   name: string;

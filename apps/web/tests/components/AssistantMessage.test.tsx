@@ -243,7 +243,7 @@ describe('AssistantMessage feedback gate', () => {
     expect(onForkFromMessage).toHaveBeenCalledTimes(1);
   });
 
-  it('reaches Contribute (share to Open Design) through the More -> Share cascade', () => {
+  it('reaches Contribute (share to Creator Studio Design) through the More -> Share cascade', () => {
     const onShare = vi.fn();
 
     render(

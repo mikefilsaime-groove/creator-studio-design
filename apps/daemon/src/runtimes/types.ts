@@ -67,7 +67,7 @@ export type RuntimeContext = {
   newSessionId?: string;
   // Per-run plugin isolation for agent subprocesses. External Plugin entry
   // points use this for Local Codex so the child cannot recursively load the
-  // same Codex Plugin and route itself into another Open Design workflow.
+  // same Codex Plugin and route itself into another Creator Studio Design workflow.
   // Operator-wide overrides remain owned by each runtime definition.
   disablePlugins?: boolean;
 };

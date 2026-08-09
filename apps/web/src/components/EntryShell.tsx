@@ -97,8 +97,6 @@ import { DesignSystemsTab } from './DesignSystemsTab';
 import { BrandsTab } from './BrandsTab';
 import { EntryNavRail, type EntryView as EntryViewKind } from './EntryNavRail';
 import { ProjectSearchModal } from './ProjectSearchModal';
-import { CloudSignInTip, RailAccountSyncTip } from './CloudSignInTip';
-import { resolveEntryRailAccountFooterState } from './entry-rail-account-state';
 import { LibrarySection } from './LibrarySection';
 import { UpdaterPopup } from './UpdaterPopup';
 import { WhatsNewPopup } from './WhatsNewPopup';
@@ -593,13 +591,9 @@ export function EntryShell({
   // view from the route rather than keeping it in component state.
   const route = useRoute();
   const view: EntryViewKind = route.kind === 'home' ? route.view : 'home';
-  useEffect(() => {
-    // The entry shell is the authenticated Home surface. A definitive
-    // signed-out result returns it to the Cloud identity gate while leaving
-    // the saved model source untouched for passive reauthentication.
-    if (amrLoggedIn !== false || view === 'onboarding') return;
-    navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
-  }, [amrLoggedIn, view]);
+  // Cloud identity is optional. A signed-out user can keep using Home with a
+  // Local CLI or BYOK setup; hosted/team features surface their own sign-in
+  // prompts when the user chooses one of those capabilities.
   // The one shared workspace context. Any non-null context is a real workspace
   // (personal or team); workspace surfaces gate on B's permission bits, not on
   // workspaceType.
@@ -608,10 +602,6 @@ export function EntryShell({
   // unresolved or unavailable authority into an anonymous, unbound create.
   const workspaceContextState = useWorkspaceContext();
   const { context: workspaceContext, loading: workspaceLoading } = workspaceContextState;
-  const accountFooterState = resolveEntryRailAccountFooterState(
-    workspaceContextState,
-    amrLoggedIn,
-  );
   const workspaceContextRef = useRef(workspaceContext);
   workspaceContextRef.current = workspaceContext;
   const workspaceBillingResponse = useWorkspaceBillingResponse();
@@ -1279,7 +1269,7 @@ export function EntryShell({
   // projectKind='other', so the agent infers the task type and asks only
   // when the brief cannot be routed reliably.
   async function handlePluginLoopSubmit(payload: PluginLoopSubmit) {
-    // Open Design Cloud pre-run balance gate: hard blocks (empty wallet or
+    // Creator Studio Design Cloud pre-run balance gate: hard blocks (empty wallet or
     // signed out) and the soft low-balance reminder both fire BEFORE the
     // project is created, so the dialog appears right here on the home page
     // and the composer keeps its draft. In-project sends are gated separately
@@ -1412,7 +1402,7 @@ export function EntryShell({
    * Onboarding is where a signed-out user signs IN, so the workspace context
    * the shell resolved before it is stale by definition. Without this the rail
    * came back in its signed-out shape — no workspace switcher, no 草稿 / 全部项目
-   * / Workspace 设置, and the "sign in to Open Design Cloud" callout still in
+   * / Workspace 设置, and the "sign in to Creator Studio Design Cloud" callout still in
    * the bottom-left corner (#140) — until a focus or the 30s poll happened to
    * re-read it. `CloudSignInTip` fires the same three after its own sign-in.
    *
@@ -1487,7 +1477,13 @@ export function EntryShell({
   const homeExecutionSwitcher = (
     <InlineModelSwitcher
       compact
-      config={config}
+      config={{
+        ...config,
+        agentId: agents.some((agent) => agent.id === config.agentId)
+          ? config.agentId
+          : agents.find((agent) => agent.available)?.id ?? agents[0]?.id ?? 'codex',
+        mode: 'daemon',
+      }}
       agents={agents}
       providerModelsCache={activeProviderModelsCache}
       onProviderModelsCacheChange={activeSetProviderModelsCache}
@@ -1534,13 +1530,7 @@ export function EntryShell({
           // Keep the account slot neutral until Cloud answers successfully;
           // only a successful null context (or known local sign-out) may show
           // the sign-in card.
-          footerNotice={
-            accountFooterState === 'syncing'
-              ? <RailAccountSyncTip />
-              : accountFooterState === 'sign-in'
-                ? <CloudSignInTip />
-                : null
-          }
+          footerNotice={null}
         />
         {projectSearchOpen ? (
           <ProjectSearchModal
@@ -1559,7 +1549,7 @@ export function EntryShell({
               lives in the rail footer, and everything below is fixed-position
               or portalled so it occupies no layout space here. */}
           <WhatsNewPopup active={view === 'home'} />
-          {view === 'home'
+          {false && view === 'home'
             && deepSeekV4FlashCampaignAudience !== 'unknown'
             && typeof document !== 'undefined'
             ? createPortal(
@@ -1930,6 +1920,123 @@ export function EntryShell({
 
 function OnboardingView({
   config,
+  agents,
+  agentsLoading = false,
+  daemonLive,
+  onModeChange,
+  onAgentChange,
+  onConfigPersist,
+  onRefreshAgents,
+  onFinish,
+}: Parameters<typeof LegacyOnboardingView>[0]) {
+  const [refreshing, setRefreshing] = useState(false);
+  const supportedAgents = agents.filter((agent) => agent.id === 'claude' || agent.id === 'codex');
+  const availableAgents = supportedAgents.filter((agent) => agent.available);
+  const configuredAgent = availableAgents.find((agent) => agent.id === config.agentId);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(
+    configuredAgent?.id ?? availableAgents[0]?.id ?? '',
+  );
+
+  useEffect(() => {
+    if (availableAgents.some((agent) => agent.id === selectedAgentId)) return;
+    setSelectedAgentId(availableAgents[0]?.id ?? '');
+  }, [agents, selectedAgentId]);
+
+  const refreshAgents = async () => {
+    setRefreshing(true);
+    try {
+      const nextAgents = await onRefreshAgents();
+      const nextSupported = nextAgents.filter(
+        (agent) => (agent.id === 'claude' || agent.id === 'codex') && agent.available,
+      );
+      if (!nextSupported.some((agent) => agent.id === selectedAgentId)) {
+        setSelectedAgentId(nextSupported[0]?.id ?? '');
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const finish = async () => {
+    if (!selectedAgentId) return;
+    const nextConfig: AppConfig = {
+      ...config,
+      agentId: selectedAgentId,
+      mode: 'daemon',
+    };
+    onModeChange('daemon');
+    onAgentChange(selectedAgentId);
+    await onConfigPersist(nextConfig);
+    onFinish();
+  };
+
+  return (
+    <section className="onboarding-view onboarding-view--cloud" aria-label="Creator Studio Design setup">
+      <div className={`onboarding-cloud__pane ${onboardingSourceStyles.pane}`}>
+        <div className={`onboarding-cloud__center ${onboardingSourceStyles.center}`}>
+          <img src="/app-icon.png" alt="" width={72} height={72} />
+          <h1 className="onboarding-cloud__title">Creator Studio Design</h1>
+          <p className="onboarding-cloud__body">
+            Connect Claude Code or Codex using the subscription already signed in on this computer.
+          </p>
+          <div className={onboardingSourceStyles.options} role="radiogroup" aria-label="Coding agent">
+            {supportedAgents.map((agent) => {
+              const selected = agent.id === selectedAgentId;
+              return (
+                <Button
+                  key={agent.id}
+                  variant="subtle"
+                  role="radio"
+                  aria-checked={selected}
+                  disabled={!agent.available}
+                  className={`${onboardingSourceStyles.option} ${
+                    selected ? onboardingSourceStyles.optionActive : ''
+                  }`}
+                  onClick={() => setSelectedAgentId(agent.id)}
+                >
+                  <span className={onboardingSourceStyles.optionIcon}>
+                    <AgentIcon id={agent.id} size={24} />
+                  </span>
+                  <span className={onboardingSourceStyles.optionCopy}>
+                    <strong className={onboardingSourceStyles.optionTitle}>{agent.name}</strong>
+                    <span className={onboardingSourceStyles.optionBody}>
+                      {agent.available ? 'Ready to use' : 'Install and sign in, then rescan'}
+                    </span>
+                  </span>
+                  <span className={onboardingSourceStyles.radio} aria-hidden="true" />
+                </Button>
+              );
+            })}
+          </div>
+          {!agentsLoading && supportedAgents.length === 0 ? (
+            <p className="onboarding-cloud__error" role="alert">
+              Claude Code and Codex were not detected. Install one of them, sign in, and rescan.
+            </p>
+          ) : null}
+          <div className="onboarding-view__actions">
+            <Button variant="subtle" onClick={() => void refreshAgents()} disabled={refreshing || agentsLoading}>
+              <Icon name="reload" size={15} />
+              {refreshing || agentsLoading ? 'Scanning…' : 'Rescan'}
+            </Button>
+            <Button onClick={() => void finish()} disabled={!daemonLive || !selectedAgentId}>
+              Continue
+            </Button>
+          </div>
+        </div>
+        <footer className="onboarding-cloud__footer">
+          <LanguageMenu placement="up" align="start" />
+          <span>© {new Date().getFullYear()} Creator Studio Design</span>
+        </footer>
+      </div>
+      <div className="onboarding-cloud__art" aria-hidden="true">
+        <img src="/app-icon.png" alt="" />
+      </div>
+    </section>
+  );
+}
+
+function LegacyOnboardingView({
+  config,
   providerModelsCache: sharedProviderModelsCache,
   onProviderModelsCacheChange,
   agents,
@@ -2201,9 +2308,7 @@ function OnboardingView({
 
   useEffect(() => {
     if (
-      !amrStatusResolved
-      || !amrSignedIn
-      || config.onboardingCompleted !== true
+      config.onboardingCompleted !== true
       || !hasRestorableModelSourceConfig
       || (config.mode === 'daemon' && config.agentId !== 'amr' && agentsLoading)
       || passiveReauthCompletedRef.current
@@ -2215,8 +2320,6 @@ function OnboardingView({
     onFinish();
   }, [
     agentsLoading,
-    amrSignedIn,
-    amrStatusResolved,
     config.agentId,
     config.mode,
     config.onboardingCompleted,
@@ -2830,7 +2933,7 @@ function OnboardingView({
         // Onboarding may sit on this step for a while before finishOnboarding
         // fires refreshWorkspaceSurfacesAfterOnboarding() — without firing
         // these here too, Home's rail can render in its stale signed-out
-        // shape (still showing the "sign in to Open Design Cloud" callout)
+        // shape (still showing the "sign in to Creator Studio Design Cloud" callout)
         // for however long that gap lasts. Mirrors CloudSignInTip's own
         // finishSignedIn().
         notifyWorkspaceContextRefresh();
@@ -3075,8 +3178,9 @@ function OnboardingView({
 
   const primaryActionLabel = t('settings.onboardingContinue');
 
-  // Step 1 is identity only: every user signs into Open Design Cloud before
-  // choosing Hosted, Local, or BYOK on the next screen.
+  // Cloud identity is optional. Returning users with a valid local setup skip
+  // this route entirely; first-run users can sign in for hosted/team features
+  // or continue directly to Local/BYOK model-source selection.
   if (step === 0) {
     const cloudBusy = amrLoginPending;
     const amrStatusResolving = !amrStatusResolved;
@@ -3126,6 +3230,15 @@ function OnboardingView({
                       : t('settings.onboardingCloudSignIn')}
               </span>
             </button>
+            {!cloudBusy ? (
+              <button
+                type="button"
+                className="onboarding-cloud__cancel"
+                onClick={() => setStep(1)}
+              >
+                {t('settings.onboardingContinue')}
+              </button>
+            ) : null}
             {amrLoginError ? (
               <span className="onboarding-cloud__error" role="alert">
                 {amrLoginError}
@@ -3176,7 +3289,7 @@ function OnboardingView({
           <footer className="onboarding-cloud__footer">
             <LanguageMenu placement="up" align="start" />
             <span>
-              © {new Date().getFullYear()} Open Design · {t('settings.onboardingCloudRights')}
+              © {new Date().getFullYear()} Creator Studio Design · {t('settings.onboardingCloudRights')}
             </span>
           </footer>
         </div>
@@ -3304,7 +3417,7 @@ function OnboardingView({
           <footer className="onboarding-cloud__footer">
             <LanguageMenu placement="up" align="start" />
             <span>
-              © {new Date().getFullYear()} Open Design ·{' '}
+              © {new Date().getFullYear()} Creator Studio Design ·{' '}
               {t('settings.onboardingCloudRights')}
             </span>
           </footer>

@@ -13,7 +13,7 @@
  *
  * @see apps/packaged/src/sidecars.ts
  * @see apps/daemon/src/legacy-data-migrator.ts
- * @see https://github.com/nexu-io/open-design/issues/710
+ * @see https://github.com/mikefilsaime-groove/creator-studio-design/issues/710
  */
 import { EventEmitter } from 'node:events';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -54,7 +54,7 @@ describe('resolveDaemonStatusTimeoutMs', () => {
     // EVERY launch and can blow past the 35s baseline. The prewarm pass cuts the
     // usual case to a few seconds; the wider budget is the safety net for slow
     // devices, mirroring the win32 rationale.
-    // https://github.com/nexu-io/open-design/issues/5835
+    // https://github.com/mikefilsaime-groove/creator-studio-design/issues/5835
     expect(resolveDaemonStatusTimeoutMs({}, 'linux')).toBe(90_000);
   });
 
@@ -302,16 +302,16 @@ describe('resolvePackagedElectronNodeCommand', () => {
   it('uses the hidden Electron helper as the macOS Electron-as-Node command when available', async () => {
     const root = mkdtempSync(join(tmpdir(), 'od-packaged-electron-helper-'));
     try {
-      const appPath = posix.join(root.replaceAll('\\', '/'), 'Open Design.app');
-      const execPath = posix.join(appPath, 'Contents', 'MacOS', 'Open Design');
+      const appPath = posix.join(root.replaceAll('\\', '/'), 'Creator Studio Design.app');
+      const execPath = posix.join(appPath, 'Contents', 'MacOS', 'Creator Studio Design');
       const helperPath = posix.join(
         appPath,
         'Contents',
         'Frameworks',
-        'Open Design Helper.app',
+        'Creator Studio Design Helper.app',
         'Contents',
         'MacOS',
-        'Open Design Helper',
+        'Creator Studio Design Helper',
       );
 
       mkdirSync(posix.join(appPath, 'Contents', 'MacOS'), { recursive: true });
@@ -330,7 +330,7 @@ describe('resolvePackagedElectronNodeCommand', () => {
   it('falls back to the main executable when the macOS helper is unavailable', async () => {
     const root = mkdtempSync(join(tmpdir(), 'od-packaged-no-electron-helper-'));
     try {
-      const execPath = join(root, 'Open Design.app', 'Contents', 'MacOS', 'Open Design');
+      const execPath = join(root, 'Creator Studio Design.app', 'Contents', 'MacOS', 'Creator Studio Design');
       mkdirSync(dirname(execPath), { recursive: true });
       writeFileSync(execPath, '#!/bin/sh\n', 'utf8');
 
@@ -341,7 +341,7 @@ describe('resolvePackagedElectronNodeCommand', () => {
   });
 
   it('keeps the main executable on non-macOS platforms', async () => {
-    const execPath = '/opt/Open Design/open-design';
+    const execPath = '/opt/Creator Studio Design/open-design';
 
     await expect(resolvePackagedElectronNodeCommand(execPath, 'linux')).resolves.toBe(execPath);
   });
@@ -480,12 +480,12 @@ describe('buildPackagedDaemonSpawnEnv', () => {
   it('forwards the signed packaged launcher used to bootstrap MCP headlessly', () => {
     const env = buildPackagedDaemonSpawnEnv(fakePaths(), {
       appVersion: '1.2.3',
-      daemonCliEntry: '/Applications/Open Design.app/Contents/Resources/app/prebundled/daemon/daemon-cli.mjs',
+      daemonCliEntry: '/Applications/Creator Studio Design.app/Contents/Resources/app/prebundled/daemon/daemon-cli.mjs',
       legacyDataDir: null,
       mcpBootstrapArgs: [
         '-g',
         '-j',
-        '/Applications/Open Design.app',
+        '/Applications/Creator Studio Design.app',
         '--args',
         '--headless',
       ],
@@ -500,7 +500,7 @@ describe('buildPackagedDaemonSpawnEnv', () => {
     expect(JSON.parse(env.OD_MCP_BOOTSTRAP_ARGS ?? 'null')).toEqual([
       '-g',
       '-j',
-      '/Applications/Open Design.app',
+      '/Applications/Creator Studio Design.app',
       '--args',
       '--headless',
     ]);
@@ -541,12 +541,12 @@ describe('buildPackagedDaemonSpawnEnv', () => {
       appVersion: null,
       daemonCliEntry: null,
       legacyDataDir: null,
-      nodeCommand: 'C:\\Users\\Ada\\AppData\\Local\\Programs\\Open Design\\resources\\open-design\\bin\\node.exe',
+      nodeCommand: 'C:\\Users\\Ada\\AppData\\Local\\Programs\\Creator Studio Design\\resources\\open-design\\bin\\node.exe',
       requireDesktopAuth: true,
     });
 
     expect(env.OD_NODE_BIN).toBe(
-      'C:\\Users\\Ada\\AppData\\Local\\Programs\\Open Design\\resources\\open-design\\bin\\node.exe',
+      'C:\\Users\\Ada\\AppData\\Local\\Programs\\Creator Studio Design\\resources\\open-design\\bin\\node.exe',
     );
   });
 

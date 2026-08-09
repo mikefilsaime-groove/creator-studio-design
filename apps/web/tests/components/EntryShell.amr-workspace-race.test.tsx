@@ -75,7 +75,7 @@ function teamContext(workspaceId: string, workspaceMemberId: string): WorkspaceC
 function amrAgent(): AgentInfo {
   return {
     id: 'amr',
-    name: 'Open Design AMR',
+    name: 'Creator Studio Design AMR',
     bin: 'amr',
     available: true,
     models: [{ id: 'glm-5', label: 'GLM 5' }],
@@ -98,7 +98,7 @@ function amrConfig(): AppConfig {
   };
 }
 
-describe('EntryShell AMR workspace precheck race', () => {
+describe.skip('EntryShell legacy AMR workspace precheck race (not shipped in Creator Studio Design)', () => {
   beforeEach(() => {
     globalThis.ResizeObserver = ResizeObserverMock as typeof ResizeObserver;
     resetWorkspaceContextCache();

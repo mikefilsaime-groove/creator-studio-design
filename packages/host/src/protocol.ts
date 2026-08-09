@@ -3,7 +3,7 @@ import type { ReleaseChannel } from "@open-design/release";
 /**
  * @module protocol
  *
- * The Open Design renderer host-bridge wire contract: the injected-global name
+ * The Creator Studio Design renderer host-bridge wire contract: the injected-global name
  * and version, client/updater constant registries, and every request/result
  * type that crosses the host bridge — including the {@link OpenDesignHostBridge}
  * shape itself. Pure declarations only; depends on nothing else in the package.
@@ -360,6 +360,31 @@ export type OpenDesignHostUpdaterOpenDialogRequest = {
 
 export type OpenDesignHostUpdaterOpenDialogListener = (request: OpenDesignHostUpdaterOpenDialogRequest) => void;
 
+export type CreatorStudioDesignAuthState =
+  | "checking"
+  | "signed-out"
+  | "pairing"
+  | "active"
+  | "inactive"
+  | "error";
+
+export type CreatorStudioDesignAuthStatus = {
+  state: CreatorStudioDesignAuthState;
+  active: boolean;
+  offline?: boolean;
+  reason?: string;
+  message?: string;
+  userCode?: string;
+  expiresAt?: string;
+};
+
+export type CreatorStudioDesignAuthBridge = {
+  status(): Promise<CreatorStudioDesignAuthStatus>;
+  startPairing(): Promise<CreatorStudioDesignAuthStatus>;
+  pollPairing(): Promise<CreatorStudioDesignAuthStatus>;
+  logout(): Promise<CreatorStudioDesignAuthStatus>;
+};
+
 export type OpenDesignHostBridge = {
   // Optional so older host builds still satisfy the bridge shape; callers
   // must feature-detect before invoking.
@@ -372,6 +397,9 @@ export type OpenDesignHostBridge = {
   capture: {
     page(options?: OpenDesignHostCaptureOptions): Promise<OpenDesignHostCaptureResult>;
   };
+  // Creator Studio Design authentication is optional at the protocol level so
+  // older hosts and the browser-only development surface remain detectable.
+  creatorStudioAuth?: CreatorStudioDesignAuthBridge;
   client: OpenDesignHostClient;
   pdf: {
     print(html: string, nonce?: string, options?: OpenDesignHostPdfPrintOptions): Promise<OpenDesignHostActionResult>;

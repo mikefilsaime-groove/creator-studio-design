@@ -32,7 +32,7 @@ describe("download attribution token extraction", () => {
   it("does not treat GitHub release paths as attributed download URLs", () => {
     expect(
       extractDownloadAttributionTokenFromUrl(
-        "https://github.com/nexu-io/open-design/releases/download/open-design-v1/Open-Design-mac-arm64.dmg",
+        "https://github.com/mikefilsaime-groove/creator-studio-design/releases/download/open-design-v1/Open-Design-mac-arm64.dmg",
       ),
     ).toBeNull();
   });

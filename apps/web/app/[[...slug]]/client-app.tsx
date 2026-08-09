@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 
 import { installErrorHandlers } from '../../src/analytics/error-tracking';
 import { MatrixLoader } from '../../src/components/MatrixLoader';
+import { CreatorStudioAuthGate } from '../../src/components/CreatorStudioAuthGate';
 import { installWebObservability } from '../../src/observability/install';
 
 // Install browser exception handlers at module-load time, before any other
@@ -31,11 +32,15 @@ const App = dynamic(() => import('../../src/App').then((m) => m.App), {
   loading: () => (
     <div className="od-loading-shell">
       <MatrixLoader />
-      <span>Loading Open Design…</span>
+      <span>Loading Creator Studio Design…</span>
     </div>
   ),
 });
 
 export function ClientApp() {
-  return <App />;
+  return (
+    <CreatorStudioAuthGate>
+      <App />
+    </CreatorStudioAuthGate>
+  );
 }

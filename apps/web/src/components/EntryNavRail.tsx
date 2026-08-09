@@ -82,12 +82,9 @@ import {
   workspaceAnalyticsDimensions,
 } from '../analytics/workspace';
 
-const REPO_URL = 'https://github.com/nexu-io/open-design';
+const REPO_URL = 'https://github.com/mikefilsaime-groove/creator-studio-design';
 const GITHUB_HELP_URL = `${REPO_URL}/issues/new`;
 const GITHUB_FEATURE_URL = `${REPO_URL}/pulls`;
-const DISCORD_URL = 'https://discord.gg/mHAjSMV6gz';
-const X_URL = 'https://x.com/OpenDesignHQ';
-const CONTACT_EMAIL_URL = 'mailto:support@open-design.ai';
 const externalLinkProps = { target: '_blank', rel: 'noreferrer noopener' } as const;
 
 // Last directory this shell successfully read. `coalescedGet` only collapses
@@ -1208,47 +1205,6 @@ export function EntryNavRail({
                       <span className="entry-nav-rail__menu-social-count">
                         {githubStars == null ? GITHUB_STARS_FALLBACK_LABEL : formatStars(githubStars)}
                       </span>
-                    </a>
-                    <a
-                      className="entry-nav-rail__menu-social-btn"
-                      role="menuitem"
-                      href={DISCORD_URL}
-                      {...externalLinkProps}
-                      aria-label={t('entry.discordAria')}
-                      title={t('entry.discordAria')}
-                      onClick={() => {
-                        trackAccountAction('discord');
-                        setAccountOpen(false);
-                      }}
-                    >
-                      <Icon name="discord" size={15} />
-                    </a>
-                    <a
-                      className="entry-nav-rail__menu-social-btn"
-                      role="menuitem"
-                      href={X_URL}
-                      {...externalLinkProps}
-                      aria-label="@OpenDesignHQ"
-                      title="@OpenDesignHQ"
-                      onClick={() => {
-                        trackAccountAction('twitter');
-                        setAccountOpen(false);
-                      }}
-                    >
-                      <span className="entry-nav-rail__menu-x" aria-hidden>X</span>
-                    </a>
-                    <a
-                      className="entry-nav-rail__menu-social-btn"
-                      role="menuitem"
-                      href={CONTACT_EMAIL_URL}
-                      aria-label={t('entry.mailAria')}
-                      title={t('entry.mailAria')}
-                      onClick={() => {
-                        trackAccountAction('email');
-                        setAccountOpen(false);
-                      }}
-                    >
-                      <Icon name="mail" size={15} />
                     </a>
                   </div>
                   <div className="entry-nav-rail__menu-divider" />

@@ -21,7 +21,7 @@ export function resolvePackagedWinInstallIdentity(options: {
 }): PackagedWinInstallIdentity {
   const namespaceToken = sanitizeNamespace(options.namespace);
   const channel = releaseChannelFromVersion(options.releaseVersion)
-    ?? releaseChannelFromNamespace(options.namespace, "default");
-  const displayName = channel == null ? `Open Design ${namespaceToken}` : releaseInstallIdentity(channel).productName;
+    ?? releaseChannelFromNamespace(options.namespace, "creator-studio-design");
+  const displayName = channel == null ? `Creator Studio Design ${namespaceToken}` : releaseInstallIdentity(channel).productName;
   return { displayName, namespaceToken };
 }

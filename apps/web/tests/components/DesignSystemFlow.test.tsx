@@ -493,7 +493,7 @@ describe('DesignSystemCreationFlow', () => {
 
     render(<DesignSystemCreationFlow onBack={() => {}} onCreated={onCreated} />);
 
-    addSourceUrl('git@github.com:nexu-io/open-design.git');
+    addSourceUrl('git@github.com:mikefilsaime-groove/creator-studio-design.git');
     continueToGeneration();
     confirmExtraction();
 
@@ -504,8 +504,8 @@ describe('DesignSystemCreationFlow', () => {
     expect(requestInit).toBeTruthy();
     const body = JSON.parse(requestInit!.body) as { url?: string; designMd?: string };
     expect(body.url).toBeUndefined();
-    expect(body.designMd).toEqual(expect.stringContaining('https://github.com/nexu-io/open-design'));
-    expect(body.designMd).toEqual(expect.stringContaining('GitHub repositories: https://github.com/nexu-io/open-design'));
+    expect(body.designMd).toEqual(expect.stringContaining('https://github.com/mikefilsaime-groove/creator-studio-design'));
+    expect(body.designMd).toEqual(expect.stringContaining('GitHub repositories: https://github.com/mikefilsaime-groove/creator-studio-design'));
   });
 
   it('keeps protocol-less website paths as website URLs', async () => {
@@ -847,7 +847,7 @@ describe('DesignSystemCreationFlow', () => {
     await waitFor(() => expect(mocks.patchProject).toHaveBeenCalledWith(
       project.id,
       expect.objectContaining({
-        pendingPrompt: expect.stringContaining('Create this project as a complete Open Design design system workspace.'),
+        pendingPrompt: expect.stringContaining('Create this project as a complete Creator Studio Design design system workspace.'),
       }),
     ));
     await waitFor(() => expect(onProjectPrepared).toHaveBeenCalledWith(
@@ -934,7 +934,7 @@ describe('DesignSystemCreationFlow', () => {
     expect(mocks.patchProject).toHaveBeenCalledWith(
       project.id,
       expect.objectContaining({
-        pendingPrompt: expect.stringContaining('Create this project as a complete Open Design design system workspace.'),
+        pendingPrompt: expect.stringContaining('Create this project as a complete Creator Studio Design design system workspace.'),
       }),
     );
     expect(mocks.patchProject).toHaveBeenCalledWith(
@@ -2038,12 +2038,12 @@ describe('DesignSystemCreationFlow', () => {
   it.skip('adds website source links with Enter and keeps them out of GitHub intake', async () => {
     const system: DesignSystemDetail = {
       id: 'user:open-design-website-design-system',
-      title: 'Open Design Website Design System',
+      title: 'Creator Studio Design Website Design System',
       category: 'Custom',
-      summary: 'Open Design website source.',
+      summary: 'Creator Studio Design website source.',
       swatches: [],
       surface: 'web',
-      body: '# Open Design Website Design System\n',
+      body: '# Creator Studio Design Website Design System\n',
       source: 'user',
       status: 'draft',
       isEditable: true,
@@ -2051,7 +2051,7 @@ describe('DesignSystemCreationFlow', () => {
     };
     const project: Project = {
       id: 'ds-open-design-website-design-system',
-      name: 'Open Design Website Design System',
+      name: 'Creator Studio Design Website Design System',
       skillId: null,
       designSystemId: system.id,
       createdAt: 1,
@@ -2085,7 +2085,7 @@ describe('DesignSystemCreationFlow', () => {
     expect(sourceInput.value).toBe('');
 
     fireEvent.change(screen.getByPlaceholderText(/Mission Impastabowl/i), {
-      target: { value: 'Open Design website source' },
+      target: { value: 'Creator Studio Design website source' },
     });
     continueToGeneration();
     continueToGeneration();
@@ -2138,12 +2138,12 @@ describe('DesignSystemCreationFlow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Show access methods' }));
     expect(screen.getByText('This device')).toBeTruthy();
-    expect(screen.getByText('Open Design account')).toBeTruthy();
+    expect(screen.getByText('Creator Studio Design account')).toBeTruthy();
     expect(screen.getByText('Connector platform')).toBeTruthy();
     expect(screen.getByText('Coming soon')).toBeTruthy();
     expect(screen.getByText('Not configured')).toBeTruthy();
 
-    fireEvent.change(input, { target: { value: 'https://github.com/nexu-io/open-design/' } });
+    fireEvent.change(input, { target: { value: 'https://github.com/mikefilsaime-groove/creator-studio-design/' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     expect(screen.getByText('nexu-io/open-design')).toBeTruthy();
@@ -2252,7 +2252,7 @@ describe('DesignSystemCreationFlow', () => {
       const input = screen.getByPlaceholderText('https://example.com or https://github.com/owner/repo') as HTMLInputElement;
       expect(input.disabled).toBe(false);
 
-      fireEvent.change(input, { target: { value: 'https://github.com/nexu-io/open-design/' } });
+      fireEvent.change(input, { target: { value: 'https://github.com/mikefilsaime-groove/creator-studio-design/' } });
       fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
       expect(screen.getByText('nexu-io/open-design')).toBeTruthy();
@@ -2302,7 +2302,7 @@ describe('DesignSystemCreationFlow', () => {
         redirectUrl: 'https://example.com/oauth',
         expiresAt: '2099-05-08T10:00:00.000Z',
       },
-      error: 'Popup blocked. Allow popups for Open Design and try again.',
+      error: 'Popup blocked. Allow popups for Creator Studio Design and try again.',
     });
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
     const config = {
@@ -2323,7 +2323,7 @@ describe('DesignSystemCreationFlow', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Connect via Composio' }));
 
       await waitFor(() => expect(screen.getByText('Pending')).toBeTruthy());
-      expect(screen.getByText('Popup blocked. Allow popups for Open Design and try again.')).toBeTruthy();
+      expect(screen.getByText('Popup blocked. Allow popups for Creator Studio Design and try again.')).toBeTruthy();
 
       fireEvent.click(screen.getByRole('button', { name: 'Open authorization' }));
 
@@ -2392,7 +2392,7 @@ describe('DesignSystemCreationFlow', () => {
     fireEvent.change(screen.getByPlaceholderText(/Mission Impastabowl/i), {
       target: { value: 'GitHub: product workspace' },
     });
-    addSourceUrl('https://github.com/nexu-io/open-design');
+    addSourceUrl('https://github.com/mikefilsaime-groove/creator-studio-design');
     continueToGeneration();
     confirmExtraction();
 
@@ -2407,7 +2407,7 @@ describe('DesignSystemCreationFlow', () => {
     expect(mocks.writeProjectTextFile).toHaveBeenCalledWith(
       project.id,
       'context/source-context.md',
-      expect.stringContaining('https://github.com/nexu-io/open-design'),
+      expect.stringContaining('https://github.com/mikefilsaime-groove/creator-studio-design'),
       undefined,
       null,
     );
@@ -2421,7 +2421,7 @@ describe('DesignSystemCreationFlow', () => {
     expect(mocks.writeProjectTextFile).toHaveBeenCalledWith(
       project.id,
       'context/source-context.md',
-      expect.stringContaining('"$OD_NODE_BIN" "$OD_BIN" tools connectors github-design-context --repo \'https://github.com/nexu-io/open-design\' --output context/github/nexu-io-open-design.md'),
+      expect.stringContaining('"$OD_NODE_BIN" "$OD_BIN" tools connectors github-design-context --repo \'https://github.com/mikefilsaime-groove/creator-studio-design\' --output context/github/mikefilsaime-groove-creator-studio-design.md'),
       undefined,
       null,
     );
@@ -2573,7 +2573,7 @@ describe('DesignSystemCreationFlow', () => {
     fireEvent.change(screen.getByPlaceholderText(/Mission Impastabowl/i), {
       target: { value: 'GitHub: product workspace' },
     });
-    addSourceUrl('https://github.com/nexu-io/open-design');
+    addSourceUrl('https://github.com/mikefilsaime-groove/creator-studio-design');
     continueToGeneration();
     confirmExtraction();
 

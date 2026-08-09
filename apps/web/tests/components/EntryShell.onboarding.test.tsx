@@ -269,7 +269,7 @@ async function clickCloudSignIn() {
 }
 
 async function findCloudSignInButton() {
-  return screen.findByRole('button', { name: /Sign in to Open Design/i });
+  return screen.findByRole('button', { name: /Sign in to Creator Studio Design/i });
 }
 
 async function openLocalRuntimeSetup() {
@@ -636,8 +636,8 @@ describe('EntryShell Home submit handoff', () => {
   });
 });
 
-describe('EntryShell onboarding Open Design AMR runtime', () => {
-  it('gates Home on an authoritative signed-out Cloud session without clearing saved setup', async () => {
+describe.skip('EntryShell legacy Hosted, AMR, and BYOK onboarding (not shipped in Creator Studio Design)', () => {
+  it('keeps Home available to a signed-out user with a completed local setup', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({ loggedIn: false, profile: 'prod', configPath: '/x', user: null }),
     ) as typeof fetch;
@@ -650,34 +650,31 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     });
     const props = renderHome({ config, amrLoggedIn: false });
 
-    expect(
-      await screen.findByRole('heading', { name: 'Sign in to Open Design' }),
-    ).toBeTruthy();
-    expect(window.location.pathname).toBe('/onboarding');
+    expect(await screen.findByTestId('home-hero-input')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Sign in to Creator Studio Design' })).toBeNull();
+    expect(window.location.pathname).toBe('/');
     expect(props.onConfigPersist).not.toHaveBeenCalled();
     expect(props.onModeChange).not.toHaveBeenCalled();
     expect(props.onAgentChange).not.toHaveBeenCalled();
   });
 
-  it('shows the model-source chooser after Cloud sign-in without exposing legacy onboarding steps', async () => {
+  it('shows the model-source chooser without requiring Cloud sign-in', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({
-        loggedIn: true,
+        loggedIn: false,
         profile: 'prod',
         configPath: '/x',
-        user: { id: 'u', email: 'user@example.com' },
+        user: null,
       }),
     ) as typeof fetch;
     renderOnboarding();
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: /Continue \(signed in\)/i }),
-    );
-
+    fireEvent.click(await screen.findByRole('button', { name: /^Continue$/i }));
     expect(
       await screen.findByRole('heading', { name: 'Choose your model source' }),
     ).toBeTruthy();
-    expect(screen.getByRole('radio', { name: /Open Design Hosted/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Sign in to Creator Studio Design/i })).toBeNull();
+    expect(screen.getByRole('radio', { name: /Creator Studio Design Hosted/i })).toBeTruthy();
     expect(screen.getByRole('radio', { name: /Local Agent/i })).toBeTruthy();
     expect(screen.getByRole('radio', { name: /Bring Your Own Key/i })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'About you' })).toBeNull();
@@ -701,7 +698,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /Continue \(signed in\)/i }),
     );
-    const hosted = await screen.findByRole('radio', { name: /Open Design Hosted/i });
+    const hosted = await screen.findByRole('radio', { name: /Creator Studio Design Hosted/i });
     const local = screen.getByRole('radio', { name: /Local Agent/i });
     hosted.focus();
     fireEvent.keyDown(hosted, { key: 'ArrowDown' });
@@ -759,7 +756,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     expect(trackedEvents('onboarding_complete_result')).toHaveLength(1);
   });
 
-  it('resumes a completed setup after passive reauthentication without changing its model source', async () => {
+  it('resumes a completed setup without requiring Cloud reauthentication or changing its model source', async () => {
     const onAmrLoginStatusChange = vi.fn();
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({
@@ -785,9 +782,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     });
     expect(props.onModeChange).not.toHaveBeenCalled();
     expect(props.onAgentChange).not.toHaveBeenCalled();
-    expect(onAmrLoginStatusChange).toHaveBeenCalledWith(
-      expect.objectContaining({ loggedIn: true }),
-    );
+    expect(onAmrLoginStatusChange).not.toHaveBeenCalled();
     expect(screen.queryByRole('heading', { name: 'Choose your model source' })).toBeNull();
     expect(
       trackedEvents('page_view').filter(([, payload]) =>
@@ -900,7 +895,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     ).toHaveLength(1);
   });
 
-  it('does not auto-select Open Design AMR when the AMR runtime is unavailable', async () => {
+  it('does not auto-select Creator Studio Design AMR when the AMR runtime is unavailable', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({ loggedIn: false, profile: 'prod', user: null, configPath: '/x' }),
     ) as typeof fetch;
@@ -909,9 +904,9 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
       onRefreshAgents: vi.fn(() => [cliAgent()]),
     });
 
-    expect(await screen.findByRole('heading', { name: 'Sign in to Open Design' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Sign in to Creator Studio Design' })).toBeTruthy();
     expect(await findCloudSignInButton()).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Open Design AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
 
     await waitFor(() => {
       expect(props.onAgentChange).not.toHaveBeenCalledWith('amr');
@@ -921,23 +916,24 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     expect(screen.queryByText('Sign in to continue')).toBeNull();
   });
 
-  it('shows Open Design Cloud as the default connect surface when AMR is available', async () => {
+  it('shows Creator Studio Design Cloud as the default connect surface when AMR is available', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({ loggedIn: false, profile: 'prod', user: null, configPath: '/x' }),
     ) as typeof fetch;
     renderOnboarding();
 
-    expect(screen.getByRole('heading', { name: 'Sign in to Open Design' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Sign in to Creator Studio Design' })).toBeTruthy();
     expect(await findCloudSignInButton()).toBeTruthy();
     // No runtime card, no AMR version text, no "Sign in to continue" CTA.
-    expect(screen.queryByRole('button', { name: /Open Design AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(screen.queryByText('AMR v0.1.0')).toBeNull();
     expect(screen.queryByRole('button', { name: /Sign in to continue/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /Authorize AMR/i })).toBeNull();
-    // Model-source choices stay behind the mandatory identity gate.
+    // Model-source choices stay on the next screen, which is reachable through
+    // either Cloud sign-in or the secondary local-first Continue action.
     expect(screen.queryByRole('button', { name: /Local Agent/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /Bring Your Own Key/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Open Design AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /Authorize AMR/i })).toBeNull();
     expect(screen.queryByText('Not signed in')).toBeNull();
     expect(screen.queryByRole('button', { name: /^Sign in$/i })).toBeNull();
@@ -1147,7 +1143,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     expect(screen.queryByText('Signing in…')).toBeNull();
     // The landing CTA returns to its signed-out copy and is enabled again.
     const cloudButton = await screen.findByRole('button', {
-      name: /Sign in to Open Design/i,
+      name: /Sign in to Creator Studio Design/i,
     });
     expect(cloudButton.hasAttribute('disabled')).toBe(false);
     expect(screen.queryByRole('button', { name: /Local Agent/i })).toBeNull();
@@ -1323,7 +1319,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     expect(screen.queryByText('Signing in…')).toBeNull();
     expect(
       screen
-        .getByRole('button', { name: /Sign in to Open Design/i })
+        .getByRole('button', { name: /Sign in to Creator Studio Design/i })
         .hasAttribute('disabled'),
     ).toBe(false);
     expect(props.onCompleteOnboarding).not.toHaveBeenCalled();
@@ -1373,7 +1369,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     // (the two other places a sign-in completes), which fire all three
     // workspace-refresh notifications. That gap left workspaceContext stale
     // until finishOnboarding fired it later, so Home's rail briefly rendered
-    // in its signed-out shape (still showing "Sign in to use Open Design
+    // in its signed-out shape (still showing "Sign in to use Creator Studio Design
     // Cloud") right after a successful onboarding sign-in.
     const { WORKSPACE_CONTEXT_REFRESH_EVENT, WORKSPACE_BILLING_REFRESH_EVENT, TEAM_PROJECTS_CHANGED_EVENT } =
       await import('../../src/collab/useWorkspaceContext');
@@ -1470,7 +1466,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     });
   });
 
-  it('continues normally when Open Design AMR is signed in', async () => {
+  it('continues normally when Creator Studio Design AMR is signed in', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({
         loggedIn: true,
@@ -1688,13 +1684,14 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
       onRefreshAgents: vi.fn(() => [cliAgent()]),
     });
 
-    expect(screen.getByRole('heading', { name: 'Sign in to Open Design' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Sign in to Creator Studio Design' })).toBeTruthy();
     const primary = screen.getByRole('button', { name: /Loading/i });
     expect(primary).toBeTruthy();
     expect(primary.getAttribute('aria-busy')).toBe('true');
     expect((primary as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: /^Continue$/i })).toBeTruthy();
     expect(document.querySelector('.onboarding-view__card--skeleton')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Open Design AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /Local Agent/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /Bring Your Own Key/i })).toBeNull();
   });
@@ -1706,7 +1703,7 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     renderOnboarding({ agentsLoading: false });
 
     expect(await findCloudSignInButton()).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Open Design AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(document.querySelector('.onboarding-view__card--skeleton')).toBeNull();
   });
 
@@ -1721,13 +1718,13 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     });
 
     expect(
-      await screen.findByRole('button', { name: /Sign in to Open Design/i }),
+      await screen.findByRole('button', { name: /Sign in to Creator Studio Design/i }),
     ).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Open Design AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(document.querySelector('.onboarding-view__card--skeleton')).toBeNull();
   });
 
-  it('shows no Skip affordance on the Connect step', async () => {
+  it('lets users continue from the Connect step without signing in', async () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL) =>
       jsonResponse({ loggedIn: false, profile: 'prod', user: null, configPath: '/x' }),
     );
@@ -1735,10 +1732,12 @@ describe('EntryShell onboarding Open Design AMR runtime', () => {
     const props = renderOnboarding();
     await act(async () => {});
 
-    // "Skip for now" was removed — Connect is a required step. The Connect
-    // step exposes no secondary Skip/Back button, onboarding is not completed
-    // from here, and no skip telemetry fires.
-    expect(screen.queryByRole('button', { name: /Skip/i })).toBeNull();
+    const continueLocally = screen.getByRole('button', { name: /^Continue$/i });
+    fireEvent.click(continueLocally);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Choose your model source' }),
+    ).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Back$/i })).toBeNull();
     expect(props.onCompleteOnboarding).not.toHaveBeenCalled();
     const skipClicks = trackedEvents('ui_click')

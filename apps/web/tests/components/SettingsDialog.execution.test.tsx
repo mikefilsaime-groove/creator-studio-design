@@ -609,7 +609,26 @@ describe('SettingsDialog privacy settings interactions', () => {
   });
 });
 
-describe('SettingsDialog execution settings BYOK interactions', () => {
+describe('Creator Studio Design settings restrictions', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('ships Local CLI only and removes BYOK, media-provider, and pet settings', () => {
+    renderSettingsDialog(
+      { mode: 'api' },
+      { agents: availableAgents, daemonLive: true },
+    );
+
+    expect(screen.getByRole('tab', { name: /Local CLI/i })).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: /API providers/i })).toBeNull();
+    expect(screen.queryByTestId('settings-nav-mediaProviders')).toBeNull();
+    expect(screen.queryByTestId('settings-nav-pet')).toBeNull();
+  });
+});
+
+describe.skip('SettingsDialog execution settings BYOK interactions (not shipped in Creator Studio Design)', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
@@ -2676,7 +2695,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     vi.unstubAllGlobals();
   });
 
-  it('pins Open Design to the top of the installed CLI list', () => {
+  it('pins Creator Studio Design to the top of the installed CLI list', () => {
     const claudeAgent: AgentInfo = {
       id: 'claude',
       name: 'Claude Code',
@@ -3211,7 +3230,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     const localCliTab = screen.getByRole('tab', { name: /Local CLI.*daemon offline/i }) as HTMLButtonElement;
     expect(localCliTab.disabled).toBe(true);
     expect(localCliTab.getAttribute('title')).toBe('Daemon is not running');
-    expect(screen.getByRole('tab', { name: /API providers.*API provider/i }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('tab', { name: /API providers/i })).toBeNull();
   });
 
   it('renders a Local CLI connection test for selected installed agents', () => {
@@ -4198,7 +4217,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
   });
 });
 
-describe('SettingsDialog media providers interactions', () => {
+describe.skip('SettingsDialog media providers interactions (not shipped in Creator Studio Design)', () => {
   afterEach(() => {
     cleanup();
   });
@@ -4628,9 +4647,9 @@ describe('SettingsDialog connectors interactions', () => {
 
 describe('SettingsDialog MCP server interactions', () => {
   const installInfo = {
-    command: '/Applications/Open Design.app/Contents/Resources/open-design/bin/node',
+    command: '/Applications/Creator Studio Design.app/Contents/Resources/open-design/bin/node',
     args: [
-      '/Applications/Open Design.app/Contents/Resources/app/node_modules/@open-design/daemon/dist/cli.js',
+      '/Applications/Creator Studio Design.app/Contents/Resources/app/node_modules/@open-design/daemon/dist/cli.js',
       'mcp',
       '--daemon-url',
       'http://127.0.0.1:51706',
@@ -4683,12 +4702,12 @@ describe('SettingsDialog MCP server interactions', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/mcp/install-info');
     });
-    expect(screen.getByRole('heading', { name: /Connect Open Design to your coding agent/i })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Connect Creator Studio Design to your coding agent/i })).toBeTruthy();
     expect(screen.queryByText(/Run this command in your terminal/i)).toBeNull();
     await waitFor(() => {
-      expect(screen.getByText(/claude mcp add-json --scope user open-design/i)).toBeTruthy();
+      expect(screen.getByText(/claude mcp add-json --scope user creator-studio-design/i)).toBeTruthy();
     });
-    expect(screen.getByText(/Keep Open Design running\. Restart your coding agent after setup\./i)).toBeTruthy();
+    expect(screen.getByText(/Keep Creator Studio Design running\. Restart your coding agent after setup\./i)).toBeTruthy();
     expect(screen.getByText(/What your agent can do/i)).toBeTruthy();
   });
 
@@ -4699,28 +4718,17 @@ describe('SettingsDialog MCP server interactions', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/claude mcp add-json --scope user open-design/i)).toBeTruthy();
+      expect(screen.getByText(/claude mcp add-json --scope user creator-studio-design/i)).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /Claude Code/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Claude Code.*Setup command/i }));
     fireEvent.click(screen.getByRole('option', { name: /Codex/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/Append this table to ~\/\.codex\/config\.toml/i)).toBeTruthy();
     });
-    expect(screen.getByText(/\[mcp_servers\.open-design\]/i)).toBeTruthy();
-
-    // Scope to the picker trigger ("Codex" + the TOML method chip) so
-    // we don't collide with the new one-click "Install in Codex" /
-    // "Remove from Codex" button on the same panel.
-    fireEvent.click(screen.getByRole('button', { name: /Codex.*TOML/i }));
-    fireEvent.click(screen.getByRole('option', { name: /Cursor/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Install in Cursor/i })).toBeTruthy();
-    });
-    expect(screen.getByText(/merge this JSON into ~\/\.cursor\/mcp\.json/i)).toBeTruthy();
-    expect(screen.getByText(/"mcpServers"/i)).toBeTruthy();
+    expect(screen.getByText(/\[mcp_servers\.creator-studio-design\]/i)).toBeTruthy();
+    expect(screen.queryByRole('option', { name: /Cursor/i })).toBeNull();
   });
 
   it('copies the currently selected MCP snippet to the clipboard', async () => {
@@ -4730,14 +4738,14 @@ describe('SettingsDialog MCP server interactions', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/claude mcp add-json --scope user open-design/i)).toBeTruthy();
+      expect(screen.getByText(/claude mcp add-json --scope user creator-studio-design/i)).toBeTruthy();
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Copy setup command' }));
 
     await waitFor(() => {
       expect(writeTextMock).toHaveBeenCalledWith(
-        expect.stringContaining("claude mcp add-json --scope user open-design"),
+        expect.stringContaining("claude mcp add-json --scope user creator-studio-design"),
       );
     });
     expect(screen.getByText('Copied')).toBeTruthy();
@@ -5112,7 +5120,7 @@ describe('SettingsDialog draft reconciliation', () => {
   });
 });
 
-describe('SettingsDialog pets interactions', () => {
+describe.skip('SettingsDialog pets interactions (not shipped in Creator Studio Design)', () => {
   const clipboardDescriptor = Object.getOwnPropertyDescriptor(window.navigator, 'clipboard');
 
   afterEach(() => {
@@ -5708,7 +5716,7 @@ describe('SettingsDialog about interactions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: en['settings.updateViewReleases'] }));
 
-    expect(openExternalUrlMock).toHaveBeenCalledWith('https://github.com/nexu-io/open-design/releases');
+    expect(openExternalUrlMock).toHaveBeenCalledWith('https://github.com/mikefilsaime-groove/creator-studio-design/releases');
   });
 
   it('downloads an available packaged update from the about page', async () => {
@@ -5718,13 +5726,13 @@ describe('SettingsDialog about interactions', () => {
     });
     const downloaded = updateStatus({
       artifact: {
-        name: 'Open Design Beta.dmg',
+        name: 'Creator Studio Design Beta.dmg',
         platformKey: 'macAppleSilicon',
         type: 'dmg',
-        url: 'https://fixture.test/Open Design Beta.dmg',
+        url: 'https://fixture.test/Creator Studio Design Beta.dmg',
       },
       availableVersion: '1.2.3-beta.4',
-      downloadPath: '/tmp/open-design-updater/Open Design Beta.dmg',
+      downloadPath: '/tmp/open-design-updater/Creator Studio Design Beta.dmg',
       state: 'downloaded',
     });
     const download = vi.fn(async () => downloaded);

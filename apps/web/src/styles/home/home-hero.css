@@ -85,7 +85,7 @@
   display: block;
   /* Sized against the pixel-scan wordmark (was 201.6px for the static-image
      build — read as undersized once the full mark+wordmark artwork landed). */
-  width: min(260px, 65vw);
+  width: min(132px, 34vw);
   /* Logo → composer gap = 24px total: this 18px + the hero's 6px flex gap. */
   margin-bottom: var(--spacing-18);
 }
@@ -96,12 +96,10 @@
   user-select: none;
   -webkit-user-drag: none;
 }
-/* Tile-field wordmark: a sized, relative host the canvas engine measures and
-   overlays. Keeps the original logo's footprint (same 1705:291 aspect as
-   logo-03.svg) so the composer below doesn't shift. */
+/* Tile-field Scale mark: a square host the canvas engine measures and overlays. */
 .home-hero__logo--tiles {
   position: relative;
-  aspect-ratio: 1705 / 291;
+  aspect-ratio: 1;
 }
 .home-hero__logo--tiles > canvas {
   position: absolute;

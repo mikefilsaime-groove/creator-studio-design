@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { cp } from "node:fs/promises";
+import { cp, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -84,4 +84,7 @@ export async function copyBundledResourceTrees({
       recursive: true,
     });
   }
+  const brandingRoot = join(resourceRoot, "branding");
+  await mkdir(brandingRoot, { recursive: true });
+  await cp(macResources.iconPng, join(brandingRoot, "app-icon.png"));
 }

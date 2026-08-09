@@ -179,10 +179,9 @@ const TRAIL_MIN_PX = 3;
 const ACCENT: [number, number, number] = [0.529, 0.918, 0.361]; // #87EA5C
 const ACCENT2: [number, number, number] = [0.816, 1.0, 0.71]; // #D0FFB5
 const BASE: [number, number, number] = [0.184, 0.471, 0.114]; // #2F781D
-// The resting artwork: the real logo SVG (paths filled #202020, matching the
-// app's near-black text tone); its alpha channel is the glyph mask the shader
-// samples. Same 1705:291 aspect as the host box.
-const LOGO_SRC = '/logo-scan.svg';
+// Creator Studio Design uses the Scale family mark everywhere. Its alpha
+// channel is the glyph mask sampled by the shader.
+const LOGO_SRC = '/app-icon.png';
 
 let logoImgPromise: Promise<HTMLImageElement> | null = null;
 function loadLogo(): Promise<HTMLImageElement> {

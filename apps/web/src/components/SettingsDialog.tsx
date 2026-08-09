@@ -153,7 +153,6 @@ import {
   type UpdaterModel,
   type UpdaterRestartSafety,
 } from '../lib/updater';
-import { PetSettings } from './pet/PetSettings';
 import { McpClientSection } from './McpClientSection';
 import { DesignSystemsSection } from './DesignSystemsSection';
 import { PrivacySection } from './PrivacySection';
@@ -264,6 +263,7 @@ function normalizeSettingsSection(section: SettingsSection): SettingsSection {
     case 'pet':
     case 'projectLocations':
     case 'critiqueTheater':
+    case 'media':
       return 'general';
     default:
       return section;
@@ -284,7 +284,7 @@ interface ByokProviderPreset {
 // sign-in coachmark when the user has not authorized AMR yet).
 export type SettingsHighlight = 'amr' | null;
 
-const OPEN_DESIGN_RELEASES_URL = 'https://github.com/nexu-io/open-design/releases';
+const OPEN_DESIGN_RELEASES_URL = 'https://github.com/mikefilsaime-groove/creator-studio-design/releases';
 
 type AboutUpdatePrimaryAction = 'check' | 'download' | 'install' | 'quit';
 type AboutUpdateTone = 'neutral' | 'success' | 'warning' | 'error';
@@ -877,7 +877,7 @@ function cleanAgentVersionLabel(
 }
 
 function displayAgentName(agent: Pick<AgentInfo, 'id' | 'name'>): string {
-  return agent.id === 'amr' ? 'Open Design' : agent.name;
+  return agent.id === 'amr' ? 'Creator Studio Design' : agent.name;
 }
 
 const AGENT_CLI_ENV_FIELDS = [
@@ -1525,11 +1525,10 @@ export function SettingsDialog({
   // isn't stuck blocking the live model fetch until the user re-selects the tab.
   const normalizedInitialConfig: AppConfig = {
     ...initial,
+    mode: 'daemon',
     baseUrl: resolveFixedOriginBaseUrl(initial.apiProtocol ?? 'anthropic', initial.baseUrl),
   };
-  const initialFormConfig = initial.mode === 'api'
-    ? restorePendingByokProviderDraft(normalizedInitialConfig)
-    : normalizedInitialConfig;
+  const initialFormConfig = normalizedInitialConfig;
   const [cfg, setCfg] = useState<AppConfig>(() => initialFormConfig);
   const [maxTokensInput, setMaxTokensInput] = useState(
     initialFormConfig.maxTokens == null ? '' : String(initialFormConfig.maxTokens),
@@ -4279,7 +4278,7 @@ export function SettingsDialog({
               <Icon name="sliders" size={18} />
               <span>
                 <strong>{t('settings.envConfigure')}</strong>
-                <small>{`${t('settings.localCli')} / ${t('settings.modeApiMeta')}`}</small>
+                <small>Claude Code / Codex</small>
               </span>
             </button>
             <button
@@ -4313,17 +4312,6 @@ export function SettingsDialog({
               <span>
                 <strong>{t('settings.memory')}</strong>
                 <small>{t('settings.memoryHint')}</small>
-              </span>
-            </button>
-            <button
-              type="button"
-              className={`settings-nav-item${activeSection === 'media' ? ' active' : ''}`}
-              onClick={() => setActiveSection('media')}
-            >
-              <Icon name="image" size={18} />
-              <span>
-                <strong>{t('settings.mediaProviders')}</strong>
-                <small>Image / video / audio</small>
               </span>
             </button>
             <button
@@ -4373,7 +4361,7 @@ export function SettingsDialog({
                 className="seg-control"
                 role="tablist"
                 aria-label={t('settings.modeAria')}
-                style={{ ['--seg-cols' as string]: 2 } as CSSProperties}
+                style={{ ['--seg-cols' as string]: 1 } as CSSProperties}
               >
                 <button
                   type="button"
@@ -4398,23 +4386,10 @@ export function SettingsDialog({
                       : t('settings.modeDaemonOfflineMeta')}
                   </span>
                 </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={cfg.mode === 'api'}
-                  className={
-                    'seg-btn seg-btn--inline' +
-                    (cfg.mode === 'api' ? ' active' : '')
-                  }
-                  onClick={() => setMode('api')}
-                >
-                  <span className="seg-title">{t('settings.modeApiMeta')}</span>
-                  <span className="seg-meta">{t('settings.modeApi')}</span>
-                </button>
               </div>
               </div>
-              {cfg.mode === 'daemon' && amrCardStatus?.loggedIn !== true ? (
-                // Only prompt to sign into Open Design Cloud when NOT already
+              {false ? (
+                // Only prompt to sign into Creator Studio Design Cloud when NOT already
                 // signed in — the AMR/vela session IS the cloud identity (one
                 // session drives both), so a logged-in user has nothing to do
                 // here and the callout was showing spuriously.
@@ -4423,7 +4398,7 @@ export function SettingsDialog({
                     <strong>{t('settings.cloudCalloutTitle')}</strong>
                     <p>{t('settings.cloudCalloutBody')}</p>
                   </div>
-                  {/* Same device-auth flow as the 授权 button on the Open Design
+                  {/* Same device-auth flow as the 授权 button on the Creator Studio Design
                       agent card below — the AMR/vela session IS the cloud
                       identity, so signing in here is that one flow. This used to
                       navigate to onboarding, which walked the user through the
@@ -5870,13 +5845,6 @@ export function SettingsDialog({
                   <p className="hint">{t('settings.systemPrefsHint')}</p>
                 </div>
                 <NotificationsSection cfg={cfg} setCfg={setCfg} />
-              </div>
-
-              <div className="settings-general-block">
-                <div className="settings-general-block-head">
-                  <h3>{t('pet.navTitle')}</h3>
-                </div>
-                <PetSettings cfg={cfg} setCfg={setCfg} />
               </div>
 
               <div className="settings-general-block">
@@ -8056,7 +8024,7 @@ function MediaProvidersSection({
 // Important: every snippet uses absolute paths to the daemon's current
 // Node-compatible runtime and built cli.js, fetched at runtime. macOS
 // and Linux ship a system /usr/bin/od (octal-dump) that shadows any
-// `od` we might add to PATH, and most Open Design users run from
+// `od` we might add to PATH, and most Creator Studio Design users run from
 // source where `od` is not installed globally. The installer panel
 // must NOT reference bare `od`.
 type McpClientId =
@@ -8117,26 +8085,6 @@ function homeConfigPath(
   return platform === 'win32' ? windows : posix;
 }
 
-function commandPaletteShortcut(platform: McpInstallInfo['platform']): string {
-  return platform === 'darwin' ? '⌘⇧P' : 'Ctrl+Shift+P';
-}
-
-function settingsShortcut(platform: McpInstallInfo['platform']): string {
-  return platform === 'darwin' ? '⌘,' : 'Ctrl+,';
-}
-
-// btoa() requires every input character be representable in Latin-1
-// (codepoints 0-255). A Mac/Linux home directory like
-// "/Users/Émile/.fnm/.../node" trips that and throws
-// InvalidCharacterError. UTF-8-encode the string into bytes first,
-// then map each byte back to a Latin-1 char before base64'ing.
-function utf8Btoa(s: string): string {
-  const bytes = new TextEncoder().encode(s);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]!);
-  return btoa(bin);
-}
-
 function buildMcpStdioServerConfig(info: McpInstallInfo): McpStdioServerConfig {
   const env = info.env && Object.keys(info.env).length > 0 ? info.env : undefined;
   return {
@@ -8151,25 +8099,12 @@ function buildCodexEnvToml(info: McpInstallInfo): string {
   if (entries.length === 0) return '';
   return `
 
-[mcp_servers.open-design.env]
+[mcp_servers.creator-studio-design.env]
 ${entries.map(([key, value]) => `${key} = ${JSON.stringify(value)}`).join('\n')}`;
 }
 
-function buildSharedMcpJson(info: McpInstallInfo): string {
-  const inner = buildMcpStdioServerConfig(info);
-  const innerJson = JSON.stringify(inner, null, 2)
-    .split('\n')
-    .map((line, i) => (i === 0 ? line : `    ${line}`))
-    .join('\n');
-  return `{
-  "mcpServers": {
-    "open-design": ${innerJson}
-  }
-}`;
-}
-
 // One-click install toggle for Codex: queries the daemon for whether
-// `codex mcp get open-design` succeeds, and POSTs/DELETEs the install
+// `codex mcp get creator-studio-design` succeeds, and POSTs/DELETEs the install
 // endpoint to call `codex mcp add/remove` on the user's behalf. The
 // copy-snippet path still works for users who prefer to paste manually
 // or whose Codex CLI is not on PATH (button shows a disabled hint in
@@ -8291,7 +8226,7 @@ function IntegrationsSection() {
       buildInstruction: () => t('settings.mcpInstructionCli'),
       buildSnippet: (info) => {
         const inner = JSON.stringify(buildMcpStdioServerConfig(info));
-        return `claude mcp add-json --scope user open-design '${inner}'`;
+        return `claude mcp add-json --scope user creator-studio-design '${inner}'`;
       },
       buildSnippetLang: () => 'bash',
     },
@@ -8307,77 +8242,8 @@ function IntegrationsSection() {
         );
         return t('settings.mcpInstructionCodex', { path });
       },
-      buildSnippet: (info) => `[mcp_servers.open-design]\ncommand = ${JSON.stringify(info.command)}\nargs = ${JSON.stringify(info.args)}${buildCodexEnvToml(info)}`,
+      buildSnippet: (info) => `[mcp_servers.creator-studio-design]\ncommand = ${JSON.stringify(info.command)}\nargs = ${JSON.stringify(info.args)}${buildCodexEnvToml(info)}`,
       buildSnippetLang: () => 'toml',
-    },
-    {
-      id: 'cursor',
-      label: 'Cursor',
-      buildMethod: () => t('settings.mcpMethodOneClick'),
-      buildInstruction: (info) =>
-        t('settings.mcpInstructionCursor', {
-          path: homeConfigPath(info.platform, '~/.cursor/mcp.json', '%USERPROFILE%\\.cursor\\mcp.json'),
-        }),
-      buildSnippet: buildSharedMcpJson,
-      buildSnippetLang: () => 'json',
-      buildDeeplink: (info) => {
-        const inner = buildMcpStdioServerConfig(info);
-        const encoded = utf8Btoa(JSON.stringify(inner));
-        return `cursor://anysphere.cursor-deeplink/mcp/install?name=open-design&config=${encoded}`;
-      },
-      deeplinkLabel: () => t('settings.mcpDeeplinkInstallCursor'),
-    },
-    {
-      id: 'kiro',
-      label: 'Kiro CLI',
-      buildMethod: () => t('settings.mcpMethodJson'),
-      buildInstruction: (info) =>
-        t('settings.mcpInstructionKiro', {
-          path: homeConfigPath(info.platform, '~/.kiro/settings/mcp.json', '%USERPROFILE%\\.kiro\\settings\\mcp.json'),
-        }),
-      buildSnippet: buildSharedMcpJson,
-      buildSnippetLang: () => 'json',
-    },
-    {
-      id: 'vscode',
-      label: 'VS Code',
-      buildMethod: () => t('settings.mcpMethodJson'),
-      buildInstruction: (info) =>
-        t('settings.mcpInstructionCopilot', {
-          shortcut: commandPaletteShortcut(info.platform),
-        }),
-      buildSnippet: (info) => `{\n  "servers": {\n    "open-design": {\n      "type": "stdio",\n      "command": ${JSON.stringify(info.command)},\n      "args": ${JSON.stringify(info.args)}${info.env && Object.keys(info.env).length > 0 ? `,\n      "env": ${JSON.stringify(info.env)}` : ''}\n    }\n  }\n}`,
-      buildSnippetLang: () => 'json',
-    },
-    {
-      id: 'antigravity',
-      label: 'Antigravity',
-      buildMethod: () => t('settings.mcpMethodJson'),
-      buildInstruction: () => t('settings.mcpInstructionAntigravity'),
-      buildSnippet: buildSharedMcpJson,
-      buildSnippetLang: () => 'json',
-    },
-    {
-      id: 'zed',
-      label: 'Zed',
-      buildMethod: () => t('settings.mcpMethodJson'),
-      buildInstruction: (info) =>
-        t('settings.mcpInstructionZed', {
-          shortcut: settingsShortcut(info.platform),
-        }),
-      buildSnippet: (info) => `{\n  "context_servers": {\n    "open-design": {\n      "source": "custom",\n      "command": ${JSON.stringify(info.command)},\n      "args": ${JSON.stringify(info.args)}${info.env && Object.keys(info.env).length > 0 ? `,\n      "env": ${JSON.stringify(info.env)}` : ''}\n    }\n  }\n}`,
-      buildSnippetLang: () => 'json',
-    },
-    {
-      id: 'windsurf',
-      label: 'Windsurf',
-      buildMethod: () => t('settings.mcpMethodJson'),
-      buildInstruction: (info) =>
-        t('settings.mcpInstructionWindsurf', {
-          path: homeConfigPath(info.platform, '~/.codeium/windsurf/mcp_config.json', '%USERPROFILE%\\.codeium\\windsurf\\mcp_config.json'),
-        }),
-      buildSnippet: buildSharedMcpJson,
-      buildSnippetLang: () => 'json',
     },
   ];
 
