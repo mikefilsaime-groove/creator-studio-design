@@ -379,7 +379,7 @@ function selfCheck(): void {
     conclusion: "success",
     created_at: now.toISOString(),
     head_sha: "a".repeat(40),
-    html_url: "https://github.com/nexu-io/open-design/actions/runs/1",
+    html_url: "https://github.com/mikefilsaime-groove/creator-studio-design/actions/runs/1",
     id: 1,
     run_number: 41,
     status: "completed",
@@ -402,7 +402,7 @@ function selfCheck(): void {
     productionUrl: "https://open-design.ai",
     reason: "Ship the new showcase gallery",
     repo: "nexu-io/open-design",
-    runUrl: "https://github.com/nexu-io/open-design/actions/runs/2",
+    runUrl: "https://github.com/mikefilsaime-groove/creator-studio-design/actions/runs/2",
     success: true,
   });
   const json = JSON.stringify(card);

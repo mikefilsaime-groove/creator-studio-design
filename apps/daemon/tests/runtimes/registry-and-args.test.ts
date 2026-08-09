@@ -12,6 +12,10 @@ test('AGENT_DEFS ids are unique', () => {
   assert.deepEqual(dupes, [], `duplicate agent ids: ${JSON.stringify(dupes)}`);
 });
 
+test('Creator Studio Design exposes only subscription-backed Codex and Claude Code runtimes', () => {
+  assert.deepEqual(AGENT_DEFS.map((agent) => agent.id), ['claude', 'codex']);
+});
+
 test('local agent profiles inherit a base adapter and can pin the default model', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-local-agent-profiles-'));
   try {

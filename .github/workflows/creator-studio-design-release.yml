@@ -1,0 +1,336 @@
+name: Creator Studio Design release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version in x.y.z form
+        required: true
+        type: string
+      publish:
+        description: Publish the installers as the latest GitHub Release
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: creator-studio-design-release-${{ inputs.version }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 24
+  PNPM_VERSION: 10.33.2
+  RELEASE_VERSION: ${{ inputs.version }}
+  UPDATE_METADATA_URL: https://github.com/${{ github.repository }}/releases/latest/download/metadata.json
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "version must use x.y.z form" >&2
+            exit 1
+          fi
+      - name: Require release signing credentials
+        shell: bash
+        env:
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_SIGNING_CERTIFICATE_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_BASE64 }}
+          APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WINDOWS_SIGNING_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_BASE64 }}
+          WINDOWS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" ] || missing+=(APPLE_APP_SPECIFIC_PASSWORD)
+          [ -n "${APPLE_ID:-}" ] || missing+=(APPLE_ID)
+          [ -n "${APPLE_SIGNING_CERTIFICATE_BASE64:-}" ] || missing+=(APPLE_SIGNING_CERTIFICATE_BASE64)
+          [ -n "${APPLE_SIGNING_CERTIFICATE_PASSWORD:-}" ] || missing+=(APPLE_SIGNING_CERTIFICATE_PASSWORD)
+          [ -n "${APPLE_TEAM_ID:-}" ] || missing+=(APPLE_TEAM_ID)
+          [ -n "${WINDOWS_SIGNING_CERTIFICATE_BASE64:-}" ] || missing+=(WINDOWS_SIGNING_CERTIFICATE_BASE64)
+          [ -n "${WINDOWS_SIGNING_CERTIFICATE_PASSWORD:-}" ] || missing+=(WINDOWS_SIGNING_CERTIFICATE_PASSWORD)
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Creator Studio Design release signing credentials are missing:\n' >&2
+            printf ' - %s\n' "${missing[@]}" >&2
+            exit 1
+          fi
+
+  mac:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+            namespace: release-stable
+          - arch: x64
+            runner: macos-15-large
+            namespace: release-stable-intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - name: Enable pnpm
+        run: corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+      - name: Build packaging control plane
+        run: pnpm --filter @open-design/tools-pack build
+      - name: Build, sign, and notarize installer
+        env:
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_SIGNING_CERTIFICATE_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_BASE64 }}
+          APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUILD_JSON_PATH: ${{ runner.temp }}/creator-studio-build/build.json
+          BUILD_LOG_PATH: ${{ runner.temp }}/creator-studio-build/build.log
+          OD_UPDATE_METADATA_URL: ${{ env.UPDATE_METADATA_URL }}
+          RELEASE_BUILD_TARGET: all
+          RELEASE_CHANNEL: stable
+          RELEASE_NAMESPACE: ${{ matrix.namespace }}
+          RELEASE_OUTPUTS_PATH: ${{ runner.temp }}/creator-studio-build/outputs.json
+          RELEASE_REPORT_DIR: ${{ runner.temp }}/creator-studio-report
+          RELEASE_SIGN_MODE: notarize
+          RELEASE_SMOKE_MODE: skip
+          RELEASE_TARGET: mac_${{ matrix.arch }}
+          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+          RELEASE_WORK_DIR: ${{ runner.temp }}/creator-studio-work
+          TOOLS_PACK_CACHE_DIR: ${{ runner.temp }}/creator-studio-cache
+          TOOLS_PACK_DIR: ${{ runner.temp }}/creator-studio-pack
+        run: bash tools/release/scripts/build-platform.sh
+      - name: Prepare release assets
+        env:
+          BUILD_JSON_PATH: ${{ runner.temp }}/creator-studio-build/build.json
+          RELEASE_ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          dmg_path="$(node -p "JSON.parse(require('fs').readFileSync(process.env.BUILD_JSON_PATH)).dmgPath")"
+          zip_path="$(node -p "JSON.parse(require('fs').readFileSync(process.env.BUILD_JSON_PATH)).zipPath")"
+          payload_path="$(node -p "JSON.parse(require('fs').readFileSync(process.env.BUILD_JSON_PATH)).payloadPath")"
+          dmg_name="creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}.dmg"
+          latest_dmg_name="creator-studio-design-mac-${RELEASE_ARCH}.dmg"
+          zip_name="creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}.zip"
+          payload_name="creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}-payload.zip"
+          cp "$dmg_path" "$RUNNER_TEMP/release-assets/$dmg_name"
+          cp "$dmg_path" "$RUNNER_TEMP/release-assets/$latest_dmg_name"
+          cp "$zip_path" "$RUNNER_TEMP/release-assets/$zip_name"
+          cp "$payload_path" "$RUNNER_TEMP/release-assets/$payload_name"
+          xcrun stapler validate "$dmg_path"
+          spctl -a -vv -t install "$dmg_path"
+          (cd "$RUNNER_TEMP/release-assets" && shasum -a 256 "$dmg_name" > "$dmg_name.sha256")
+          (cd "$RUNNER_TEMP/release-assets" && shasum -a 256 "$latest_dmg_name" > "$latest_dmg_name.sha256")
+          (cd "$RUNNER_TEMP/release-assets" && shasum -a 256 "$zip_name" > "$zip_name.sha256")
+          (cd "$RUNNER_TEMP/release-assets" && shasum -a 256 "$payload_name" > "$payload_name.sha256")
+      - uses: actions/upload-artifact@v6
+        with:
+          name: creator-studio-design-mac-${{ matrix.arch }}
+          path: ${{ runner.temp }}/release-assets/*
+          if-no-files-found: error
+
+  windows:
+    needs: validate
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - name: Enable pnpm
+        shell: pwsh
+        run: corepack enable; corepack prepare pnpm@${env:PNPM_VERSION} --activate
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+      - name: Build packaging control plane
+        run: pnpm --filter @open-design/tools-pack build
+      - name: Configure Windows signing certificate
+        shell: pwsh
+        env:
+          WINDOWS_SIGNING_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_BASE64 }}
+          WINDOWS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERTIFICATE_BASE64) -or
+              [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERTIFICATE_PASSWORD)) {
+            throw "Windows signing credentials are required"
+          }
+          $certificatePath = Join-Path $env:RUNNER_TEMP "creator-studio-design-signing.pfx"
+          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WINDOWS_SIGNING_CERTIFICATE_BASE64))
+          "CSC_LINK=$certificatePath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "CSC_KEY_PASSWORD=$env:WINDOWS_SIGNING_CERTIFICATE_PASSWORD" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Build Windows installer
+        shell: pwsh
+        env:
+          OD_UPDATE_METADATA_URL: ${{ env.UPDATE_METADATA_URL }}
+        run: |
+          $toolsPackDir = Join-Path $env:RUNNER_TEMP "creator-studio-design-pack"
+          $output = pnpm exec tools-pack win build `
+            --dir $toolsPackDir `
+            --namespace release-stable-win `
+            --portable `
+            --app-version $env:RELEASE_VERSION `
+            --to all `
+            --json
+          if ($LASTEXITCODE -ne 0) { throw "Windows packaging failed" }
+          $buildPath = Join-Path $env:RUNNER_TEMP "creator-studio-design-win-build.json"
+          $output | Set-Content -Path $buildPath -Encoding utf8
+          $build = Get-Content $buildPath -Raw | ConvertFrom-Json
+          $assetDir = Join-Path $env:RUNNER_TEMP "release-assets"
+          New-Item -ItemType Directory -Force -Path $assetDir | Out-Null
+          $installerName = "creator-studio-design-$env:RELEASE_VERSION-win-x64-setup.exe"
+          $latestInstallerName = "creator-studio-design-win-x64-setup.exe"
+          $zipName = "creator-studio-design-$env:RELEASE_VERSION-win-x64-portable.zip"
+          $payloadName = "creator-studio-design-$env:RELEASE_VERSION-win-x64-payload.7z"
+          Copy-Item $build.installerPath (Join-Path $assetDir $installerName)
+          Copy-Item $build.installerPath (Join-Path $assetDir $latestInstallerName)
+          Copy-Item $build.portableZipPath (Join-Path $assetDir $zipName)
+          Copy-Item $build.payloadPath (Join-Path $assetDir $payloadName)
+          $installerPath = Join-Path $assetDir $installerName
+          $signature = Get-AuthenticodeSignature $installerPath
+          if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid) {
+            throw "Windows installer signature is not valid: $($signature.Status)"
+          }
+          foreach ($name in @($installerName, $latestInstallerName, $zipName, $payloadName)) {
+            $hash = (Get-FileHash (Join-Path $assetDir $name) -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $name" | Set-Content (Join-Path $assetDir "$name.sha256")
+          }
+      - uses: actions/upload-artifact@v6
+        with:
+          name: creator-studio-design-windows-x64
+          path: ${{ runner.temp }}/release-assets/*
+          if-no-files-found: error
+
+  linux:
+    needs: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - name: Enable pnpm
+        run: corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+      - name: Build packaging control plane
+        run: pnpm --filter @open-design/tools-pack build
+      - name: Build Linux AppImage
+        env:
+          OD_UPDATE_METADATA_URL: ${{ env.UPDATE_METADATA_URL }}
+        run: |
+          set -euo pipefail
+          pnpm exec tools-pack linux build \
+            --dir "$RUNNER_TEMP/creator-studio-design-pack" \
+            --namespace release-stable-linux \
+            --portable \
+            --app-version "$RELEASE_VERSION" \
+            --to appimage \
+            --containerized \
+            --json > "$RUNNER_TEMP/linux-build.json"
+          source_path="$(node -p "JSON.parse(require('fs').readFileSync('$RUNNER_TEMP/linux-build.json')).appImagePath")"
+          asset_name="creator-studio-design-${RELEASE_VERSION}-linux-x64.AppImage"
+          latest_asset_name="creator-studio-design-linux-x64.AppImage"
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          cp "$source_path" "$RUNNER_TEMP/release-assets/$asset_name"
+          cp "$source_path" "$RUNNER_TEMP/release-assets/$latest_asset_name"
+          (cd "$RUNNER_TEMP/release-assets" && sha256sum "$asset_name" > "$asset_name.sha256")
+          (cd "$RUNNER_TEMP/release-assets" && sha256sum "$latest_asset_name" > "$latest_asset_name.sha256")
+      - uses: actions/upload-artifact@v6
+        with:
+          name: creator-studio-design-linux-x64
+          path: ${{ runner.temp }}/release-assets/*
+          if-no-files-found: error
+
+  release:
+    needs: [mac, windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: creator-studio-design-*
+          path: dist
+          merge-multiple: true
+      - name: Create updater metadata
+        env:
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const crypto = require('node:crypto');
+          const dir = 'dist';
+          const version = process.env.RELEASE_VERSION;
+          const origin = `https://github.com/${process.env.RELEASE_REPOSITORY}/releases/download/v${version}`;
+          const asset = (name) => {
+            const filePath = path.join(dir, name);
+            const bytes = fs.readFileSync(filePath);
+            return {
+              name,
+              url: `${origin}/${name}`,
+              sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+              size: bytes.length,
+            };
+          };
+          const macArm = `creator-studio-design-${version}-mac-arm64.dmg`;
+          const macIntel = `creator-studio-design-${version}-mac-x64.dmg`;
+          const windows = `creator-studio-design-${version}-win-x64-setup.exe`;
+          const macArmPayload = `creator-studio-design-${version}-mac-arm64-payload.zip`;
+          const macIntelPayload = `creator-studio-design-${version}-mac-x64-payload.zip`;
+          const windowsPayload = `creator-studio-design-${version}-win-x64-payload.7z`;
+          const linux = `creator-studio-design-${version}-linux-x64.AppImage`;
+          const metadata = {
+            schemaVersion: 1,
+            channel: 'stable',
+            releaseVersion: version,
+            stableVersion: version,
+            publishedAt: new Date().toISOString(),
+            github: { repository: process.env.RELEASE_REPOSITORY, commit: process.env.GITHUB_SHA },
+            platforms: {
+              mac: { enabled: true, arch: 'arm64', artifacts: { dmg: asset(macArm), payload: asset(macArmPayload) } },
+              macIntel: { enabled: true, arch: 'x64', artifacts: { dmg: asset(macIntel), payload: asset(macIntelPayload) } },
+              win: { enabled: true, arch: 'x64', artifacts: { installer: asset(windows), payload: asset(windowsPayload) } },
+              linux: { enabled: true, arch: 'x64', artifacts: { appimage: asset(linux) } },
+            },
+          };
+          fs.writeFileSync(path.join(dir, 'metadata.json'), `${JSON.stringify(metadata, null, 2)}\n`);
+          NODE
+          (cd dist && sha256sum metadata.json > metadata.json.sha256)
+      - uses: actions/upload-artifact@v6
+        with:
+          name: creator-studio-design-release-${{ inputs.version }}
+          path: dist/*
+          if-no-files-found: error
+      - name: Publish GitHub Release
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="v${RELEASE_VERSION}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit "$tag" --latest --title "Creator Studio Design ${RELEASE_VERSION}" --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" dist/* \
+              --latest \
+              --target "$GITHUB_SHA" \
+              --title "Creator Studio Design ${RELEASE_VERSION}" \
+              --generate-notes \
+              --repo "$GITHUB_REPOSITORY"
+          fi

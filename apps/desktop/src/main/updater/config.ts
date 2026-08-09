@@ -8,7 +8,7 @@ import {
   type DesktopUpdateMode,
   type SidecarSource,
 } from "@open-design/sidecar-proto";
-import { releaseChannelFromVersion } from "@open-design/release";
+import { PRODUCT_IDENTITY, releaseChannelFromVersion } from "@open-design/release";
 
 /**
  * @module updater-config
@@ -38,7 +38,6 @@ export const DESKTOP_UPDATE_ENV = Object.freeze({
   PLATFORM: "OD_UPDATE_PLATFORM",
 } as const);
 
-const DEFAULT_RELEASE_ORIGIN = "https://releases.open-design.ai";
 const BETA_POLL_INTERVAL_MS = 15 * 60 * 1000;
 const STABLE_POLL_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_POLL_INITIAL_DELAY_MS = 5000;
@@ -115,8 +114,8 @@ export function isDesktopUpdateChannel(value: unknown): value is DesktopUpdateCh
   return typeof value === "string" && DESKTOP_UPDATE_CHANNEL_VALUES.has(value);
 }
 
-function defaultMetadataUrl(channel: DesktopUpdateChannel): string {
-  return `${DEFAULT_RELEASE_ORIGIN}/${channel}/latest/metadata.json`;
+function defaultMetadataUrl(_channel: DesktopUpdateChannel): string {
+  return PRODUCT_IDENTITY.updateMetadataUrl;
 }
 
 export function normalizeDownloadRoot(value: string): string {

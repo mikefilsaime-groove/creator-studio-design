@@ -215,7 +215,7 @@ export function createCreatedProjectWorkspaceResolver(deps: {
  * always gets a binding row. A project with no row is not a harmless default —
  * `GET /api/projects/:id/workspace-scope` answers `unbound` for it, which strips
  * the workspace off the run request (`ProjectView`'s `projectRunWorkspaceContext`
- * → an Open Design Cloud run nothing can bill) and blanks the balance/plan area
+ * → an Creator Studio Design Cloud run nothing can bill) and blanks the balance/plan area
  * while that project is open (`AvatarMenu`). It is also denied a run outright by
  * `enforceWorkspaceResourceMutation` the moment the caller carries any workspace
  * header, because the two-key lookup comes back empty.

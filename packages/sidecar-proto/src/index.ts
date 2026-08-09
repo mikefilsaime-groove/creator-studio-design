@@ -1,4 +1,8 @@
-import { RELEASE_CHANNELS, type ReleaseChannel } from "@open-design/release";
+import {
+  PRODUCT_IDENTITY,
+  RELEASE_CHANNELS,
+  type ReleaseChannel,
+} from "@open-design/release";
 
 export const APP_KEYS = Object.freeze({
   DAEMON: "daemon",
@@ -63,13 +67,13 @@ export const SIDECAR_STAMP_FIELDS = ["app", "mode", "namespace", "ipc", "source"
 
 export const SIDECAR_DEFAULTS = Object.freeze({
   host: "127.0.0.1",
-  ipcBase: "/tmp/open-design/ipc",
+  ipcBase: "/tmp/creator-studio-design/ipc",
   namespace: "default",
   projectTmpDirName: ".tmp",
-  windowsPipePrefix: "open-design",
+  windowsPipePrefix: "creator-studio-design",
 } as const);
 
-export const OPEN_DESIGN_PRODUCT_NAME = "Open Design";
+export const OPEN_DESIGN_PRODUCT_NAME = PRODUCT_IDENTITY.name;
 
 export function resolveWindowsReleaseNamespaceToken(value: string): string {
   return value.replace(/[^A-Za-z0-9._-]+/g, "-");

@@ -46,11 +46,11 @@ function makeConfig(root: string, namespace: string): ToolPackConfig {
 describe("resolveMacInstallIdentity", () => {
   it("keeps stable builds on the canonical mac identity", () => {
     expect(resolveMacInstallIdentity(makeConfig("/work", "release-stable"))).toMatchObject({
-      appId: "io.open-design.desktop",
-      installerTitle: "Open Design",
-      productName: "Open Design",
-      publicAppBundleName: "Open Design.app",
-      systemAppBundleName: "Open Design.app",
+      appId: "gg.creatorstudio.design",
+      installerTitle: "Creator Studio Design",
+      productName: "Creator Studio Design",
+      publicAppBundleName: "Creator Studio Design.app",
+      systemAppBundleName: "Creator Studio Design.app",
     });
   });
 
@@ -58,28 +58,28 @@ describe("resolveMacInstallIdentity", () => {
     const config = makeConfig("/work", "release-beta");
 
     expect(resolveMacInstallIdentity(config)).toEqual({
-      appId: "io.open-design.desktop.beta",
-      executableName: "Open Design Beta",
-      installerTitle: "Open Design Beta",
-      productName: "Open Design Beta",
-      publicAppBundleName: "Open Design Beta.app",
-      systemAppBundleName: "Open Design Beta.app",
+      appId: "gg.creatorstudio.design.beta",
+      executableName: "Creator Studio Design Beta",
+      installerTitle: "Creator Studio Design Beta",
+      productName: "Creator Studio Design Beta",
+      publicAppBundleName: "Creator Studio Design Beta.app",
+      systemAppBundleName: "Creator Studio Design Beta.app",
     });
-    expect(resolveMacPaths(config).appPath).toMatch(/Open Design Beta\.app$/);
+    expect(resolveMacPaths(config).appPath).toMatch(/Creator Studio Design Beta\.app$/);
   });
 
   it("uses first-class preview app identity for preview release namespaces", () => {
     const config = makeConfig("/work", "release-preview");
 
     expect(resolveMacInstallIdentity(config)).toEqual({
-      appId: "io.open-design.desktop.preview",
-      executableName: "Open Design Preview",
-      installerTitle: "Open Design Preview",
-      productName: "Open Design Preview",
-      publicAppBundleName: "Open Design Preview.app",
-      systemAppBundleName: "Open Design Preview.app",
+      appId: "gg.creatorstudio.design.preview",
+      executableName: "Creator Studio Design Preview",
+      installerTitle: "Creator Studio Design Preview",
+      productName: "Creator Studio Design Preview",
+      publicAppBundleName: "Creator Studio Design Preview.app",
+      systemAppBundleName: "Creator Studio Design Preview.app",
     });
-    expect(resolveMacPaths(config).appPath).toMatch(/Open Design Preview\.app$/);
+    expect(resolveMacPaths(config).appPath).toMatch(/Creator Studio Design Preview\.app$/);
   });
 
   it("uses first-class prerelease app identity for prerelease release versions and namespaces", () => {
@@ -90,17 +90,17 @@ describe("resolveMacInstallIdentity", () => {
     const prereleaseNamespaceConfig = makeConfig("/work", "release-prerelease");
 
     expect(resolveMacInstallIdentity(prereleaseVersionConfig)).toEqual({
-      appId: "io.open-design.desktop.prerelease",
-      executableName: "Open Design Prerelease",
-      installerTitle: "Open Design Prerelease",
-      productName: "Open Design Prerelease",
-      publicAppBundleName: "Open Design Prerelease.app",
-      systemAppBundleName: "Open Design Prerelease.app",
+      appId: "gg.creatorstudio.design.prerelease",
+      executableName: "Creator Studio Design Prerelease",
+      installerTitle: "Creator Studio Design Prerelease",
+      productName: "Creator Studio Design Prerelease",
+      publicAppBundleName: "Creator Studio Design Prerelease.app",
+      systemAppBundleName: "Creator Studio Design Prerelease.app",
     });
-    expect(resolveMacPaths(prereleaseVersionConfig).appPath).toMatch(/Open Design Prerelease\.app$/);
+    expect(resolveMacPaths(prereleaseVersionConfig).appPath).toMatch(/Creator Studio Design Prerelease\.app$/);
     expect(resolveMacInstallIdentity(prereleaseNamespaceConfig)).toMatchObject({
-      productName: "Open Design Prerelease",
-      publicAppBundleName: "Open Design Prerelease.app",
+      productName: "Creator Studio Design Prerelease",
+      publicAppBundleName: "Creator Studio Design Prerelease.app",
     });
   });
 });

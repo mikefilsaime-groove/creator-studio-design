@@ -1,13 +1,27 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyDesktopApplicationName,
   createAmrEnvironmentProfileMenuItems,
   mergeAmrEnvironmentProfileConfig,
   normalizeAmrEnvironmentProfile,
+  resolveDesktopApplicationName,
   resolveAboutPanelVersion,
 } from "../../src/main/index.js";
 
 describe("AMR Environment Profile desktop menu helpers", () => {
+  it("replaces Electron's development application name with the public product name", () => {
+    const names: string[] = [];
+    const electronApp = { setName: (name: string) => names.push(name) };
+
+    expect(applyDesktopApplicationName(electronApp)).toBe("Creator Studio Design");
+    expect(applyDesktopApplicationName(electronApp, "Creator Studio Design Beta")).toBe(
+      "Creator Studio Design Beta",
+    );
+    expect(names).toEqual(["Creator Studio Design", "Creator Studio Design Beta"]);
+    expect(resolveDesktopApplicationName("  ")).toBe("Creator Studio Design");
+  });
+
   it("normalizes missing or invalid profile values to prod", () => {
     expect(normalizeAmrEnvironmentProfile(undefined)).toBe("prod");
     expect(normalizeAmrEnvironmentProfile("")).toBe("prod");

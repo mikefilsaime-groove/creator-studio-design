@@ -145,7 +145,7 @@ describe('UpdateDialog', () => {
 
     await screen.findByRole('dialog', { name: 'Check for updates' });
     expect(
-      screen.getByText('Open Design 1.2.4 requires a full reinstall. Open Design will close and open the installer.'),
+      screen.getByText('Creator Studio Design 1.2.4 requires a full reinstall. Creator Studio Design will close and open the installer.'),
     ).toBeTruthy();
     expect(screen.getByTestId('update-dialog-reinstall-learn-more')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Explore new features' })).toBeNull();
@@ -291,7 +291,7 @@ describe('UpdateDialog', () => {
     expect(screen.queryByRole('button', { name: 'Explore new features' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Check for updates' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Download manually' }));
-    await waitFor(() => expect(openExternal).toHaveBeenCalledWith('https://github.com/nexu-io/open-design/releases'));
+    await waitFor(() => expect(openExternal).toHaveBeenCalledWith('https://github.com/mikefilsaime-groove/creator-studio-design/releases'));
   });
 
   it('defaults to Later when tasks are active and requires an explicit Restart anyway override', async () => {
@@ -336,7 +336,7 @@ describe('UpdateDialog', () => {
     });
     fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
 
-    expect(await screen.findByText('Open Design is still working')).toBeTruthy();
+    expect(await screen.findByText('Creator Studio Design is still working')).toBeTruthy();
     expect(screen.getByText('2 active tasks are still running. Restarting now will interrupt them.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Later' })).toHaveFocus();
 

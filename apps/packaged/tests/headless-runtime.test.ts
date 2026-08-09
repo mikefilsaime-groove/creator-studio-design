@@ -31,15 +31,15 @@ describe("resolvePackagedMcpBootstrapLaunch", () => {
   it("uses macOS open against the stable signed app bundle", () => {
     expect(resolvePackagedMcpBootstrapLaunch({
       currentExecutablePath:
-        "/private/payload/Open Design.app/Contents/MacOS/Open Design",
-      installedLaunchPath: "/Applications/Open Design.app",
+        "/private/payload/Creator Studio Design.app/Contents/MacOS/Creator Studio Design",
+      installedLaunchPath: "/Applications/Creator Studio Design.app",
       platform: "darwin",
     })).toEqual({
       command: "/usr/bin/open",
       args: [
         "-g",
         "-j",
-        "/Applications/Open Design.app",
+        "/Applications/Creator Studio Design.app",
         "--args",
         "--headless",
       ],

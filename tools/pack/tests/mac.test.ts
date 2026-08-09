@@ -277,11 +277,7 @@ describe("renderMacPackagedConfig", () => {
     }
   });
 
-  // The vela web origin is the workspace-team console link the daemon derives
-  // its settings / members / dashboard URLs from. It arrives from a CI secret
-  // rather than the source tree, so packaging has to carry it into the bundle
-  // (same chain as posthogKey) or the feature stays dark in the packaged app.
-  it("bakes the injected vela web origin for a workspace-team build", async () => {
+  it("does not bake the legacy Vela origin into Creator Studio Design", async () => {
     const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-mac-"));
     try {
       const config = makeConfig(root, {
@@ -297,7 +293,7 @@ describe("renderMacPackagedConfig", () => {
         }),
       ) as Record<string, unknown>;
 
-      expect(packagedConfig.velaWebUrl).toBe("https://vela.example.invalid");
+      expect(packagedConfig).not.toHaveProperty("velaWebUrl");
     } finally {
       await rm(root, { force: true, recursive: true });
     }
@@ -457,7 +453,7 @@ describe("writeLaunchPackagedConfig", () => {
     const root = await mkdtemp(join(tmpdir(), "open-design-tools-pack-mac-"));
     try {
       const config = makeConfig(root, { namespace: "release-beta", portable: true });
-      const appPath = join(root, "Open Design.app");
+      const appPath = join(root, "Creator Studio Design.app");
       const embeddedConfigPath = join(appPath, "Contents", "Resources", "open-design-config.json");
       await mkdir(dirname(embeddedConfigPath), { recursive: true });
       await writeFile(

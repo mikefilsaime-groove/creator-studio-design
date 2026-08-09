@@ -430,7 +430,7 @@ describe('PluginDetailsModal common metadata coverage', () => {
     expect(html).not.toContain('plugin-meta-sections__heading');
   });
 
-  it('routes official plugin author and source links to the Open Design repo', () => {
+  it('routes official plugin author and source links to the Creator Studio Design repo', () => {
     const html = render(
       pluginWithMeta({
         id: 'official-link-meta',
@@ -439,8 +439,8 @@ describe('PluginDetailsModal common metadata coverage', () => {
       }),
     );
 
-    expect(html).toContain('href="https://github.com/nexu-io/open-design"');
-    expect(html).toContain('nexu-io/open-design');
+    expect(html).toContain('href="https://github.com/mikefilsaime-groove/creator-studio-design"');
+    expect(html).toContain('mikefilsaime-groove/creator-studio-design');
     expect(html).toContain('Official');
   });
 });

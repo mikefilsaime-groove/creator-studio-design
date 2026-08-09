@@ -51,12 +51,21 @@ export const RELEASE_PLATFORM_NAMESPACE_SUFFIXES = Object.freeze({
   win: "win",
 } as const satisfies Record<ReleasePlatform, string>);
 
-const PRODUCT_NAME = "Open Design";
-const DEFAULT_NAMESPACE = "open-design";
+export const PRODUCT_IDENTITY = Object.freeze({
+  appId: "gg.creatorstudio.design",
+  githubRepository: "mikefilsaime-groove/creator-studio-design",
+  name: "Creator Studio Design",
+  slug: "creator-studio-design",
+  updateMetadataUrl:
+    "https://github.com/mikefilsaime-groove/creator-studio-design/releases/latest/download/metadata.json",
+} as const);
+
+const PRODUCT_NAME = PRODUCT_IDENTITY.name;
+const DEFAULT_NAMESPACE = PRODUCT_IDENTITY.slug;
 
 const descriptors: Record<ReleaseChannel, ReleaseChannelDescriptor> = {
   beta: {
-    appId: "io.open-design.desktop.beta",
+    appId: `${PRODUCT_IDENTITY.appId}.beta`,
     baseVersionField: "baseVersion",
     channel: "beta",
     displayLabel: "Beta",
@@ -68,7 +77,7 @@ const descriptors: Record<ReleaseChannel, ReleaseChannelDescriptor> = {
     storagePrefix: "beta",
   },
   betas: {
-    appId: "io.open-design.desktop.betas",
+    appId: `${PRODUCT_IDENTITY.appId}.betas`,
     baseVersionField: "baseVersion",
     channel: "betas",
     counterField: "releaseNumber",
@@ -80,7 +89,7 @@ const descriptors: Record<ReleaseChannel, ReleaseChannelDescriptor> = {
     storagePrefix: "betas",
   },
   prerelease: {
-    appId: "io.open-design.desktop.prerelease",
+    appId: `${PRODUCT_IDENTITY.appId}.prerelease`,
     baseVersionField: "baseVersion",
     channel: "prerelease",
     counterField: "releaseNumber",
@@ -92,7 +101,7 @@ const descriptors: Record<ReleaseChannel, ReleaseChannelDescriptor> = {
     storagePrefix: "prerelease",
   },
   preview: {
-    appId: "io.open-design.desktop.preview",
+    appId: `${PRODUCT_IDENTITY.appId}.preview`,
     baseVersionField: "baseVersion",
     channel: "preview",
     counterField: "releaseNumber",
@@ -104,7 +113,7 @@ const descriptors: Record<ReleaseChannel, ReleaseChannelDescriptor> = {
     storagePrefix: "preview",
   },
   stable: {
-    appId: "io.open-design.desktop",
+    appId: PRODUCT_IDENTITY.appId,
     baseVersionField: "baseVersion",
     channel: "stable",
     counterField: null,
@@ -137,7 +146,7 @@ export function releaseChannelFromVersion(version: string | null | undefined): R
   return null;
 }
 
-export function releaseChannelFromNamespace(namespace: string, defaultNamespace = DEFAULT_NAMESPACE): ReleaseChannel | null {
+export function releaseChannelFromNamespace(namespace: string, defaultNamespace: string = DEFAULT_NAMESPACE): ReleaseChannel | null {
   if (namespace === defaultNamespace || isReleaseChannelNamespace(namespace, "stable")) return "stable";
   if (isReleaseChannelNamespace(namespace, "beta")) return "beta";
   if (isReleaseChannelNamespace(namespace, "betas")) return "betas";

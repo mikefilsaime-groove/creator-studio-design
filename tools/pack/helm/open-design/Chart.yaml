@@ -1,7 +1,7 @@
 apiVersion: v2
 name: open-design
 description: |
-  Open Design daemon Helm chart. Spec §15.5 reference deployment for
+  Creator Studio Design daemon Helm chart. Spec §15.5 reference deployment for
   AWS / GCP / Azure / Aliyun / Tencent / Huawei / self-hosted Kubernetes.
   Pairs with `tools/pack/docker-compose.yml` as the docker-only entry
   point.
@@ -17,7 +17,7 @@ keywords:
   - skills
 home: https://open-design.ai
 sources:
-  - https://github.com/nexu-io/open-design
+  - https://github.com/mikefilsaime-groove/creator-studio-design
 maintainers:
-  - name: Open Design
+  - name: Creator Studio Design
     url: https://open-design.ai

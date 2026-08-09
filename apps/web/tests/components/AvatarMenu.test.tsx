@@ -277,14 +277,14 @@ describe('AvatarMenu', () => {
   });
 
   // Product decision (2026-07-24): the popover is a model picker only. The
-  // Open Design account row — plan badge, balance, upgrade/console links —
+  // Creator Studio Design account row — plan badge, balance, upgrade/console links —
   // was removed entirely (account/billing surfaces live in the nav rail and
   // Settings), so none of it may render even with a fully signed-in AMR
   // status. This is the guard for that invariant.
   it('never renders the account row, plan badge or balance in the popover', async () => {
     const amrAgent: AgentInfo = {
       id: 'amr',
-      name: 'Open Design AMR',
+      name: 'Creator Studio Design AMR',
       bin: 'vela',
       available: true,
       models: [{ id: 'default', label: 'Default (CLI config)' }],
@@ -425,7 +425,7 @@ describe('AvatarMenu', () => {
       agents: [
         {
           id: 'amr',
-          name: 'Open Design AMR',
+          name: 'Creator Studio Design AMR',
           bin: 'vela',
           available: true,
           models: [
@@ -499,7 +499,7 @@ describe('AvatarMenu', () => {
       },
       agents: [{
         id: 'amr',
-        name: 'Open Design AMR',
+        name: 'Creator Studio Design AMR',
         bin: 'vela',
         available: true,
         models: [{ id: 'default', label: 'Default (CLI config)' }],
@@ -642,7 +642,7 @@ describe('AvatarMenu', () => {
       },
       agents: [{
         id: 'amr',
-        name: 'Open Design AMR',
+        name: 'Creator Studio Design AMR',
         bin: 'vela',
         available: true,
         models: [{ id: 'paid-model', label: 'Paid model', enabled: false }],

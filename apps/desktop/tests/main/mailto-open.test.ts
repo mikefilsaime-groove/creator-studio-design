@@ -182,7 +182,7 @@ realMacLaunchServicesTest(
 );
 
 describe("openFirstPartyMailto", () => {
-  const MAILTO = "mailto:support@open-design.ai";
+  const MAILTO = "mailto:support@clickcampaigns.ai";
 
   test("refuses anything that is not a mailto", async () => {
     const calls: string[] = [];

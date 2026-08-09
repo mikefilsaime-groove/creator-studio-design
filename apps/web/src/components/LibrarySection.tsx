@@ -4,7 +4,7 @@
 // upload, agent task, design-system staging, AI generation) with a source
 // badge, a kind badge, and back-links. Captures from the browser extension
 // stream in live over the `/api/library/events` SSE feed. The OD Clipper is
-// zero-config — it connects automatically whenever Open Design is running
+// zero-config — it connects automatically whenever Creator Studio Design is running
 // locally, so there is no pairing step here.
 //
 // Each card thumbnail is kind-aware (image / video / html / font / color) and
@@ -1139,18 +1139,7 @@ export function LibrarySection({ active, onOpenProject }: Props) {
       {fontFaceCss ? <style>{fontFaceCss}</style> : null}
       <header className="entry-section__head">
         <h1 className="entry-section__title">{t('library.title')}</h1>
-        <div className={styles.clipperHint}>
-          <p className={styles.headerHint}>{t('library.headerHint')}</p>
-          <a
-            className={styles.clipperDownload}
-            href="https://open-design.ai/clipper"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Icon name="download" size={15} />
-            {t('library.getClipper')}
-          </a>
-        </div>
+        <p className={styles.headerHint}>{t('library.headerHint')}</p>
       </header>
 
       <div className={styles.toolbar}>

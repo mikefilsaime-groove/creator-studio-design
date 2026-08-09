@@ -3,27 +3,16 @@ import { dirname, join } from "node:path";
 
 import { hashJson, hashPath, ToolPackCache } from "../cache.js";
 import type { ToolPackConfig } from "../config.js";
-import { copyBundledResourceTrees, winResources } from "../resources.js";
-import {
-  copyOptionalVelaCliBinary,
-  resolveOptionalVelaCliBinary,
-  resolveOptionalVelaCliOpenCodeCompanionTree,
-} from "../vela-cli.js";
+import { copyBundledResourceTrees, macResources, winResources } from "../resources.js";
 import type { WinPaths, ResourceTreeCacheMetadata } from "./types.js";
 
 const RESOURCE_TREE_CACHE_SCHEMA_VERSION = 6;
 
 async function createResourceTreeCacheKey(config: ToolPackConfig): Promise<string> {
-  const velaCliBin = await resolveOptionalVelaCliBinary({
-    requireBundled: config.requireVelaCli,
-  });
-  const velaOpenCodeCompanion =
-    velaCliBin == null
-      ? null
-      : await resolveOptionalVelaCliOpenCodeCompanionTree(velaCliBin);
   return hashJson({
     assetsCommunityPets: await hashPath(join(config.workspaceRoot, "assets", "community-pets")),
     assetsFrames: await hashPath(join(config.workspaceRoot, "assets", "frames")),
+    creatorStudioIcon: await hashPath(macResources.iconPng),
     craft: await hashPath(join(config.workspaceRoot, "craft")),
     designSystems: await hashPath(join(config.workspaceRoot, "design-systems")),
     designTemplates: await hashPath(join(config.workspaceRoot, "design-templates")),
@@ -36,11 +25,6 @@ async function createResourceTreeCacheKey(config: ToolPackConfig): Promise<strin
     skills: await hashPath(join(config.workspaceRoot, "skills")),
     sevenZipDll: await hashPath(winResources.sevenZipDll),
     sevenZipExe: await hashPath(winResources.sevenZipExe),
-    requireVelaCli: config.requireVelaCli,
-    velaCliBin: velaCliBin ? await hashPath(velaCliBin) : null,
-    velaOpenCodeCompanion: velaOpenCodeCompanion
-      ? await hashPath(velaOpenCodeCompanion)
-      : null,
   });
 }
 
@@ -71,11 +55,6 @@ export async function prepareResourceTree(
       await mkdir(join(resourceRoot, "bin"), { recursive: true });
       await cp(winResources.sevenZipExe, join(resourceRoot, "bin", "7z.exe"));
       await cp(winResources.sevenZipDll, join(resourceRoot, "bin", "7z.dll"));
-      await copyOptionalVelaCliBinary({
-        platform: "win",
-        requireBundled: config.requireVelaCli,
-        resourceRoot,
-      });
       return { resourceName: "open-design" };
     },
   };

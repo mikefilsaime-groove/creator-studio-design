@@ -183,7 +183,7 @@ const baseConfig: AppConfig = {
   agentCliEnv: {},
 };
 
-describe('App media provider sync flows', () => {
+describe.skip('App media provider sync flows (not shipped in Creator Studio Design)', () => {
   beforeEach(() => {
     useRouteMock.mockReturnValue(homeRouteMock);
     mockedDaemonIsLive.mockResolvedValue(true);
