@@ -44,6 +44,15 @@ describe("release workflows", () => {
     expect(workflow).toContain("channel: 'stable'");
     expect(workflow).toContain("APPLE_SIGNING_CERTIFICATE_BASE64");
     expect(workflow).toContain("WINDOWS_SIGNING_CERTIFICATE_BASE64");
+    expect(workflow).toContain("Require release signing credentials");
+    expect(workflow).toContain("RELEASE_SIGN_MODE: notarize");
+    expect(workflow).toContain('xcrun stapler validate "$dmg_path"');
+    expect(workflow).toContain('spctl -a -vv -t install "$dmg_path"');
+    expect(workflow).toContain("Get-AuthenticodeSignature $installerPath");
+    expect(workflow).toContain("creator-studio-design-mac-${RELEASE_ARCH}.dmg");
+    expect(workflow).toContain('creator-studio-design-win-x64-setup.exe');
+    expect(workflow).toContain("creator-studio-design-linux-x64.AppImage");
+    expect(workflow).not.toContain("Configure optional Windows signing certificate");
     expect(workflow).not.toContain("--require-vela-cli");
     expect(workflow).not.toContain("nexu-io/open-design");
     expect(workflow).not.toContain("releases.open-design.ai");
