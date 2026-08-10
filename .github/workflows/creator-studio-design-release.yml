@@ -123,6 +123,13 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build packaging control plane
         run: pnpm --filter @open-design/tools-pack build
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          if ((Get-Command makensis.exe -ErrorAction SilentlyContinue) -or (Test-Path "C:\Program Files (x86)\NSIS\makensis.exe")) {
+            exit 0
+          }
+          choco install nsis -y --no-progress
       - name: Build Windows installer
         shell: pwsh
         env:
@@ -185,7 +192,6 @@ jobs:
             --portable \
             --app-version "$RELEASE_VERSION" \
             --to appimage \
-            --containerized \
             --json > "$RUNNER_TEMP/linux-build.json"
           source_path="$(node -p "JSON.parse(require('fs').readFileSync('$RUNNER_TEMP/linux-build.json')).appImagePath")"
           asset_name="creator-studio-design-${RELEASE_VERSION}-linux-x64.AppImage"
