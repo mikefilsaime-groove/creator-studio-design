@@ -38,12 +38,14 @@ Use `pnpm tools-dev inspect desktop status` to inspect the Electron runtime. Do 
 
 The `Creator Studio Design release` GitHub Action builds:
 
-- signed/notarized macOS Apple Silicon and Intel installers;
-- signed Windows installer and portable archive;
+- unsigned macOS Apple Silicon and Intel installers;
+- unsigned Windows installer and portable archive;
 - Linux AppImage;
 - launcher payloads and checksummed updater metadata.
 
 Run the workflow in GitHub with a stable `x.y.z` version. A validation run can leave the assets as a workflow artifact; enabling `publish` creates the latest GitHub Release and makes it available to the in-app updater.
+
+These community installers do not require paid Apple or Windows developer certificates. On first launch, macOS users may need to Control-click the app and choose **Open**; Windows users may need to choose **More info** and **Run anyway** if SmartScreen warns.
 
 The `Sync upstream Creator Studio Design base` workflow brings the newest upstream base into a review branch so product identity, authentication, execution restrictions, and packaging checks can be validated before merging.
 
