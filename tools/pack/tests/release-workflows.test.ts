@@ -44,7 +44,9 @@ describe("release workflows", () => {
     expect(workflow).toContain("channel: 'stable'");
     expect(workflow).toContain("Build unsigned installer");
     expect(workflow).toContain("RELEASE_SIGN_MODE: no");
+    expect(workflow).toContain("runner: macos-15-intel");
     expect(workflow).toContain("Unsigned community build");
+    expect(workflow).not.toContain("cache: pnpm");
     expect(workflow).not.toContain("Require release signing credentials");
     expect(workflow).not.toContain("APPLE_SIGNING_CERTIFICATE_BASE64");
     expect(workflow).not.toContain("WINDOWS_SIGNING_CERTIFICATE_BASE64");

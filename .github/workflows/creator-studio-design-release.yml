@@ -48,7 +48,7 @@ jobs:
             runner: macos-15
             namespace: release-stable
           - arch: x64
-            runner: macos-15-large
+            runner: macos-15-intel
             namespace: release-stable-intel
     runs-on: ${{ matrix.runner }}
     steps:
@@ -56,7 +56,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
       - name: Enable pnpm
         run: corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
       - name: Install workspace
@@ -117,7 +116,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
       - name: Enable pnpm
         shell: pwsh
         run: corepack enable; corepack prepare pnpm@${env:PNPM_VERSION} --activate
@@ -170,7 +168,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
       - name: Enable pnpm
         run: corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
       - name: Install workspace
