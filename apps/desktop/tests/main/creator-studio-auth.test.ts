@@ -58,7 +58,6 @@ describe("Creator Studio Design authentication", () => {
 
   it("keeps pairing secrets and the app access token out of renderer-visible status", async () => {
     const now = Date.now();
-    const { jwk, lease } = signedLease(now);
     const responses = [
       new Response(JSON.stringify({
         expiresAt: new Date(now + 600_000).toISOString(),
@@ -67,8 +66,6 @@ describe("Creator Studio Design authentication", () => {
         userCode: "ABCD-EFGH",
       }), { status: 201 }),
       new Response(JSON.stringify({ accessToken: "cliauth-secret", status: "approved" }), { status: 200 }),
-      new Response(JSON.stringify({ active: true, godmode: true, lease }), { status: 200 }),
-      new Response(JSON.stringify({ keys: [jwk] }), { status: 200 }),
     ];
     const fetchImpl = vi.fn(async () => responses.shift()!);
     const memory = memoryStorage();
@@ -80,24 +77,25 @@ describe("Creator Studio Design authentication", () => {
     }));
     await expect(auth.pollPairing()).resolves.toEqual({ active: true, state: "active" });
     expect(JSON.stringify(await auth.status())).not.toContain("cliauth-secret");
-    expect(memory.read()).toEqual(expect.objectContaining({ accessToken: "cliauth-secret", lease }));
+    expect(memory.read()).toEqual({
+      accessToken: "cliauth-secret",
+      authorizedAt: new Date(now).toISOString(),
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
-  it("accepts a valid app-bound offline lease after a network failure", async () => {
-    const now = Date.now();
-    const { jwk, lease } = signedLease(now);
-    const memory = memoryStorage({ accessToken: "cliauth-secret", lease, leaseJwk: jwk });
+  it("keeps an authenticated device authorized across launches without a network recheck", async () => {
+    const memory = memoryStorage({ accessToken: "cliauth-secret" });
+    const fetchImpl = vi.fn(async () => { throw new Error("offline"); });
     const auth = createCreatorStudioDesignAuth({
-      fetchImpl: vi.fn(async () => { throw new Error("offline"); }),
-      now: () => now,
+      fetchImpl,
       storage: memory.storage,
     });
 
-    await expect(auth.status()).resolves.toEqual(expect.objectContaining({
-      active: true,
-      offline: true,
-      state: "active",
-    }));
+    await expect(auth.status()).resolves.toEqual({ active: true, state: "active" });
+    await expect(auth.status()).resolves.toEqual({ active: true, state: "active" });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(memory.read()).toEqual({ accessToken: "cliauth-secret" });
   });
 
   it("rejects a lease for another audience", () => {
@@ -113,21 +111,19 @@ describe("Creator Studio Design authentication", () => {
     expect(verifyCreatorStudioDesignLease(`${parts[0]}.${wrongClaims}.${parts[2]}`, jwk, now)).toBe(false);
   });
 
-  it("fails closed when Mastermind is inactive", async () => {
+  it("clears durable authorization only when the user explicitly disconnects", async () => {
     const memory = memoryStorage({ accessToken: "cliauth-secret" });
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL) => new Response(null, { status: 204 }));
     const auth = createCreatorStudioDesignAuth({
-      fetchImpl: vi.fn(async () => new Response(JSON.stringify({
-        active: false,
-        godmode: false,
-        reason: "inactive",
-      }), { status: 200 })),
+      fetchImpl,
       storage: memory.storage,
     });
 
-    await expect(auth.status()).resolves.toEqual(expect.objectContaining({
-      active: false,
-      reason: "inactive",
-      state: "inactive",
-    }));
+    await expect(auth.status()).resolves.toEqual({ active: true, state: "active" });
+    await expect(auth.logout()).resolves.toEqual({ active: false, state: "signed-out" });
+    await expect(auth.status()).resolves.toEqual({ active: false, state: "signed-out" });
+    expect(memory.read()).toBeNull();
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(fetchImpl.mock.calls[0]?.[0]).toContain("/logout");
   });
 });

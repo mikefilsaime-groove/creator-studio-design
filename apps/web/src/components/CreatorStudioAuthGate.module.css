@@ -19,7 +19,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 560px;
+  max-width: 620px;
   padding: 48px;
   text-align: center;
   width: 100%;
@@ -30,6 +30,14 @@
   font-size: clamp(30px, 5vw, 44px);
   letter-spacing: -0.04em;
   line-height: 1;
+  margin: 0;
+}
+
+.card h2 {
+  color: #232238;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   margin: 0;
 }
 
@@ -53,6 +61,28 @@
   letter-spacing: 0.18em;
 }
 
+.pairingHeader {
+  display: grid;
+  gap: 8px;
+}
+
+.steps {
+  color: #4e4c5d;
+  display: grid;
+  gap: 10px;
+  line-height: 1.5;
+  margin: 0;
+  padding-left: 24px;
+  text-align: left;
+  width: 100%;
+}
+
+.steps a {
+  color: #67559a;
+  font-weight: 650;
+  text-underline-offset: 3px;
+}
+
 .instruction {
   background: #232238;
   border-radius: 14px;
@@ -64,10 +94,31 @@
   width: 100%;
 }
 
-.instruction strong {
-  color: #dcefac;
-  font-size: 28px;
+.instruction > span {
+  color: #b9b6c9;
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.instruction code {
+  color: #dcefac;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.instruction button {
+  justify-self: center;
+}
+
+.instruction small {
+  color: #d6d3df;
+  line-height: 1.4;
 }
 
 .note {

@@ -300,6 +300,7 @@ async function main(): Promise<void> {
 
   const { runDesktopMain } = await import("@open-design/desktop/main");
   await runDesktopMain(runtime, {
+    creatorStudioAuthCredentialPath: join(paths.installationRoot, "creator-studio-design-auth.enc"),
     splashWindow: splash.window,
     splashStartedAt: splash.startedAt,
     async beforeShutdown() {

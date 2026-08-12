@@ -372,6 +372,8 @@ export type DesktopRuntimeOptions = {
    * not available. The packaged entrypoint never passes this option.
    */
   creatorStudioAuthBypass?: boolean;
+  /** Stable encrypted device credential path supplied by packaged launchers. */
+  creatorStudioAuthCredentialPath?: string;
   // Per-process secret shared with the daemon at startup (over its
   // sidecar IPC) so the main process can mint HMAC tokens for the
   // `dialog:pick-and-import` flow. The secret stays in main-process
@@ -2423,7 +2425,8 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
     : createCreatorStudioDesignAuth({
       baseUrl: process.env.CREATORSTUDIO_DESIGN_AUTH_BASE_URL,
       storage: createEncryptedFileCredentialStorage({
-        filePath: join(app.getPath("userData"), "creator-studio-design-auth.enc"),
+        filePath: options.creatorStudioAuthCredentialPath
+          ?? join(app.getPath("userData"), "creator-studio-design-auth.enc"),
         encrypt(plaintext) {
           if (!safeStorage.isEncryptionAvailable()) {
             throw new Error("Secure operating-system credential storage is unavailable.");
