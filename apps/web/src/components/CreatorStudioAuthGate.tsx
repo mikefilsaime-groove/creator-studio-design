@@ -14,11 +14,17 @@ const CHECKING_STATUS: CreatorStudioDesignAuthStatus = {
   state: 'checking',
 };
 
+const GODMODE_SETTINGS_URL = 'https://clickcampaigns.ai/settings?tab=god-mode';
+
 export function CreatorStudioAuthGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<CreatorStudioDesignAuthStatus>(CHECKING_STATUS);
   const [busy, setBusy] = useState(false);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const host = typeof window === 'undefined' ? null : getOpenDesignHost();
   const auth = host?.creatorStudioAuth;
+  const authorizationPrompt = status.userCode == null
+    ? ''
+    : `Authorize Creator Studio Design code ${status.userCode}`;
 
   // The entitlement screen is a complete first paint, even though the main App
   // stays intentionally unmounted until access is verified. Signal Electron's
@@ -72,10 +78,21 @@ export function CreatorStudioAuthGate({ children }: { children: ReactNode }) {
   const startPairing = async () => {
     if (auth == null || busy) return;
     setBusy(true);
+    setCopyState('idle');
     try {
       setStatus(await auth.startPairing());
     } finally {
       setBusy(false);
+    }
+  };
+
+  const copyAuthorizationPrompt = async () => {
+    if (authorizationPrompt.length === 0) return;
+    try {
+      await navigator.clipboard.writeText(authorizationPrompt);
+      setCopyState('copied');
+    } catch {
+      setCopyState('failed');
     }
   };
 
@@ -92,21 +109,41 @@ export function CreatorStudioAuthGate({ children }: { children: ReactNode }) {
           <p>Verifying your Mastermind access…</p>
         ) : pairing ? (
           <>
-            <p>Use your authenticated ClickCampaigns GodMode connection in Claude Code or Codex and say:</p>
-            <div className={styles.instruction}>
-              Authorize Creator Studio Design code
-              <strong>{status.userCode}</strong>
+            <div className={styles.pairingHeader}>
+              <h2>Finish setup in Codex or Claude Code</h2>
+              <p>Follow these steps once. Creator Studio Design will stay authorized on this Mac.</p>
             </div>
-            <p className={styles.note}>This window will unlock automatically. The code expires in ten minutes.</p>
+            <ol className={styles.steps}>
+              <li>Open Codex or Claude Code.</li>
+              <li>
+                Make sure ClickCampaigns GodMode is connected. If it is not, open your{' '}
+                <a href={GODMODE_SETTINGS_URL} target="_blank" rel="noreferrer">GodMode settings</a> first.
+              </li>
+              <li>Copy the message below, paste it into the chat, and send it.</li>
+            </ol>
+            <div className={styles.instruction}>
+              <span>Message to send</span>
+              <code>{authorizationPrompt}</code>
+              <Button variant="primary" onClick={() => void copyAuthorizationPrompt()}>
+                Copy authorization message
+              </Button>
+              {copyState === 'copied' ? <small>Copied. Paste it into Codex or Claude Code.</small> : null}
+              {copyState === 'failed' ? <small>Select the message above and copy it manually.</small> : null}
+            </div>
+            <p className={styles.note}>
+              Return to this window after sending the message. It unlocks automatically, saves the authorization,
+              and will not ask you to connect again. The code expires in ten minutes.
+            </p>
           </>
         ) : (
           <>
             <p>
-              Creator Studio Design is available to active Mastermind members through ClickCampaigns GodMode.
+              Connect once through ClickCampaigns GodMode to verify your Mastermind access. This Mac will stay
+              authorized, so you will not need to repeat these steps.
             </p>
             {status.message ? <p className={styles.error}>{status.message}</p> : null}
             <Button onClick={() => void startPairing()} disabled={busy || auth == null}>
-              {busy ? 'Creating secure code…' : 'Connect ClickCampaigns GodMode'}
+              {busy ? 'Creating secure code…' : 'Connect once with ClickCampaigns GodMode'}
             </Button>
           </>
         )}

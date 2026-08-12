@@ -9,11 +9,16 @@ import { CreatorStudioAuthGate } from '../../src/components/CreatorStudioAuthGat
 
 describe('CreatorStudioAuthGate', () => {
   let restoreHost: (() => void) | null = null;
+  const originalClipboard = navigator.clipboard;
 
   afterEach(() => {
     cleanup();
     restoreHost?.();
     restoreHost = null;
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: originalClipboard,
+    });
   });
 
   it('renders the application after Mastermind access is verified', async () => {
@@ -34,7 +39,12 @@ describe('CreatorStudioAuthGate', () => {
     expect(screen.queryByTestId('creator-studio-auth-gate')).toBeNull();
   });
 
-  it('creates a short-lived pairing code without exposing an access token', async () => {
+  it('explains exactly how to authorize once and copies the complete prompt', async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
     const startPairing = vi.fn(async () => ({
       active: false,
       expiresAt: '2026-08-09T22:00:00.000Z',
@@ -53,11 +63,20 @@ describe('CreatorStudioAuthGate', () => {
     });
 
     render(<CreatorStudioAuthGate><div>Design workspace</div></CreatorStudioAuthGate>);
-    fireEvent.click(await screen.findByRole('button', { name: 'Connect ClickCampaigns GodMode' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Connect once with ClickCampaigns GodMode' }));
 
     await waitFor(() => expect(startPairing).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText('ABCD-2345')).toBeTruthy();
-    expect(screen.getByText(/Authorize Creator Studio Design code/)).toBeTruthy();
+    expect(await screen.findByText('Finish setup in Codex or Claude Code')).toBeTruthy();
+    expect(screen.getByText('Authorize Creator Studio Design code ABCD-2345')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'GodMode settings' }).getAttribute('href'))
+      .toBe('https://clickcampaigns.ai/settings?tab=god-mode');
+    expect(screen.getByText(/will not ask you to connect again/i)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy authorization message' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(
+      'Authorize Creator Studio Design code ABCD-2345',
+    ));
+    expect(await screen.findByText(/Copied\. Paste it into Codex or Claude Code/i)).toBeTruthy();
     expect(document.body.textContent).not.toContain('cliauth-');
   });
 

@@ -18,6 +18,7 @@ type PairingSession = {
 
 type StoredCredential = {
   accessToken: string;
+  authorizedAt?: string;
   lease?: string;
   leaseJwk?: JsonWebKey;
 };
@@ -60,20 +61,6 @@ type AuthOptions = {
   baseUrl?: string;
   fetchImpl?: typeof fetch;
   now?: () => number;
-};
-
-type ApiError = {
-  code?: string;
-  message?: string;
-  retryable?: boolean;
-};
-
-type EntitlementResponse = ApiError & {
-  active?: boolean;
-  godmode?: boolean;
-  suspended?: boolean;
-  reason?: string;
-  lease?: string;
 };
 
 function authError(message: string, reason = "authentication_unavailable"): CreatorStudioDesignAuthStatus {
@@ -208,76 +195,12 @@ export function createCreatorStudioDesignAuth(options: AuthOptions): CreatorStud
     signal: init?.signal ?? AbortSignal.timeout(15_000),
   });
 
-  const activeFromCredential = async (
-    credential: StoredCredential,
-  ): Promise<CreatorStudioDesignAuthStatus> => {
-    try {
-      const response = await request("/entitlement", {
-        headers: { authorization: `Bearer ${credential.accessToken}` },
-      });
-      const body = await readJson(response) as EntitlementResponse;
-      if (response.status === 401) {
-        await options.storage.clear();
-        return {
-          active: false,
-          message: apiMessage(body, "Your Creator Studio Design connection expired. Connect again."),
-          reason: typeof body.code === "string" ? body.code : "invalid_access_token",
-          state: "signed-out",
-        };
-      }
-      if (response.status === 403 || (response.ok && body.active !== true)) {
-        return {
-          active: false,
-          message: apiMessage(body, "An active Mastermind membership is required."),
-          reason: typeof body.reason === "string" ? body.reason : "mastermind_inactive",
-          state: "inactive",
-        };
-      }
-      if (!response.ok || body.active !== true || body.godmode !== true) {
-        throw new Error(apiMessage(body, `Authentication server returned ${response.status}.`));
-      }
-
-      let leaseJwk = credential.leaseJwk;
-      if (typeof body.lease === "string") {
-        const keysResponse = await request("/lease-keys");
-        const keysBody = await readJson(keysResponse);
-        const keys = Array.isArray(keysBody.keys) ? keysBody.keys : [];
-        const firstKey = keys[0];
-        if (keysResponse.ok && firstKey != null && typeof firstKey === "object") {
-          leaseJwk = firstKey as JsonWebKey;
-        }
-      }
-      await options.storage.write({
-        accessToken: credential.accessToken,
-        ...(typeof body.lease === "string" ? { lease: body.lease } : {}),
-        ...(leaseJwk == null ? {} : { leaseJwk }),
-      });
-      return { active: true, state: "active" };
-    } catch (error) {
-      if (
-        credential.lease != null
-        && credential.leaseJwk != null
-        && verifyCreatorStudioDesignLease(credential.lease, credential.leaseJwk, now())
-      ) {
-        return {
-          active: true,
-          message: "Mastermind access is verified from the encrypted offline lease.",
-          offline: true,
-          state: "active",
-        };
-      }
-      return authError(
-        error instanceof Error ? error.message : "Mastermind access could not be verified.",
-      );
-    }
-  };
-
   return {
     async status() {
       const credential = await options.storage.read();
       return credential == null
         ? { active: false, state: "signed-out" }
-        : activeFromCredential(credential);
+        : { active: true, state: "active" };
     },
     async startPairing() {
       try {
@@ -322,10 +245,13 @@ export function createCreatorStudioDesignAuth(options: AuthOptions): CreatorStud
           return authError(apiMessage(body, "Secure pairing failed."),
             typeof body.code === "string" ? body.code : "pairing_failed");
         }
-        const credential = { accessToken: body.accessToken };
+        const credential = {
+          accessToken: body.accessToken,
+          authorizedAt: new Date(now()).toISOString(),
+        };
         await options.storage.write(credential);
         pairing = null;
-        return activeFromCredential(credential);
+        return { active: true, state: "active" };
       } catch (error) {
         return authError(error instanceof Error ? error.message : "Secure pairing failed.");
       }

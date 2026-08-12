@@ -186,6 +186,8 @@ export type DesktopMainOptions = {
   beforeShutdown?: () => Promise<void>;
   /** Internal tools-dev-only switch. Packaged callers must leave this unset. */
   creatorStudioAuthBypass?: boolean;
+  /** Stable encrypted device credential shared across packaged namespaces and app updates. */
+  creatorStudioAuthCredentialPath?: string;
   onExternalShow?: () => void | Promise<void>;
   discoverWebUrl?: () => Promise<string | null>;
   /**
@@ -962,6 +964,7 @@ export async function runDesktopMain(
   console.info("[open-design desktop] creating desktop runtime");
   desktop = await createDesktopRuntime({
     creatorStudioAuthBypass: options.creatorStudioAuthBypass,
+    creatorStudioAuthCredentialPath: options.creatorStudioAuthCredentialPath,
     desktopAuthSecret,
     discoverUrl: options.discoverWebUrl ?? createWebDiscovery(runtime),
     discoverDaemonUrl: options.discoverDaemonUrl,
