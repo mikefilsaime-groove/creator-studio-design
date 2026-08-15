@@ -17,7 +17,6 @@ import type {
   OpenDesignHostUpdaterOpenDialogRequest,
   OpenDesignHostUpdaterStatusListener,
   OpenDesignHostUpdaterStatusSnapshot,
-  CreatorStudioDesignAuthStatus,
 } from '@open-design/host';
 
 const OPEN_DESIGN_HOST_GLOBAL: typeof import('@open-design/host').OPEN_DESIGN_HOST_GLOBAL = '__od__';
@@ -298,17 +297,6 @@ const updater = {
   },
 };
 
-const creatorStudioAuth = {
-  status: (): Promise<CreatorStudioDesignAuthStatus> =>
-    ipcRenderer.invoke('creator-studio-design:auth:status'),
-  startPairing: (): Promise<CreatorStudioDesignAuthStatus> =>
-    ipcRenderer.invoke('creator-studio-design:auth:start-pairing'),
-  pollPairing: (): Promise<CreatorStudioDesignAuthStatus> =>
-    ipcRenderer.invoke('creator-studio-design:auth:poll-pairing'),
-  logout: (): Promise<CreatorStudioDesignAuthStatus> =>
-    ipcRenderer.invoke('creator-studio-design:auth:logout'),
-};
-
 const osLocale = readOsLocaleFromArgv();
 
 ipcRenderer.on(APP_CONFIG_CHANGED_IPC_CHANNEL, () => {
@@ -331,7 +319,6 @@ const hostBridge = {
   shell,
   browser,
   capture,
-  creatorStudioAuth,
   project,
   pdf: {
     print: async (html: string, nonce?: string, options?: PrintPdfOptions): Promise<OpenDesignHostActionResult> => {

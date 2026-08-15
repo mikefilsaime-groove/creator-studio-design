@@ -360,31 +360,6 @@ export type OpenDesignHostUpdaterOpenDialogRequest = {
 
 export type OpenDesignHostUpdaterOpenDialogListener = (request: OpenDesignHostUpdaterOpenDialogRequest) => void;
 
-export type CreatorStudioDesignAuthState =
-  | "checking"
-  | "signed-out"
-  | "pairing"
-  | "active"
-  | "inactive"
-  | "error";
-
-export type CreatorStudioDesignAuthStatus = {
-  state: CreatorStudioDesignAuthState;
-  active: boolean;
-  offline?: boolean;
-  reason?: string;
-  message?: string;
-  userCode?: string;
-  expiresAt?: string;
-};
-
-export type CreatorStudioDesignAuthBridge = {
-  status(): Promise<CreatorStudioDesignAuthStatus>;
-  startPairing(): Promise<CreatorStudioDesignAuthStatus>;
-  pollPairing(): Promise<CreatorStudioDesignAuthStatus>;
-  logout(): Promise<CreatorStudioDesignAuthStatus>;
-};
-
 export type OpenDesignHostBridge = {
   // Optional so older host builds still satisfy the bridge shape; callers
   // must feature-detect before invoking.
@@ -397,9 +372,6 @@ export type OpenDesignHostBridge = {
   capture: {
     page(options?: OpenDesignHostCaptureOptions): Promise<OpenDesignHostCaptureResult>;
   };
-  // Creator Studio Design authentication is optional at the protocol level so
-  // older hosts and the browser-only development surface remain detectable.
-  creatorStudioAuth?: CreatorStudioDesignAuthBridge;
   client: OpenDesignHostClient;
   pdf: {
     print(html: string, nonce?: string, options?: OpenDesignHostPdfPrintOptions): Promise<OpenDesignHostActionResult>;

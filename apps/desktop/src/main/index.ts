@@ -184,10 +184,6 @@ export function resolveDesktopApplicationName(requestedName?: string): string {
 
 export type DesktopMainOptions = {
   beforeShutdown?: () => Promise<void>;
-  /** Internal tools-dev-only switch. Packaged callers must leave this unset. */
-  creatorStudioAuthBypass?: boolean;
-  /** Stable encrypted device credential shared across packaged namespaces and app updates. */
-  creatorStudioAuthCredentialPath?: string;
   onExternalShow?: () => void | Promise<void>;
   discoverWebUrl?: () => Promise<string | null>;
   /**
@@ -963,8 +959,6 @@ export async function runDesktopMain(
 
   console.info("[open-design desktop] creating desktop runtime");
   desktop = await createDesktopRuntime({
-    creatorStudioAuthBypass: options.creatorStudioAuthBypass,
-    creatorStudioAuthCredentialPath: options.creatorStudioAuthCredentialPath,
     desktopAuthSecret,
     discoverUrl: options.discoverWebUrl ?? createWebDiscovery(runtime),
     discoverDaemonUrl: options.discoverDaemonUrl,
@@ -1092,11 +1086,7 @@ if (isDirectEntry()) {
     contract: OPEN_DESIGN_SIDECAR_CONTRACT,
   });
 
-  void runDesktopMain(runtime, {
-    // This code path is the direct tools-dev Electron entrypoint. Packaged
-    // builds import runDesktopMain and never inherit this environment switch.
-    creatorStudioAuthBypass: process.env.CREATORSTUDIO_DESIGN_DEV_AUTH_BYPASS === "1",
-  }).catch((error: unknown) => {
+  void runDesktopMain(runtime).catch((error: unknown) => {
     console.error(error instanceof Error ? error.stack || error.message : String(error));
     process.exit(1);
   });
