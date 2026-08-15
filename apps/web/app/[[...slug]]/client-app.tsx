@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 
 import { installErrorHandlers } from '../../src/analytics/error-tracking';
 import { MatrixLoader } from '../../src/components/MatrixLoader';
-import { CreatorStudioAuthGate } from '../../src/components/CreatorStudioAuthGate';
 import { installWebObservability } from '../../src/observability/install';
 
 // Install browser exception handlers at module-load time, before any other
@@ -38,9 +37,5 @@ const App = dynamic(() => import('../../src/App').then((m) => m.App), {
 });
 
 export function ClientApp() {
-  return (
-    <CreatorStudioAuthGate>
-      <App />
-    </CreatorStudioAuthGate>
-  );
+  return <App />;
 }

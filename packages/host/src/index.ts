@@ -63,9 +63,6 @@ export type {
   OpenDesignHostUpdaterMenuLabels,
   OpenDesignHostUpdaterOpenDialogRequest,
   OpenDesignHostUpdaterOpenDialogListener,
-  CreatorStudioDesignAuthState,
-  CreatorStudioDesignAuthStatus,
-  CreatorStudioDesignAuthBridge,
   OpenDesignHostBridge,
   OpenDesignHostGlobalScope,
 } from "./protocol.js";

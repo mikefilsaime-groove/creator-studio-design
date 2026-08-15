@@ -6,7 +6,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { BrowserWindow, app, dialog, ipcMain, nativeImage, nativeTheme, safeStorage, screen, session, shell } from "electron";
+import { BrowserWindow, app, dialog, ipcMain, nativeImage, nativeTheme, screen, session, shell } from "electron";
 import {
   DESKTOP_UPDATE_CHANNELS,
   DESKTOP_UPDATE_MODES,
@@ -42,12 +42,6 @@ import {
   parseUpdateActionRequest,
   updateRestartSafetyError,
 } from "./update-preflight.js";
-import {
-  createCreatorStudioDesignAuth,
-  createCreatorStudioDesignDevelopmentAuth,
-  createEncryptedFileCredentialStorage,
-} from "./creator-studio-auth.js";
-
 const execFileAsync = promisify(execFile);
 
 /**
@@ -367,13 +361,6 @@ export type DesktopRuntime = {
 };
 
 export type DesktopRuntimeOptions = {
-  /**
-   * Explicit tools-dev-only access used when the production pairing backend is
-   * not available. The packaged entrypoint never passes this option.
-   */
-  creatorStudioAuthBypass?: boolean;
-  /** Stable encrypted device credential path supplied by packaged launchers. */
-  creatorStudioAuthCredentialPath?: string;
   // Per-process secret shared with the daemon at startup (over its
   // sidecar IPC) so the main process can mint HMAC tokens for the
   // `dialog:pick-and-import` flow. The secret stays in main-process
@@ -2029,10 +2016,6 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
   ipcMain.removeHandler("shell:open-external");
   ipcMain.removeHandler("shell:open-path");
   ipcMain.removeHandler("browser:clear-data");
-  ipcMain.removeHandler("creator-studio-design:auth:status");
-  ipcMain.removeHandler("creator-studio-design:auth:start-pairing");
-  ipcMain.removeHandler("creator-studio-design:auth:poll-pairing");
-  ipcMain.removeHandler("creator-studio-design:auth:logout");
   for (const channel of UPDATER_IPC_CHANNELS) {
     ipcMain.removeHandler(channel);
   }
@@ -2415,48 +2398,6 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
       throw new Error("host IPC is only available to the main Creator Studio Design window");
     }
   };
-  if (options.creatorStudioAuthBypass) {
-    console.warn(
-      "[creator-studio-design] local development authentication bypass is active; packaged builds remain gated",
-    );
-  }
-  const creatorStudioAuth = options.creatorStudioAuthBypass
-    ? createCreatorStudioDesignDevelopmentAuth()
-    : createCreatorStudioDesignAuth({
-      baseUrl: process.env.CREATORSTUDIO_DESIGN_AUTH_BASE_URL,
-      storage: createEncryptedFileCredentialStorage({
-        filePath: options.creatorStudioAuthCredentialPath
-          ?? join(app.getPath("userData"), "creator-studio-design-auth.enc"),
-        encrypt(plaintext) {
-          if (!safeStorage.isEncryptionAvailable()) {
-            throw new Error("Secure operating-system credential storage is unavailable.");
-          }
-          return safeStorage.encryptString(plaintext);
-        },
-        decrypt(ciphertext) {
-          if (!safeStorage.isEncryptionAvailable()) {
-            throw new Error("Secure operating-system credential storage is unavailable.");
-          }
-          return safeStorage.decryptString(ciphertext);
-        },
-      }),
-    });
-  ipcMain.handle("creator-studio-design:auth:status", async (event) => {
-    requireMainWindowSender(event);
-    return creatorStudioAuth.status();
-  });
-  ipcMain.handle("creator-studio-design:auth:start-pairing", async (event) => {
-    requireMainWindowSender(event);
-    return creatorStudioAuth.startPairing();
-  });
-  ipcMain.handle("creator-studio-design:auth:poll-pairing", async (event) => {
-    requireMainWindowSender(event);
-    return creatorStudioAuth.pollPairing();
-  });
-  ipcMain.handle("creator-studio-design:auth:logout", async (event) => {
-    requireMainWindowSender(event);
-    return creatorStudioAuth.logout();
-  });
   const discoverUpdateDaemonBaseUrl = async (): Promise<string> => {
     const daemonUrl = await options.discoverDaemonUrl?.();
     const baseUrl = daemonUrl ?? await options.discoverUrl();
@@ -3005,10 +2946,6 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
         ipcMain.removeHandler(channel);
       }
       ipcMain.removeHandler("browser:clear-data");
-      ipcMain.removeHandler("creator-studio-design:auth:status");
-      ipcMain.removeHandler("creator-studio-design:auth:start-pairing");
-      ipcMain.removeHandler("creator-studio-design:auth:poll-pairing");
-      ipcMain.removeHandler("creator-studio-design:auth:logout");
       if (splash != null && !splash.isDestroyed()) splash.close();
       if (!petWindow.isDestroyed()) petWindow.close();
       if (!window.isDestroyed()) window.close();

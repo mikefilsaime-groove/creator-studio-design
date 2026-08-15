@@ -4,23 +4,18 @@
   <img src="apps/web/public/app-icon.png" alt="Creator Studio Design" width="160" />
 </p>
 
-Creator Studio Design is the agent-native desktop design workspace for Creator Studio members. It turns briefs into interactive prototypes, web and mobile interfaces, decks, images, video, and other production-ready design artifacts.
+Creator Studio Design is an agent-native desktop design workspace. It turns briefs into interactive prototypes, web and mobile interfaces, decks, images, video, and other production-ready design artifacts.
 
 [Download the latest Creator Studio Design release](https://github.com/mikefilsaime-groove/creator-studio-design/releases/latest)
 
 ## Requirements
 
-- An active Creator Studio Mastermind membership verified through ClickCampaigns GodMode.
-- Claude Code or Codex CLI installed and signed in with the member's existing Claude or ChatGPT subscription.
+- Claude Code or Codex CLI installed and signed in with your existing Claude or ChatGPT subscription.
 - macOS, Windows, or Linux.
 
-Creator Studio Design does not ask members for model API keys and does not include hosted, BYOK, or local-model execution. Claude Code and Codex are the only supported execution engines.
+Creator Studio Design does not require a Creator Studio account, membership check, pairing code, or application login. If you can download it, you can use it.
 
-## Secure member connection
-
-On first launch, Creator Studio Design displays a short-lived pairing code. In an authenticated ClickCampaigns GodMode connection, authorize that code for Creator Studio Design. The desktop app receives its own revocable application token; it never copies or exposes the member's GodMode MCP credential.
-
-The application token and signed offline entitlement lease are encrypted with the operating system's secure credential storage. Inactive, suspended, expired, or revoked Mastermind access fails closed.
+The app does not ask for model API keys and does not include hosted, BYOK, or local-model execution. Claude Code and Codex are the supported execution engines, so those tools still require their own normal sign-in.
 
 ## Local development
 
@@ -47,7 +42,7 @@ Run the workflow in GitHub with a stable `x.y.z` version. A validation run can l
 
 These community installers do not require paid Apple or Windows developer certificates. On first launch, macOS users may need to Control-click the app and choose **Open**; Windows users may need to choose **More info** and **Run anyway** if SmartScreen warns.
 
-The `Sync upstream Creator Studio Design base` workflow brings the newest upstream base into a review branch so product identity, authentication, execution restrictions, and packaging checks can be validated before merging.
+The `Sync upstream Creator Studio Design base` workflow brings the newest upstream base into a review branch so product identity, open-access behavior, execution restrictions, and packaging checks can be validated before merging.
 
 ## Validation
 
