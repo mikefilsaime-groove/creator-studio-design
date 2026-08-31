@@ -105,7 +105,7 @@ export function releaseChannelDescriptor(channel: string): ReleaseChannelDescrip
   if (channel === "stable" || channel === "prerelease") return descriptors[channel];
   const displayLabel = channel[0]!.toUpperCase() + channel.slice(1);
   return {
-    appId: `io.open-design.desktop.${channel}`,
+    appId: `${PRODUCT_IDENTITY.appId}.${channel}`,
     baseVersionField: "baseVersion",
     channel,
     counterField: "releaseNumber",

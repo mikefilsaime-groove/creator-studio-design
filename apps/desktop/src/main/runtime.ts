@@ -293,7 +293,7 @@ const MIN_SPLASH_MS = 2000;
 // While the splash is up, the real web app loads in a hidden main window. We
 // reveal it only once the web bundle reports it has actually mounted (it sets
 // `data-od-app-mounted="1"` on first paint of the real UI), so the user never
-// sees the web's own "Loading OpenDesign…" shell flash between the splash and
+// sees the web's own "Loading Creator Studio Design…" shell flash between the splash and
 // the app. Poll cadence + a hard ceiling so a missing mount signal can never
 // strand the user on the splash forever.
 const WEB_MOUNT_POLL_MS = 80;
@@ -935,7 +935,7 @@ function createPendingHtml(): string {
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>OpenDesign</title>
+    <title>Creator Studio Design</title>
     <style>
       html,
       body {
@@ -1159,7 +1159,7 @@ function buildCrashReportUrl(ctx: RendererCrashScreenContext): string {
   const title = `Desktop app keeps crashing (renderer ${ctx.reason})`;
   const body = [
     "**What happened**",
-    "The OpenDesign desktop window crashed several times in a row and showed the recovery screen.",
+    "The Creator Studio Design desktop window crashed several times in a row and showed the recovery screen.",
     "",
     "**What I was doing when it started** (please add any detail):",
     "",
@@ -1178,9 +1178,9 @@ function buildCrashReportUrl(ctx: RendererCrashScreenContext): string {
 // Prefilled mailto for the "Email us" action — same auto-filled diagnostics as
 // the issue, for users who'd rather email than open a GitHub account.
 function buildCrashMailtoUrl(ctx: RendererCrashScreenContext): string {
-  const subject = `OpenDesign keeps crashing (renderer ${ctx.reason})`;
+  const subject = `Creator Studio Design keeps crashing (renderer ${ctx.reason})`;
   const body = [
-    "The OpenDesign desktop app crashed several times in a row on my device.",
+    "The Creator Studio Design desktop app crashed several times in a row on my device.",
     "",
     "(If possible, attach the diagnostics file you saved with the “Save logs…” button.)",
     "",
@@ -1198,7 +1198,7 @@ function createRendererCrashHtml(ctx: RendererCrashScreenContext): string {
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>OpenDesign</title>
+    <title>Creator Studio Design</title>
     <style>
       /* Palette mirrors the app's neutral design tokens (apps/web tokens.css):
          warm off-white + near-black, no accent color — matching the black/white
@@ -1294,7 +1294,7 @@ function createRendererCrashHtml(ctx: RendererCrashScreenContext): string {
   </head>
   <body>
     <div class="panel">
-      <p class="title">OpenDesign keeps closing on this device</p>
+      <p class="title">Creator Studio Design keeps closing on this device</p>
       <p class="body">The app window crashed several times in a row, so it has paused to avoid getting stuck reloading.</p>
       <p class="body">It will try to recover on its own in a few minutes.</p>
       <div class="actions">
@@ -1304,7 +1304,7 @@ function createRendererCrashHtml(ctx: RendererCrashScreenContext): string {
       <p class="hint" id="diag-note">Saved logs include a crash memory snapshot so we can find the cause. Nothing is sent unless you choose to share it.</p>
       <p class="status" id="status" aria-live="polite"></p>
       <p class="email" id="email-line">Prefer email? <a href="#" id="email">Contact ${SUPPORT_EMAIL}</a></p>
-      <p class="hint">If this keeps happening, quitting and reinstalling OpenDesign usually resolves it.</p>
+      <p class="hint">If this keeps happening, quitting and reinstalling Creator Studio Design usually resolves it.</p>
     </div>
     <script>
       (function () {
@@ -1392,7 +1392,7 @@ const SPLASH_STAGE_SEQUENCE: readonly SplashBootStage[] = [
 ];
 
 const SPLASH_STAGE_LABELS: Record<SplashBootStage, string> = {
-  starting: "Starting OpenDesign",
+  starting: "Starting Creator Studio Design",
   engine: "Starting the local engine",
   engineReady: "Local engine ready",
   interface: "Preparing the interface",
@@ -1519,7 +1519,7 @@ export function pinNativeAppearanceToLight(): void {
  * + matching size so the reveal swap reads as a single window, never a flash.
  */
 export function createSplashWindow(): SplashWindowHandle {
-  // OpenDesign ships light-only (the theme setting was removed), so pin the
+  // Creator Studio Design ships light-only (the theme setting was removed), so pin the
   // native appearance before the first window exists. Electron defaults
   // `themeSource` to `system`, which paints the macOS vibrancy glass and the
   // native chrome dark on a dark-mode Mac — visible on the splash and again in
@@ -1534,7 +1534,7 @@ export function createSplashWindow(): SplashWindowHandle {
     height: 900,
     resizable: false,
     show: true,
-    title: "OpenDesign",
+    title: "Creator Studio Design",
     width: 1280,
     webPreferences: {
       contextIsolation: true,
@@ -2259,7 +2259,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
 
   const consoleEntries: DesktopConsoleEntry[] = [];
   const petWindow = createDesktopPetWindow(preloadPath, options.osLocale);
-  const windowTitle = options.windowTitle ?? "OpenDesign";
+  const windowTitle = options.windowTitle ?? "Creator Studio Design";
   const window = new BrowserWindow({
     height: 900,
     icon: resolveDesktopIconPath(),
@@ -2272,7 +2272,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
     // Starts hidden: the splash window is what the user sees while the real web
     // app loads in here. We reveal this window only once the app has actually
     // mounted (see `revealWhenReady` below), so there is never a flash of the
-    // web's own "Loading OpenDesign…" shell.
+    // web's own "Loading Creator Studio Design…" shell.
     show: false,
     title: windowTitle,
     autoHideMenuBar: true,
@@ -2481,7 +2481,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
   const unsubscribeUpdater = options.updater?.subscribe(() => sendUpdaterStatus()) ?? (() => undefined);
   const requireMainWindowSender = (event: Electron.IpcMainInvokeEvent): void => {
     if (event.sender !== window.webContents) {
-      throw new Error("host IPC is only available to the main OpenDesign window");
+      throw new Error("host IPC is only available to the main Creator Studio Design window");
     }
   };
   const discoverUpdateDaemonBaseUrl = async (): Promise<string> => {
@@ -2838,7 +2838,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
 
   // Hold the splash until BOTH (a) the web bundle reports it has mounted — it
   // sets `data-od-app-mounted="1"` on first paint of the real UI — so we never
-  // reveal the web's own dark "Loading OpenDesign…" shell, and (b) the splash
+  // reveal the web's own dark "Loading Creator Studio Design…" shell, and (b) the splash
   // has been up at least MIN_SPLASH_MS so the brand clip plays through. A hard
   // ceiling guarantees the user is never stranded on the splash if the mount
   // signal never arrives.

@@ -681,8 +681,8 @@ describe('daemon_log_tail (unparseable log recovery)', () => {
   // `XError: …` headline — exactly the shape that reports all-null today.
   const UNPARSEABLE_LOG = [
     '[open-design packaged] starting app=daemon',
-    'loading config from /Users/liudetao/Library/Application Support/Open Design/config.json',
-    'cache dir C:\\Users\\John Doe\\AppData\\Roaming\\Open Design\\cache',
+    'loading config from /Users/liudetao/Library/Application Support/Creator Studio Design/config.json',
+    'cache dir C:\\Users\\John Doe\\AppData\\Roaming\\Creator Studio Design\\cache',
     'something we have never seen went wrong while binding the port',
     '[open-design packaged] exited app=daemon pid=45305 code=1 signal=none',
   ].join('\n');

@@ -1914,7 +1914,7 @@ describe('FileViewer SVG artifacts', () => {
       value: vi.fn(),
     });
     const userAgent = vi.spyOn(window.navigator, 'userAgent', 'get')
-      .mockReturnValue('OpenDesign/0.20 Electron/41.3.0');
+      .mockReturnValue('Creator Studio Design/0.20 Electron/41.3.0');
     try {
       const renderViewer = (liveHtml: string, workspaceActive = true) => (
         <FileViewer
@@ -2004,7 +2004,7 @@ describe('FileViewer SVG artifacts', () => {
       value: vi.fn(),
     });
     const userAgent = vi.spyOn(window.navigator, 'userAgent', 'get')
-      .mockReturnValue('OpenDesign/0.20 Electron/41.3.0');
+      .mockReturnValue('Creator Studio Design/0.20 Electron/41.3.0');
     const contentWindow = { postMessage } as unknown as Window;
     const contentWindowGetter = vi.spyOn(
       HTMLIFrameElement.prototype,
@@ -9269,7 +9269,7 @@ describe('FileViewer tweaks toolbar', () => {
     }
   });
 
-  it('immediately recovers an exact active Open Design blob navigation abort', () => {
+  it('immediately recovers an exact active Creator Studio Design blob navigation abort', () => {
     vi.useFakeTimers();
     let navigationFailureListener: OpenDesignHostPreviewNavigationFailureListener | null = null;
     const restoreHost = installMockOpenDesignHost({

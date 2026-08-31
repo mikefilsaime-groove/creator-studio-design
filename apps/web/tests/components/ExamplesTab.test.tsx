@@ -165,7 +165,7 @@ describe('ExamplesTab', () => {
           }),
           skill({
             id: 'open-design-landing',
-            name: 'OpenDesign landing',
+            name: 'Creator Studio Design landing',
             examplePrompt: 'Unique prompt',
           }),
         ]}

@@ -369,7 +369,7 @@ describe('App onboarding completion persistence', () => {
     });
   });
 
-  it('persists the Cloud reset without discarding BYOK and returns to onboarding', async () => {
+  it('clears unsupported Cloud and BYOK settings and returns to local onboarding', async () => {
     mockedLoadConfig.mockReturnValue({
       ...returningUserConfig(),
       mode: 'api',
@@ -399,23 +399,17 @@ describe('App onboarding completion persistence', () => {
 
     expect(screen.getByTestId('onboarding-completed').textContent).toBe('false');
     expect(screen.getByTestId('agent-id').textContent).toBe('none');
-    expect(screen.getByTestId('api-key').textContent).toBe('persisted-key');
-    expect(screen.getByTestId('api-model').textContent).toBe('gpt-5');
+    expect(screen.getByTestId('api-key').textContent).toBe('');
+    expect(screen.getByTestId('api-model').textContent).toBe('');
     expect(mockedSyncConfigToDaemon).toHaveBeenLastCalledWith(
       expect.objectContaining({
         onboardingCompleted: false,
         mode: 'daemon',
         agentId: null,
-        apiKey: 'persisted-key',
-        model: 'gpt-5',
+        apiKey: '',
+        model: '',
         agentModels: {},
-        apiProtocolConfigs: {
-          openai: {
-            apiKey: 'persisted-key',
-            baseUrl: 'https://api.openai.com/v1',
-            model: 'gpt-5',
-          },
-        },
+        apiProtocolConfigs: {},
       }),
       { allowOnboardingReset: true },
     );

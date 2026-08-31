@@ -1,3 +1,4 @@
+import { amrAgentDef } from './defs/amr.js';
 import { claudeAgentDef } from './defs/claude.js';
 import { codexAgentDef } from './defs/codex.js';
 import { devinAgentDef } from './defs/devin.js';
@@ -76,6 +77,12 @@ export const AGENT_DEFS: RuntimeAgentDef[] = [
   ...SHIPPED_AGENT_DEFS,
   ...readLocalAgentProfileDefs(SHIPPED_AGENT_DEFS),
 ];
+
+const CREATOR_STUDIO_AGENT_IDS = new Set(['claude', 'codex']);
+
+export function isCreatorStudioAgent(id: string): boolean {
+  return CREATOR_STUDIO_AGENT_IDS.has(id);
+}
 
 const ids = new Set();
 for (const def of AGENT_DEFS) {

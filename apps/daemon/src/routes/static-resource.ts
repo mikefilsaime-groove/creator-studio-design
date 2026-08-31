@@ -12,6 +12,7 @@ import {
   type TeamResourceStateProvider,
 } from '../collab/team-resource-state.js';
 import { detectAgents, detectAgentsStream } from '../agents.js';
+import { isCreatorStudioAgent } from '../runtimes/registry.js';
 import {
   SkillImportError,
   deleteUserSkill,
@@ -455,7 +456,9 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
 
     if (!wantsStream) {
       try {
-        const list = await detectAgents(agentCliEnv);
+        const list = (await detectAgents(agentCliEnv)).filter((agent) =>
+          isCreatorStudioAgent(agent.id),
+        );
         res.json({ agents: list });
       } catch (err: any) {
         res.status(500).json({ error: String(err) });
@@ -480,6 +483,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
     try {
       for await (const agent of detectAgentsStream(agentCliEnv)) {
         if (aborted) break;
+        if (!isCreatorStudioAgent(agent.id)) continue;
         res.write(`event: agent\ndata: ${JSON.stringify(agent)}\n\n`);
       }
       if (!aborted) {
@@ -1304,7 +1308,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
       try {
         const runtimeRoot = fs.realpathSync.native(RUNTIME_DATA_DIR_CANONICAL);
         if (sourceRoot === runtimeRoot || sourceRoot.startsWith(`${runtimeRoot}${path.sep}`)) {
-          return sendApiError(res, 400, 'BAD_REQUEST', 'cannot import OpenDesign runtime data');
+          return sendApiError(res, 400, 'BAD_REQUEST', 'cannot import Creator Studio Design runtime data');
         }
       } catch {
         // The runtime data directory may not exist yet in first-run tests.
@@ -1508,7 +1512,7 @@ export function assembleExample(templateHtml: string, slidesHtml: string, title:
   // its attribute values would match first.
   const range = findRealElementRange(withSlides, HTML_TAG_PATTERNS.titleOpen, 'title');
   if (!range) return withSlides;
-  return `${withSlides.slice(0, range.start)}<title>${title} | OpenDesign Example</title>`
+  return `${withSlides.slice(0, range.start)}<title>${title} | Creator Studio Design Example</title>`
     + withSlides.slice(range.end);
 }
 

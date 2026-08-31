@@ -88,11 +88,11 @@ describe("resolveWinInstallIdentity", () => {
   });
 
   it("emits a valid NSIS command literal for executable paths containing spaces", () => {
-    expect(createNsisQuotedCommandLiteral(["$INSTDIR\\Open Design.exe", "%1"])).toBe(
-      `'"$INSTDIR\\Open Design.exe" "%1"'`,
+    expect(createNsisQuotedCommandLiteral(["$INSTDIR\\Creator Studio Design.exe", "%1"])).toBe(
+      `'"$INSTDIR\\Creator Studio Design.exe" "%1"'`,
     );
-    expect(createNsisQuotedCommandLiteral(["$INSTDIR\\Open Design.exe"])).toBe(
-      `'"$INSTDIR\\Open Design.exe"'`,
+    expect(createNsisQuotedCommandLiteral(["$INSTDIR\\Creator Studio Design.exe"])).toBe(
+      `'"$INSTDIR\\Creator Studio Design.exe"'`,
     );
   });
 

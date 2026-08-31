@@ -90,7 +90,7 @@ function teamContext(workspaceId: string, workspaceMemberId: string): WorkspaceC
 function amrAgent(): AgentInfo {
   return {
     id: 'amr',
-    name: 'OpenDesign AMR',
+    name: 'Creator Studio Design AMR',
     bin: 'amr',
     available: true,
     models: [{ id: 'glm-5', label: 'GLM 5' }],
@@ -704,7 +704,7 @@ describe.skip('EntryShell legacy AMR workspace precheck race (not shipped in Cre
     );
 
     expect(
-      await screen.findByRole('heading', { name: 'Sign in to OpenDesign' }),
+      await screen.findByRole('heading', { name: 'Sign in to Creator Studio Design' }),
     ).toBeTruthy();
     expect(window.location.pathname).toBe('/onboarding');
     expect(screen.queryByRole('alertdialog')).toBeNull();
@@ -796,7 +796,7 @@ describe.skip('EntryShell legacy AMR workspace precheck race (not shipped in Cre
     await waitFor(() => expect(onCreateProject).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(window.location.pathname).toBe('/onboarding'));
     expect(
-      await screen.findByRole('heading', { name: 'Sign in to OpenDesign' }),
+      await screen.findByRole('heading', { name: 'Sign in to Creator Studio Design' }),
     ).toBeTruthy();
     expect(window.localStorage.getItem('open-design:home-composer:prompt')).toBe(
       'Keep this draft through Cloud reauthentication',

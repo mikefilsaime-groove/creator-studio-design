@@ -4,7 +4,10 @@ import {
 } from './helpers/test-helpers.js';
 import { codexNeedsDangerFullAccessSandbox } from '../../src/runtimes/defs/codex.js';
 import { isKnownServiceTier } from '../../src/runtimes/models.js';
-import { readLocalAgentProfileDefs } from '../../src/runtimes/registry.js';
+import {
+  isCreatorStudioAgent,
+  readLocalAgentProfileDefs,
+} from '../../src/runtimes/registry.js';
 
 test('AGENT_DEFS ids are unique', () => {
   const ids = AGENT_DEFS.map((a) => a.id);
@@ -12,8 +15,11 @@ test('AGENT_DEFS ids are unique', () => {
   assert.deepEqual(dupes, [], `duplicate agent ids: ${JSON.stringify(dupes)}`);
 });
 
-test('Creator Studio Design exposes only subscription-backed Codex and Claude Code runtimes', () => {
-  assert.deepEqual(AGENT_DEFS.map((agent) => agent.id), ['claude', 'codex']);
+test('Creator Studio Design publicly exposes only subscription-backed Codex and Claude Code runtimes', () => {
+  assert.deepEqual(
+    AGENT_DEFS.filter((agent) => isCreatorStudioAgent(agent.id)).map((agent) => agent.id),
+    ['claude', 'codex'],
+  );
 });
 
 test('local agent profiles inherit a base adapter and can pin the default model', async () => {

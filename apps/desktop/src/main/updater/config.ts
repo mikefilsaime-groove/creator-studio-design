@@ -8,7 +8,11 @@ import {
   type DesktopUpdateMode,
   type SidecarSource,
 } from "@open-design/sidecar-proto";
-import { isReleaseChannel, releaseChannelFromVersion } from "@open-design/release";
+import {
+  isReleaseChannel,
+  PRODUCT_IDENTITY,
+  releaseChannelFromVersion,
+} from "@open-design/release";
 
 /**
  * @module updater-config

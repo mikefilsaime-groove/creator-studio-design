@@ -5,7 +5,6 @@ import { hashJson, hashPath, ToolPackCache } from "../cache/index.js";
 import type { ToolPackConfig } from "../config/index.js";
 import { copyBundledResourceTrees, packBundledDshRuntime, winResources } from "../resources/index.js";
 import {
-  copyOptionalVelaCliBinary,
   resolveOptionalVelaCliBinary,
   resolveOptionalVelaCliOpenCodeCompanionTree,
 } from "../vela-cli.js";
@@ -24,7 +23,6 @@ async function createResourceTreeCacheKey(config: ToolPackConfig, workspaceBuild
   return hashJson({
     assetsCommunityPets: await hashPath(join(config.workspaceRoot, "assets", "community-pets")),
     assetsFrames: await hashPath(join(config.workspaceRoot, "assets", "frames")),
-    creatorStudioIcon: await hashPath(macResources.iconPng),
     craft: await hashPath(join(config.workspaceRoot, "craft")),
     designSystems: await hashPath(join(config.workspaceRoot, "design-systems")),
     designTemplates: await hashPath(join(config.workspaceRoot, "design-templates")),

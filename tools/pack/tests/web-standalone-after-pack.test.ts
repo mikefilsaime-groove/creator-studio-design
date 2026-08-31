@@ -103,8 +103,8 @@ async function writeHyperframesRuntimeFixture(options: {
     ? path.dirname(path.dirname(options.resourcesRoot))
     : path.dirname(options.resourcesRoot);
   const bundledNodePath = options.platformName === "win32"
-    ? join(appPath, "Open Design.exe")
-    : join(appPath, "Contents", "MacOS", "Open Design");
+    ? join(appPath, "Creator Studio Design.exe")
+    : join(appPath, "Contents", "MacOS", "Creator Studio Design");
   await mkdir(path.dirname(bundledNodePath), { recursive: true });
   try {
     await link(process.execPath, bundledNodePath);
@@ -302,7 +302,7 @@ describe("web standalone afterPack hook", () => {
         /resources\/app\/node_modules\/hyperframes\/dist\/cli\.js$/,
       );
       expect(report.hyperframesCliSmoke.nodePath.split(path.sep).join("/")).toMatch(
-        /win-unpacked\/Open Design\.exe$/,
+        /win-unpacked\/Creator Studio Design\.exe$/,
       );
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
@@ -320,7 +320,7 @@ describe("web standalone afterPack hook", () => {
     await expect(runWebStandaloneAfterPack({
       appOutDir: "/tmp/open-design-linux",
       electronPlatformName: "linux",
-      packager: { appInfo: { productFilename: "Open Design" } },
+      packager: { appInfo: { productFilename: "Creator Studio Design" } },
     })).rejects.toThrow(/unsupported platform: linux/);
   });
 

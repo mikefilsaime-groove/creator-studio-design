@@ -100,11 +100,11 @@ describe("tools-pack mac launcher payload archives", () => {
       publicAppBundleName: identity.publicAppBundleName,
       version: "0.9.0-beta.2",
     })).toEqual({
-      appBundleName: "Open Design Beta.app",
+      appBundleName: "Creator Studio Design Beta.app",
       channel: "beta",
       entry: {
-        cwd: "payload/Open Design Beta.app",
-        executable: "payload/Open Design Beta.app/Contents/MacOS/Open Design Beta",
+        cwd: "payload/Creator Studio Design Beta.app",
+        executable: "payload/Creator Studio Design Beta.app/Contents/MacOS/Creator Studio Design Beta",
       },
       namespace: "release-beta",
       payloadRoot: "payload",
@@ -129,14 +129,14 @@ describe("tools-pack mac launcher payload archives", () => {
         entry: { executable: string };
         version: string;
       };
-      expect(manifest.appBundleName).toBe("Open Design Beta.app");
-      expect(manifest.entry.executable).toBe("payload/Open Design Beta.app/Contents/MacOS/Open Design Beta");
+      expect(manifest.appBundleName).toBe("Creator Studio Design Beta.app");
+      expect(manifest.entry.executable).toBe("payload/Creator Studio Design Beta.app/Contents/MacOS/Creator Studio Design Beta");
       expect(manifest.version).toBe("0.9.0-beta.2");
       await expectPathExists(join(extractRoot, manifest.entry.executable));
       await expectPathExists(join(
         extractRoot,
         "payload",
-        "Open Design Beta.app",
+        "Creator Studio Design Beta.app",
         "Contents",
         "Resources",
         "open-design-config.json",

@@ -29,7 +29,6 @@ import {
 import type { ToolPackConfig } from "./config/index.js";
 import { domToPptxBundleResource } from "./dom-to-pptx-resource.js";
 import { copyBundledResourceTrees, linuxResources, packBundledDshRuntime } from "./resources/index.js";
-import { copyOptionalVelaCliBinary } from "./vela-cli.js";
 import { electronBuilderVersionForAppVersion, readRuntimeAppVersion } from "./versioning/index.js";
 import { processWebSourcemaps } from "./web-sourcemaps.js";
 
@@ -565,8 +564,6 @@ async function writeAssembledApp(
         ...(config.telemetryRelayUrl == null ? {} : { telemetryRelayUrl: config.telemetryRelayUrl }),
         ...(config.posthogKey == null ? {} : { posthogKey: config.posthogKey }),
         ...(config.posthogHost == null ? {} : { posthogHost: config.posthogHost }),
-        ...(config.velaWebUrl == null ? {} : { velaWebUrl: config.velaWebUrl }),
-        ...(config.velaWebUrls == null ? {} : { velaWebUrls: config.velaWebUrls }),
         ...(config.portable ? {} : { namespaceBaseRoot: config.roots.runtime.namespaceBaseRoot }),
       },
       null,

@@ -132,7 +132,7 @@ describe('od message-center CLI', () => {
               {
                 id: 'release',
                 typeName: 'Product update',
-                title: 'OpenDesign 0.14 is available',
+                title: 'Creator Studio Design 0.14 is available',
                 publishedAt: '2026-07-16T12:00:00.000Z',
                 readAt: null,
               },

@@ -63,7 +63,7 @@ export type TrackingAmrEntrySource =
   | 'inline_model_switcher_amr_row'
   | 'settings_amr_agent_card'
   | 'settings_amr_authorize'
-  // The 'use OpenDesign Cloud' callout on the execution tab. Same device-auth
+  // The 'use Creator Studio Design Cloud' callout on the execution tab. Same device-auth
   // flow as settings_amr_authorize, kept distinct so the two entry points stay
   // separable in funnel analysis.
   | 'settings_cloud_callout'
@@ -123,7 +123,7 @@ export interface AmrEntryAttribution {
   // Stripe payment result can be attributed without replacing first touch.
   campaignId?: TrackingCampaignId;
   conversionSource?: TrackingCampaignConversionSource;
-  // OpenDesign install/device id forwarded only on consent-gated AMR handoffs.
+  // Creator Studio Design install/device id forwarded only on consent-gated AMR handoffs.
   odDeviceId?: string;
   // Self-reported onboarding profile, forwarded to AMR (anchored to entryId) so
   // AMR can segment paid conversion by who the visitor is. Open strings, not a

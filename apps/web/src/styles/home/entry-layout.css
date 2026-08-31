@@ -7920,7 +7920,7 @@ button.entry-nav-rail__menu-credits-row:active:not(:disabled) {
    workspace menu meta, InviteDialog art, InlineModelSwitcher account block.
    Sourced verbatim from pre-integration 37f7510f4. ---- */
 
-/* Account row: OpenDesign login/plan, lifted out of the agent card so the
+/* Account row: Creator Studio Design login/plan, lifted out of the agent card so the
    agent name is never truncated. */
 .inline-switcher__account {
   order: 0;
@@ -7936,7 +7936,7 @@ button.entry-nav-rail__menu-credits-row:active:not(:disabled) {
     border-color 120ms var(--ease-out);
 }
 
-/* The OpenDesign entry is also the agent selector now: hovering the clickable
+/* The Creator Studio Design entry is also the agent selector now: hovering the clickable
    area previews selectability, and the active agent gets the same accent
    highlight the grid rows use. */
 .inline-switcher__account:has(.inline-switcher__account-select:hover):not(.is-active) {
@@ -8009,7 +8009,7 @@ button.entry-nav-rail__menu-credits-row:active:not(:disabled) {
   min-width: 0;
 }
 
-/* Balance shown as a muted subtitle line under the OpenDesign name. Each
+/* Balance shown as a muted subtitle line under the Creator Studio Design name. Each
    stat is "label value"; the gap (not a literal separator) keeps them apart. */
 .inline-switcher__account-subtitle {
   display: flex;

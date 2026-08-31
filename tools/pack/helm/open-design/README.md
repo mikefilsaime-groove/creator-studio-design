@@ -1,4 +1,4 @@
-# Open Design Helm chart
+# Creator Studio Design Helm chart
 
 > Spec §15.5 reference deployment.
 > Status: **values, templates, and per-cloud override files shipped.**

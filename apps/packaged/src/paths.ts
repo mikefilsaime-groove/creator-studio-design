@@ -68,7 +68,7 @@ function resolvePackagedDataRoot(
           "",
           `Configured value: ${odDataDir}`,
           "",
-          "Set OD_DATA_DIR to an absolute path (for example, C:\\\\Users\\\\You\\\\OpenDesign on Windows or /Users/you/OpenDesign on macOS/Linux) and relaunch Creator Studio Design.",
+          "Set OD_DATA_DIR to an absolute path (for example, C:\\\\Users\\\\You\\\\Creator Studio Design on Windows or /Users/you/Creator Studio Design on macOS/Linux) and relaunch Creator Studio Design.",
         ].join("\n"),
         { title: "Creator Studio Design cannot start with this OD_DATA_DIR" },
       );

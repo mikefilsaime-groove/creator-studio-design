@@ -47,7 +47,7 @@ describe("@open-design/release", () => {
   });
 
   it("centralizes release identity and namespace derivation", () => {
-    expect(releaseChannelDescriptor("prerelease").productName).toBe("Open Design Prerelease");
+    expect(releaseChannelDescriptor("prerelease").productName).toBe("Creator Studio Design Prerelease");
     expect(releaseInstallIdentity("prerelease")).toEqual({
       appId: "gg.creatorstudio.design.prerelease",
       executableName: "Creator Studio Design Prerelease",
@@ -59,7 +59,7 @@ describe("@open-design/release", () => {
     expect(releaseChannelDescriptor("qa2")).toMatchObject({
       appId: "io.open-design.desktop.qa2",
       channel: "qa2",
-      productName: "Open Design Qa2",
+      productName: "Creator Studio Design Qa2",
       storagePrefix: "qa2",
     });
   });
