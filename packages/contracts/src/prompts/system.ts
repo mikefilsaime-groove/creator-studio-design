@@ -35,6 +35,11 @@ import { OFFICIAL_DESIGNER_PROMPT, renderOfficialDesignerPrompt } from './offici
 import { DISCOVERY_AND_PHILOSOPHY } from './discovery.js';
 import { DECK_FRAMEWORK_DIRECTIVE } from './deck-framework.js';
 import { MEDIA_GENERATION_CONTRACT } from './media-contract.js';
+import {
+  composeOdNextStrategyRequestPromptV2,
+  type OdNextStrategyRequestRecipeV2,
+} from './od-next-strategy.js';
+import { SETTINGS_MEDIA_PROVIDERS_PATH } from '../settings-nav.js';
 
 export const BASE_SYSTEM_PROMPT = OFFICIAL_DESIGNER_PROMPT;
 const ELEVENLABS_VOICE_PROMPT_OPTION_LIMIT = 100;
@@ -111,7 +116,7 @@ export function formatElevenLabsVoiceOptionsErrorForPrompt(
   if (!trimmed) return undefined;
 
   if (/no ElevenLabs API key/i.test(trimmed)) {
-    return `${ELEVENLABS_VOICE_OPTIONS_PROMPT_PREFIX} because the ElevenLabs API key is missing. Tell the user to configure it in Settings or paste a voice id manually.`;
+    return `${ELEVENLABS_VOICE_OPTIONS_PROMPT_PREFIX} because the ElevenLabs API key is missing. Tell the user to configure it in ${SETTINGS_MEDIA_PROVIDERS_PATH} or paste a voice id manually.`;
   }
 
   const statusMatch = trimmed.match(
@@ -175,6 +180,10 @@ Active design system exception: the active design system is the visual direction
 `;
 
 export interface ComposeInput {
+  // Mirrored internal request-recipe slot. Generic/BYOK callers do not infer
+  // this from plugin ids; the daemon must supply a verified recipe payload.
+  odNextStrategyRecipe?: OdNextStrategyRequestRecipeV2 | undefined;
+  agentId?: string | null | undefined;
   skillBody?: string | undefined;
   skillName?: string | undefined;
   skillMode?:
@@ -188,6 +197,14 @@ export interface ComposeInput {
     | undefined;
   designSystemBody?: string | undefined;
   designSystemTitle?: string | undefined;
+  designSystemUsageMd?: string | undefined;
+  designSystemTokensCss?: string | undefined;
+  designSystemComponentsManifest?: string | undefined;
+  designSystemFixtureHtml?: string | undefined;
+  designSystemPullIndex?: string | undefined;
+  designSystemImportMode?: 'normalized' | 'hybrid' | 'verbatim' | undefined;
+  craftBody?: string | undefined;
+  craftSections?: string[] | undefined;
   // Personal-memory block (auto-extracted facts + the hand-edited
   // MEMORY.md index). The daemon side composes this on disk and the
   // BYOK side fetches it from `GET /api/memory/system-prompt`; either
@@ -253,11 +270,21 @@ export interface ComposeInput {
 }
 
 export function composeSystemPrompt({
+  odNextStrategyRecipe,
+  agentId,
   skillBody,
   skillName,
   skillMode,
   designSystemBody,
   designSystemTitle,
+  designSystemUsageMd,
+  designSystemTokensCss,
+  designSystemComponentsManifest,
+  designSystemFixtureHtml,
+  designSystemPullIndex,
+  designSystemImportMode,
+  craftBody,
+  craftSections,
   memoryBody,
   memoryHooks,
   metadata,
@@ -272,6 +299,28 @@ export function composeSystemPrompt({
   userInstructions,
   projectInstructions,
 }: ComposeInput): string {
+  if (odNextStrategyRecipe) {
+    return composeOdNextStrategyRequestPromptV2(odNextStrategyRecipe, {
+      agentId,
+      sessionMode,
+      locale,
+      metadata,
+      template,
+      designSystemBody,
+      designSystemTitle,
+      designSystemUsageMd,
+      designSystemTokensCss,
+      designSystemComponentsManifest,
+      designSystemFixtureHtml,
+      designSystemPullIndex,
+      designSystemImportMode,
+      craftBody,
+      craftSections,
+      memoryBody,
+      userInstructions,
+      projectInstructions,
+    });
+  }
   // Discovery + philosophy goes FIRST so its hard rules ("emit a form on
   // requirements decision, brand resolution, and TodoWrite workflow, run
   // checklist + critique before <artifact>) win precedence over softer
@@ -537,7 +586,7 @@ If the rules below tell you to plan with TodoWrite, write the plan as prose inst
 // behave the same.
 const CHAT_MODE_OVERRIDE = `# Ask mode — bare conversation (this is the whole charter for this turn)
 
-This conversation is in Creator Studio Design Ask mode: a fast, low-overhead chat kept deliberately light to save tokens. Creator Studio Design is an agent-native design workspace powered by the member's authenticated Claude Code or Codex subscription.
+This conversation is in Creator Studio Design Ask mode: a fast, low-overhead chat kept deliberately light to save tokens. Creator Studio Design is the open-source Claude Design alternative and a native Figma counterpart. Official links: GitHub https://github.com/nexu-io/open-design, website https://open-design.ai/, Discord https://discord.gg/mHAjSMV6gz.
 
 Behave like a direct, multi-turn desktop chat assistant. Prefer concise prose: answer the question, explain, compare options, debug prompts, and review existing work. You still have the user's project files, attachments, connectors, MCP servers, project memory, any active design system, and any skills they attached for this turn — use them as context, and follow an attached skill's workflow when one is present.
 
@@ -752,6 +801,11 @@ function imageLines(
     out.push(
       'This is an **image** project. Plan the prompt carefully, then dispatch via the **media generation contract** using `"$OD_NODE_BIN" "$OD_BIN" media generate --surface image --model <imageModel>`. Do NOT emit `<artifact>` HTML for media surfaces.',
     );
+    if (metadata.imageModel?.startsWith('vela/')) {
+      out.push(
+        'This Creator Studio Design Cloud `vela/*` model must go through the OD media dispatcher. Do not invoke the `vela` CLI or the remote media API directly; the daemon owns Workspace attribution, downloads, and final project-file placement.',
+      );
+    }
   }
   return out;
 }
@@ -777,6 +831,11 @@ function videoLines(
     out.push(
       'This is a **video** project. Plan the shotlist and motion, then dispatch via the **media generation contract** using `"$OD_NODE_BIN" "$OD_BIN" media generate --surface video --model <videoModel> --length <seconds> --aspect <ratio>`. Do NOT emit `<artifact>` HTML.',
     );
+    if (metadata.videoModel?.startsWith('vela/')) {
+      out.push(
+        'This Creator Studio Design Cloud `vela/*` model must go through the OD media dispatcher. Do not invoke the `vela` CLI or the remote media API directly; the daemon owns Workspace attribution, polling, downloads, and final project-file placement.',
+      );
+    }
     if (metadata.videoModel === 'hyperframes-html') {
       out.push(
         'Special case: `hyperframes-html` is a local HTML-to-MP4 renderer, not a photoreal text-to-video model. Treat it like a motion design renderer, ask at most one clarifying question, then dispatch immediately.',

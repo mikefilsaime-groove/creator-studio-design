@@ -7,8 +7,10 @@
 // All paths flowing in from HTTP handlers are validated against the project
 // directory to prevent path traversal — see resolveSafe().
 
+import { constants as fsConstants, createReadStream } from 'node:fs';
 import { link, lstat, mkdir, readdir, readFile, realpath, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import JSZip from 'jszip';
 import {
   inferLegacyManifest,
@@ -45,6 +47,16 @@ export const projectFileRenameTestHooks = {
 export const projectFileWriteTestHooks = {
   afterCommit: null as null | ((write: { safeName: string; target: string; body: Buffer | string }) => Promise<void> | void),
 };
+
+function createLazyArchiveFileStream(filePath: string): Readable {
+  return Readable.from((async function* readFileChunks() {
+    const noFollow = fsConstants.O_NOFOLLOW ?? 0;
+    const source = createReadStream(filePath, {
+      flags: fsConstants.O_RDONLY | noFollow,
+    });
+    for await (const chunk of source) yield chunk;
+  })());
+}
 
 export function isRunTouchedProjectFile(fileMtimeMs, runStartTimeMs) {
   if (!Number.isFinite(fileMtimeMs) || !Number.isFinite(runStartTimeMs)) return false;
@@ -174,7 +186,13 @@ async function collectFolders(dir, relDir, out, shouldSkipDir?: (name: string) =
     if (shouldSkipDir?.(e.name)) continue;
     const rel = relDir ? `${relDir}/${e.name}` : e.name;
     const full = path.join(dir, e.name);
-    const st = await stat(full);
+    let st;
+    try {
+      st = await stat(full);
+    } catch (err) {
+      if (err && err.code === 'ENOENT') continue;
+      throw err;
+    }
     out.push({
       name: rel,
       path: rel,
@@ -281,8 +299,15 @@ async function collectFiles(dir, relDir, out, shouldSkipDir?: (name: string) => 
     }
     if (!e.isFile()) continue;
     if (e.name.endsWith('.artifact.json')) continue;
-    const st = await stat(full);
-    const manifest = await readManifestForPath(projectRoot, rel);
+    let st;
+    let manifest;
+    try {
+      st = await stat(full);
+      manifest = await readManifestForPath(projectRoot, rel);
+    } catch (err) {
+      if (err && err.code === 'ENOENT') continue;
+      throw err;
+    }
     out.push({
       name: rel,
       path: rel,
@@ -305,6 +330,21 @@ async function collectFiles(dir, relDir, out, shouldSkipDir?: (name: string) => 
 // menu item, which exports the user's actual project tree (e.g. the
 // uploaded `ui-design/` folder), not just the rendered HTML.
 export async function buildProjectArchive(projectsRoot, projectId, root, metadata?) {
+  const { stream, baseName } = await createProjectArchiveStream(
+    projectsRoot,
+    projectId,
+    root,
+    metadata,
+  );
+  return { buffer: await collectArchiveStream(stream), baseName };
+}
+
+// The HTTP export path uses this streaming form. Unlike buildProjectArchive's
+// compatibility wrapper, it never holds every input file plus the finished ZIP
+// in daemon memory at once. All paths are collected and validated before the
+// first response byte is emitted, preserving the route's fail-before-download
+// behavior for missing, empty, or unsafe roots.
+export async function createProjectArchiveStream(projectsRoot, projectId, root, metadata?) {
   const projectRoot = resolveProjectDir(projectsRoot, projectId, metadata);
   let archiveRoot = projectRoot;
   let archiveBaseName = '';
@@ -350,8 +390,7 @@ export async function buildProjectArchive(projectsRoot, projectId, root, metadat
 
   const zip = new JSZip();
   for (const entry of entries) {
-    const buf = await readFile(entry.fullPath);
-    zip.file(entry.relPath, buf, {
+    zip.file(entry.relPath, createLazyArchiveFileStream(entry.fullPath), {
       date: new Date(entry.mtime),
       binary: true,
     });
@@ -362,18 +401,28 @@ export async function buildProjectArchive(projectsRoot, projectId, root, metadat
   // project trees (HTML/CSS/JS plus a handful of assets). Level 9 buys
   // <5% on already-compressed PNGs/fonts at 2-3× CPU; level 1 produces
   // noticeably larger archives. Revisit only if profiling says so.
-  const buffer = await zip.generateAsync({
+  const stream = zip.generateNodeStream({
     type: 'nodebuffer',
+    streamFiles: true,
     compression: 'DEFLATE',
     compressionOptions: { level: 6 },
   });
-  return { buffer, baseName: archiveBaseName };
+  return { stream, baseName: archiveBaseName };
 }
 
 export async function buildBatchArchive(projectsRoot, projectId, fileNames, metadata?) {
+  const { stream, baseName } = await createBatchArchiveStream(
+    projectsRoot,
+    projectId,
+    fileNames,
+    metadata,
+  );
+  return { buffer: await collectArchiveStream(stream), baseName };
+}
+
+export async function createBatchArchiveStream(projectsRoot, projectId, fileNames, metadata?) {
   const projectRoot = resolveProjectDir(projectsRoot, projectId, metadata);
-  const zip = new JSZip();
-  let packed = 0;
+  const eligible = [];
   const rejected = [];
 
   for (const name of fileNames) {
@@ -454,12 +503,7 @@ export async function buildBatchArchive(projectsRoot, projectId, fileNames, meta
       continue;
     }
 
-    const buf = await readFile(filePath);
-    zip.file(name, buf, {
-      date: new Date(st.mtimeMs),
-      binary: true,
-    });
-    packed += 1;
+    eligible.push({ name, filePath, mtime: st.mtimeMs });
   }
 
   // Fail-fast: any rejected entry means the request is invalid — mirror the
@@ -473,18 +517,36 @@ export async function buildBatchArchive(projectsRoot, projectId, fileNames, meta
     throw err;
   }
 
-  if (packed === 0) {
+  if (eligible.length === 0) {
     const err = new Error('no files could be packed');
     err.code = 'ENOENT';
     throw err;
   }
 
-  const buffer = await zip.generateAsync({
+  const zip = new JSZip();
+  for (const entry of eligible) {
+    zip.file(entry.name, createLazyArchiveFileStream(entry.filePath), {
+      date: new Date(entry.mtime),
+      binary: true,
+    });
+  }
+  const stream = zip.generateNodeStream({
     type: 'nodebuffer',
+    streamFiles: true,
     compression: 'DEFLATE',
     compressionOptions: { level: 6 },
   });
-  return { buffer, baseName: '' };
+  return { stream, baseName: '' };
+}
+
+async function collectArchiveStream(stream) {
+  return new Promise<Buffer>((resolve, reject) => {
+    const chunks = [];
+    stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    stream.once('error', reject);
+    stream.once('end', () => resolve(Buffer.concat(chunks)));
+    stream.resume();
+  });
 }
 
 async function collectArchiveEntries(dir, relDir, out) {
@@ -506,7 +568,11 @@ async function collectArchiveEntries(dir, relDir, out) {
       continue;
     }
     if (e.name.endsWith('.artifact.json')) continue;
-    const st = await stat(full);
+    const st = await lstat(full);
+    // A directory entry can be swapped for a symlink between readdir() and
+    // metadata collection. Keep the archive allowlist fail-closed; the lazy
+    // O_NOFOLLOW open below repeats the check when bytes are actually read.
+    if (!st.isFile() || st.isSymbolicLink()) continue;
     out.push({ relPath: rel, fullPath: full, mtime: st.mtimeMs });
   }
 }

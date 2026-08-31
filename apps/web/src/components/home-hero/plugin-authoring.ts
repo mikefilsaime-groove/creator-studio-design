@@ -1,4 +1,4 @@
-import type { SkillSummary } from '@open-design/contracts';
+import type { ProjectKind, SkillSummary } from '@open-design/contracts';
 import type { PluginUseAction } from '../plugins-home/useActions';
 
 export type HomePromptHandoff =
@@ -18,6 +18,9 @@ export type HomePromptHandoff =
     source: 'plugin-use';
     action: PluginUseAction;
     inputs?: Record<string, unknown>;
+    /** Preserve the Home creation type when a template is picked elsewhere. */
+    chipId?: string;
+    projectKind?: ProjectKind;
   }
   | {
     id: number;
@@ -45,7 +48,7 @@ export const PLUGIN_AUTHORING_PROMPT_TEMPLATE = [
   '**Do NOT** suggest follow-up CLI commands such as `od plugin publish`, `od plugin publish --to open-design`, `gh repo create`, `git init` / `git remote add` / `git push`, or any other publish / repo wiring. The plugin-folder card under Design Files already exposes three buttons whose prompts drive those flows end-to-end with the right auth gates, fallbacks, and retry rules baked in:',
   '- **Add to My plugins** — already satisfied by this turn\'s `od plugin install --source` step.',
   '- **Publish repo** — creates / updates the author\'s `plugin.repo` GitHub repo through a gh + git sequence the agent is told exactly how to run.',
-  '- **Creator Studio Design PR** — opens a draft PR against `mikefilsaime-groove/creator-studio-design` for the community catalog.',
+  '- **Creator Studio Design PR** — opens a draft PR against `nexu-io/open-design` for the community catalog.',
   '',
   'Point the user at whichever button they want next; do NOT recreate those flows as freeform shell suggestions in this summary. Recreating them drifts from the button prompts\' guarantees and is the source of the bug that closed #2332.',
   '',
@@ -119,6 +122,8 @@ export function createPluginUseHandoff(
   options: {
     action?: PluginUseAction;
     inputs?: Record<string, unknown>;
+    chipId?: string;
+    projectKind?: ProjectKind;
   } = {},
 ): HomePromptHandoff {
   return {
@@ -126,6 +131,8 @@ export function createPluginUseHandoff(
     pluginId,
     action: options.action ?? 'use',
     ...(options.inputs ? { inputs: options.inputs } : {}),
+    ...(options.chipId ? { chipId: options.chipId } : {}),
+    ...(options.projectKind ? { projectKind: options.projectKind } : {}),
     focus: true,
     source: 'plugin-use',
   };

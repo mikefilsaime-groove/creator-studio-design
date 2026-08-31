@@ -77,7 +77,7 @@ describe('buildPluginFolderAgentActionPrompt', () => {
     const prompt = buildPluginFolderAgentActionPrompt(FOLDER, 'contribute');
 
     it('delegates Creator Studio Design PR creation to the deterministic plugin CLI helper', () => {
-      expect(prompt).toContain('mikefilsaime-groove/creator-studio-design');
+      expect(prompt).toContain('nexu-io/open-design');
       expect(prompt).toContain(`"$OD_NODE_BIN" "$OD_BIN" plugin open-design-pr ${FOLDER}`);
     });
 

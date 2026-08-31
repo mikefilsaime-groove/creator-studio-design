@@ -37,7 +37,7 @@ export function buildPluginFolderAgentActionPrompt(
 //     plugin-folder buttons to satisfy.
 function buildContributePrompt(folderPath: string): string {
   return [
-    'Open a draft Pull Request that adds this generated plugin to the Creator Studio Design community catalog at `mikefilsaime-groove/creator-studio-design`.',
+    'Open a draft Pull Request that adds this generated plugin to the Creator Studio Design community catalog at `nexu-io/open-design`.',
     'The goal is to end this turn with a single PR URL the user can click in their browser to review the pre-filled form and press Create.',
     '',
     `Plugin folder: \`${folderPath}\``,

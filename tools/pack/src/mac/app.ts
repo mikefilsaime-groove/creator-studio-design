@@ -4,7 +4,7 @@ import { dirname, join, relative } from "node:path";
 
 import { rebuild, type RebuildOptions } from "@electron/rebuild";
 
-import type { ToolPackConfig } from "../config.js";
+import type { ToolPackConfig } from "../config/index.js";
 import {
   MAC_DAEMON_PREBUNDLE_ESM_REQUIRE_BANNER,
   MAC_PREBUNDLE_COPIED_RUNTIME_DEPENDENCIES,
@@ -18,13 +18,13 @@ import {
   renderMacPackagedMainEntry,
   shouldInstallInternalPackageForMacPrebundle,
   shouldUseMacStandalonePrebundle,
-} from "../mac-prebundle.js";
+} from "./prebundle.js";
 import {
   prepareNodePtyRuntime,
   resolveNodePtyRuntimeArch,
 } from "../node-pty-runtime.js";
-import { copyBundledResourceTrees } from "../resources.js";
-import { electronBuilderVersionForAppVersion } from "../versions.js";
+import { copyBundledResourceTrees, packBundledDshRuntime } from "../resources/index.js";
+import { electronBuilderVersionForAppVersion } from "../versioning/index.js";
 import { runEsbuild, runNpmInstall, runPnpm } from "./commands.js";
 import {
   ELECTRON_BUILDER_BUILD_DEPENDENCIES_FROM_SOURCE,
@@ -140,6 +140,10 @@ export async function copyResourceTree(config: ToolPackConfig, paths: MacPaths):
   await mkdir(paths.resourceRoot, { recursive: true });
 
   await copyBundledResourceTrees({
+    workspaceRoot: config.workspaceRoot,
+    resourceRoot: paths.resourceRoot,
+  });
+  await packBundledDshRuntime({
     workspaceRoot: config.workspaceRoot,
     resourceRoot: paths.resourceRoot,
   });

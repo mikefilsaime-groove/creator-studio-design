@@ -8,7 +8,7 @@ const homeHeroSource = read('../../src/components/HomeHero.tsx');
 const entryNavRailSource = read('../../src/components/EntryNavRail.tsx');
 const logoSvg = read('../../public/logo.svg');
 const brandIconSvg = read('../../public/brand-icon.svg');
-// #5517: the home hero header shows the full OpenDesign logotype instead of
+// #5517: the home hero header shows the full Creator Studio Design logotype instead of
 // the small glyph + name pair; the asset must ship with the app.
 const heroLogotypeSvg = read('../../public/logo-03.svg');
 // Round 7: the static logotype is now driven by the WebGL pixel-scan wordmark

@@ -1,12 +1,19 @@
 import type {
+  TrackingRunCancelOrigin,
   TrackingRunFailureCategory,
   TrackingRunFailureDetail,
   TrackingRunFailureStage,
   TrackingRunFailureUserAction,
+  TrackingRunTerminalTrigger,
 } from '@open-design/contracts/analytics';
+import {
+  isMembershipConcurrencyLimitFailure,
+  isModelWindowLimitFailure,
+} from '@open-design/contracts';
 
 import { classifyAmrAccountFailure } from './integrations/vela-errors.js';
 import { summarizeRunToolProgress } from './run-diagnostics.js';
+import { isAcpHandshakeRpcErrorText } from './runtimes/acp-handshake-id.js';
 import { classifyAgentServiceFailure } from './runtimes/auth.js';
 import type { RunResult, RunStatusForAnalytics } from './run-result.js';
 
@@ -22,6 +29,8 @@ export interface RunFailureClassificationInput {
   };
   errorCode?: string;
   agentId?: string | null;
+  cancelOrigin?: TrackingRunCancelOrigin | null;
+  terminalTrigger?: TrackingRunTerminalTrigger | null;
   events?: RunEventForFailureClassification[];
 }
 
@@ -31,6 +40,10 @@ export interface RunFailureClassification {
   failure_stage: TrackingRunFailureStage;
   retryable: boolean;
   user_action: TrackingRunFailureUserAction;
+  /** Distinguishes an explicit user stop from lifecycle-driven cancellation. */
+  cancel_origin?: TrackingRunCancelOrigin;
+  /** Lifecycle or watchdog mechanism that forced the terminal state. */
+  terminal_trigger?: TrackingRunTerminalTrigger;
 }
 
 function normalizeCode(value: string | undefined | null): string {
@@ -99,6 +112,21 @@ function latestRetryable(
   return undefined;
 }
 
+/**
+ * Automatic retries reuse one durable run and append another `start` event.
+ * Failure telemetry must describe the terminal attempt, not stale provider,
+ * tool, or phase evidence left behind by an earlier retry attempt.
+ */
+function terminalAttemptEvents(
+  events: RunEventForFailureClassification[] | undefined,
+): RunEventForFailureClassification[] {
+  const records = events ?? [];
+  for (let i = records.length - 1; i >= 0; i -= 1) {
+    if (records[i]?.event === 'start') return records.slice(i);
+  }
+  return records;
+}
+
 function inferFailureStageFromEvents(
   events: RunEventForFailureClassification[] | undefined,
   fallback: TrackingRunFailureStage,
@@ -147,7 +175,18 @@ function collectFailureText(input: RunFailureClassificationInput): string {
 }
 
 function isHardQuotaText(text: string): boolean {
-  return /\b(session limit|usage limit|limit reached|quota|billing (?:hard )?limit|insufficient[ _-]?(?:quota|credit|credits|funds)|exceeded your current quota|out of credits|no payment method|requires more credits|can only afford)\b|DAILY_LIMIT_EXCEEDED|用户额度不足|额度不足|预扣费额度失败/i
+  // Standalone `\bquota\b` is intentionally absent: advisory phrases such as
+  // "checking quota" in the daemon's own empty-output fallback message would
+  // otherwise match, misclassifying a retryable empty_output run as a
+  // non-retryable hard quota exhaustion.  Specific exhaustion phrases are
+  // listed below instead.
+  //
+  // `quota reached` covers Antigravity's upstream log line:
+  //   RESOURCE_EXHAUSTED (code 429): Individual quota reached.
+  // `RESOURCE_EXHAUSTED` catches the same log when the phrase portion is
+  // truncated or arrives separately — it is the gRPC status code that
+  // Antigravity uses exclusively for per-model quota exhaustion.
+  return /\b(session limit|usage limit|limit reached|quota exceeded|quota reached|exceeded your current quota|billing (?:hard )?limit|insufficient[ _-]?(?:quota|credit|credits|funds)|out of credits|no payment method|requires more credits|can only afford)\b|DAILY_LIMIT_EXCEEDED|RESOURCE_EXHAUSTED|用户额度不足|额度不足|预扣费额度失败/i
     .test(text);
 }
 
@@ -258,8 +297,11 @@ function promptTooLargeDetail(text: string): TrackingRunFailureDetail | null {
   }
   // `prefill context too large` is the local-runtime (MLX) shape of the same
   // "the prompt does not fit" failure that currently leaks into execution_failed.
+  // Claude Code's terminal result uses the distinct literal `Prompt is too
+  // long`; keep it here as a fallback for persisted or legacy failures that
+  // do not carry the structured AGENT_PROMPT_TOO_LARGE code.
   if (
-    /\b(context window|context size (?:has been )?exceeded|prompt too large|request_too_large|maximum context|too many tokens|input.*too large|request (?:body )?exceeds configured limit|output token maximum|maximum output tokens|CLAUDE_CODE_MAX_OUTPUT_TOKENS|exceeds the safe size|composed prompt exceeds|prompt token count .* exceeds|maximum context length|context too large|prefill context too large|reduce the length of (?:the )?(?:messages|input prompt)|request \(\d+ tokens\) exceeds the available context size|n_keep:\s*\d+\s*>=\s*n_ctx)\b/i.test(text)
+    /\b(context window|context size (?:has been )?exceeded|prompt too large|prompt is too long|request_too_large|maximum context|too many tokens|input.*too large|request (?:body )?exceeds configured limit|output token maximum|maximum output tokens|CLAUDE_CODE_MAX_OUTPUT_TOKENS|exceeds the safe size|composed prompt exceeds|prompt token count .* exceeds|maximum context length|context too large|prefill context too large|reduce the length of (?:the )?(?:messages|input prompt)|request \(\d+ tokens\) exceeds the available context size|n_keep:\s*\d+\s*>=\s*n_ctx)\b/i.test(text)
   ) {
     return 'prompt_too_large';
   }
@@ -502,6 +544,32 @@ function isProcessCrashText(text: string): boolean {
     .test(text);
 }
 
+/**
+ * True when the failure text is an agent CLI reporting that a runtime IT
+ * manages failed to start — not a statement about the CLI's own build.
+ *
+ * vela wraps every bundled-OpenCode startup failure this way before answering
+ * `session/new` / `session/load` (`acp_runtime.go`: `start opencode server:
+ * %v`, over `opencode_process.go`'s `opencode exited before readiness`), so the
+ * text arrives inside a handshake-numbered JSON-RPC frame while describing a
+ * CHILD OF THE CLI that never came up: a port collision, an OOM kill, a
+ * half-written config, a binary the release package is missing.
+ *
+ * The distinction the classifier needs from this is which variable the user can
+ * move. An agent CLI that answered `initialize` and then refused to open a
+ * session with no reason has only its own build left to blame; a CLI that
+ * reports its managed runtime never became ready has named the moving part
+ * itself, and pointing that user at the CLI version sends them after a fix that
+ * cannot apply. These startups are also the transient half of the pair — a port
+ * race clears on the next attempt — which is the retry the refusal reading
+ * withdraws.
+ *
+ * @param text - Failure text as surfaced by the ACP session (`rpcErrorMessage`).
+ */
+function isManagedRuntimeStartupFailureText(text: string): boolean {
+  return /\bstart opencode server\b|\bopencode exited before readiness\b/i.test(text);
+}
+
 // The child binary executed an instruction this CPU does not implement — in
 // practice a Bun-compiled agent (bundled opencode) built for AVX2 running on a
 // CPU without it (Intel Atom/Celeron/Pentium N-series through 2021, and
@@ -511,10 +579,10 @@ function isProcessCrashText(text: string): boolean {
 //   machines. Unconditional — the feature line itself is the proof.
 // - Windows STATUS_ILLEGAL_INSTRUCTION (hex 0xC000001D or Go/Node's decimal
 //   exit-status rendering 3221225501), but ONLY inside vela's bundled-opencode
-//   startup wrapper text ("start opencode server" / "opencode exited before
-//   readiness"). The raw status code is a generic Windows SIGILL that any
-//   agent binary could die with for unrelated reasons; every bannerless
-//   production trace carries the vela wrapper, so the gate costs no recall.
+//   startup wrapper text (`isManagedRuntimeStartupFailureText`). The raw status
+//   code is a generic Windows SIGILL that any agent binary could die with for
+//   unrelated reasons; every bannerless production trace carries the vela
+//   wrapper, so the gate costs no recall.
 // A bare "Illegal instruction" line is deliberately NOT matched: any
 // unrelated SIGILL (a runtime bug on an AVX2-capable machine) would then be
 // mislabeled as a processor limitation and lose its retry. The same binary on
@@ -524,7 +592,7 @@ function isCpuUnsupportedCrashText(text: string): boolean {
   if (/\bno_avx2\b/i.test(text)) return true;
   return (
     /0xc000001d|\b3221225501\b/i.test(text) &&
-    /\bstart opencode server\b|\bopencode exited before readiness\b/i.test(text)
+    isManagedRuntimeStartupFailureText(text)
   );
 }
 
@@ -621,23 +689,34 @@ function classification(
   };
 }
 
-export function classifyRunFailure(
+function classifyRunFailureBase(
   input: RunFailureClassificationInput,
 ): RunFailureClassification | undefined {
   if (input.result === 'success') return undefined;
+  const events = terminalAttemptEvents(input.events);
   if (input.result === 'cancelled') {
-    return classification(
-      'user_cancel',
-      'user_cancelled',
-      inferFailureStageFromEvents(input.events, 'first_token_wait'),
-      false,
-      'none',
-    );
+    const cancelOrigin = input.cancelOrigin ?? 'unknown';
+    return {
+      // Preserve the legacy category/detail for dashboard compatibility.
+      // `cancel_origin` is the authoritative SLO eligibility signal.
+      ...classification(
+        'user_cancel',
+        'user_cancelled',
+        inferFailureStageFromEvents(events, 'first_token_wait'),
+        false,
+        'none',
+      ),
+      cancel_origin: cancelOrigin,
+      terminal_trigger: cancelOrigin,
+    };
   }
 
   const errorCode = normalizeCode(input.errorCode ?? input.status.errorCode);
-  const text = collectFailureText(input);
-  const retryableHint = latestRetryable(input.events);
+  const text = collectFailureText({ ...input, events });
+  const retryableHint = latestRetryable(events);
+  // Compute once; used both for the early empty_output guard below and for the
+  // fatal_rpc_error promotion later in this function.
+  const runtimeCloseReason = readRuntimeCloseReason(events);
   const amrFailure = classifyAmrAccountFailure(text);
   const byokOpenCodeProviderNotFound = isByokOpenCodeProviderNotFoundText(
     input.agentId,
@@ -704,7 +783,7 @@ export function classifyRunFailure(
       'model_unavailable',
       modelDetail,
       modelDetail === 'cli_version_incompatible' &&
-        wasBlockedByModelCapabilityPreflight(input.events)
+        wasBlockedByModelCapabilityPreflight(events)
         ? 'preflight'
         : 'model_select',
       false,
@@ -789,7 +868,15 @@ export function classifyRunFailure(
     );
   }
 
-  if (isAgentProtocolErrorText(text)) {
+  // A protocol failure from AFTER the handshake: a session existed, so the run
+  // may simply have hit a bad moment and the old transient treatment stands.
+  // Handshake-numbered frames (ids 1 and 2) are deliberately NOT claimed here
+  // — the wording an agent chooses for its rejection (`Internal error`,
+  // `Method not found`, `Invalid params`) is not a signal, and matching on it
+  // made the verdict depend on which layer of the CLI happened to refuse.
+  // Those fall through every cause branch below and are answered once, at
+  // `isAcpHandshakeRpcErrorText` further down.
+  if (isAgentProtocolErrorText(text) && !isAcpHandshakeRpcErrorText(text)) {
     return classification(
       'process_exit',
       processExitDetail(errorCode, text),
@@ -810,7 +897,34 @@ export function classifyRunFailure(
     );
   }
 
+  // Vela reports a full membership concurrency policy through an ACP fatal
+  // envelope. Claim the named policy limit before fatal close promotion. Even
+  // when the envelope says retryable, an immediate automatic replay only hits
+  // the same occupied slots, so leave retry to the user after the reset time.
+  if (input.agentId === 'amr' && isMembershipConcurrencyLimitFailure(text)) {
+    return classification(
+      'rate_limit',
+      'membership_concurrency_limit',
+      'session_init',
+      false,
+      'none',
+    );
+  }
+
   if (errorCode === 'RATE_LIMITED' || serviceFailure === 'RATE_LIMITED' || isHardQuotaText(text) || isRateLimitText(text)) {
+    // Checked BEFORE the hard-quota reading: vela phrases its rolling per-model
+    // window as "…usage limit…", which `isHardQuotaText` matches, so without
+    // this branch a self-resetting window is reported as an exhausted quota —
+    // non-retryable, and counted against reliability as a real failure.
+    if (isModelWindowLimitFailure(text)) {
+      return classification(
+        'rate_limit',
+        'model_window_limit',
+        'session_init',
+        true,
+        'retry',
+      );
+    }
     const hardQuota = isHardQuotaText(text);
     const workspaceCredits = isWorkspaceCreditsText(text);
     const retryable = hardQuota ? false : (retryableHint ?? true);
@@ -843,9 +957,25 @@ export function classifyRunFailure(
     return classification(
       'upstream_unavailable',
       upstreamClientError ? 'upstream_client_error' : upstreamDetail(text),
-      inferFailureStageFromEvents(input.events, 'first_token_wait'),
+      inferFailureStageFromEvents(events, 'first_token_wait'),
       retryable,
       retryable ? 'retry' : 'none',
+    );
+  }
+
+  // Prefer the structured rpc_close_reason=empty_output signal over text
+  // heuristics — but only after RATE_LIMITED, UPSTREAM_UNAVAILABLE, and other
+  // structured-code branches above have had a chance to claim the run. A child
+  // that exits cleanly after a provider rate-limit rejection may still carry
+  // rpc_close_reason=empty_output; the structured error code is the authoritative
+  // signal in that case, not the close reason.
+  if (runtimeCloseReason === 'empty_output') {
+    return classification(
+      'empty_output',
+      'empty_output',
+      inferFailureStageFromEvents(events, 'first_token_wait'),
+      retryableHint ?? true,
+      'retry',
     );
   }
 
@@ -853,7 +983,7 @@ export function classifyRunFailure(
     return classification(
       'empty_output',
       'empty_output',
-      inferFailureStageFromEvents(input.events, 'first_token_wait'),
+      inferFailureStageFromEvents(events, 'first_token_wait'),
       retryableHint ?? true,
       'retry',
     );
@@ -861,15 +991,32 @@ export function classifyRunFailure(
 
   if (isTimeoutText(text) || errorCode === 'TIMEOUT') {
     const retryable = retryableHint ?? true;
-    return classification(
-      'timeout',
-      /inactivity|stalled|hung|no new output|without emitting any new output/i.test(text)
-        ? 'inactivity_timeout'
-        : 'timeout',
-      inferFailureStageFromEvents(input.events, 'first_token_wait'),
-      retryable,
-      retryable ? 'retry' : 'none',
-    );
+    const inactivityTimeout = /inactivity|stalled|hung|no new output|without emitting any new output/i.test(text);
+    // `attachAcpSession`'s stage watchdog fails the turn with
+    // `ACP <stage> timed out after <n>ms` and then kills the child, so the run
+    // surfaces the child's exit code instead of a stall code. Without this
+    // trigger the terminal reads as a bare AGENT_EXIT_130 — indistinguishable
+    // from a user interrupt, which is how the 2026-07-28 AMR stall got
+    // attributed to the wrong watchdog and the wrong 15-minute window.
+    const acpStageTimeout = /\bACP\b[^\n]*timed out after \d+\s*ms/i.test(text);
+    const terminalTrigger: TrackingRunTerminalTrigger | undefined =
+      /without emitting a first output/i.test(text)
+        ? 'first_output_deadline'
+        : inactivityTimeout
+          ? 'inactivity_watchdog'
+          : acpStageTimeout
+            ? 'acp_stage_timeout'
+            : undefined;
+    return {
+      ...classification(
+        'timeout',
+        inactivityTimeout ? 'inactivity_timeout' : 'timeout',
+        inferFailureStageFromEvents(events, 'first_token_wait'),
+        retryable,
+        retryable ? 'retry' : 'none',
+      ),
+      ...(terminalTrigger ? { terminal_trigger: terminalTrigger } : {}),
+    };
   }
 
   if (isToolErrorText(text)) {
@@ -914,9 +1061,52 @@ export function classifyRunFailure(
     return classification(
       'process_exit',
       'cpu_unsupported',
-      inferFailureStageFromEvents(input.events, 'session_init'),
+      inferFailureStageFromEvents(events, 'session_init'),
       false,
       'none',
+    );
+  }
+
+  // Last word on an ACP handshake rejection, and deliberately the last: every
+  // branch above has already had its chance to name a cause, so reaching here
+  // means the agent CLI answered `initialize`, refused `session/new` /
+  // `session/load`, and gave no reason the daemon recognises. Its build is then
+  // the only variable left — file it at `session_init`, which is the stage the
+  // retry policy refuses to re-run, and point the user at the CLI rather than
+  // at the model or the stream.
+  //
+  // Placing this AFTER the cause branches is what makes the precedence a fact
+  // rather than a promise: a signed-out CLI is filed under auth, a throttled
+  // one under rate_limit, an over-long prompt under prompt_too_large, and only
+  // an unexplained refusal reaches this line. `isAcpCliSessionRefusalText` is
+  // this same reading, exposed so the ACP payload rewrite prescribes exactly
+  // what the telemetry records.
+  //
+  // The deferrals are not about wording. Both are texts where the handshake
+  // frame is the ENVELOPE rather than the evidence — something other than the
+  // agent CLI's own build failed, and the CLI merely carried the report:
+  //
+  // - An OS-level crash banner (a Bun panic, a Windows
+  //   STATUS_ILLEGAL_INSTRUCTION from the bundled opencode) describes a child
+  //   that DIED; `signalInterruptClassification` below owns that reading, the
+  //   same reason `isCpuUnsupportedCrashText` is checked above.
+  // - A managed runtime that never became ready describes a child that never
+  //   STARTED. AMR is the population this reaches — vela reports its bundled
+  //   OpenCode's startup failures from inside `session/new` — and a startup
+  //   race is exactly the shape the fatal_rpc_error path below recovers by
+  //   retrying. Filing it here would tell that user to replace a healthy CLI
+  //   and take the recovery away at the same time.
+  if (
+    isAcpHandshakeRpcErrorText(text)
+    && !isProcessCrashText(text)
+    && !isManagedRuntimeStartupFailureText(text)
+  ) {
+    return classification(
+      'process_exit',
+      'agent_protocol_error',
+      'session_init',
+      false,
+      'install_cli',
     );
   }
 
@@ -926,7 +1116,6 @@ export function classifyRunFailure(
   // had a chance to claim auth, quota, upstream, prompt-size, and other known
   // failures. Unlike stream_error, fatal_rpc_error may have no structured SSE
   // error code at all, so it must also refine signal/unknown/exit fallbacks.
-  const runtimeCloseReason = readRuntimeCloseReason(input.events);
   if (
     runtimeCloseReason === 'fatal_rpc_error' &&
     (
@@ -940,7 +1129,7 @@ export function classifyRunFailure(
     return classification(
       'process_exit',
       'fatal_rpc_error',
-      inferFailureStageFromEvents(input.events, 'child_close'),
+      inferFailureStageFromEvents(events, 'child_close'),
       retryable,
       retryable ? 'retry' : 'none',
     );
@@ -955,7 +1144,7 @@ export function classifyRunFailure(
     errorCode === 'AGENT_EXECUTION_FAILED'
   ) {
     const baseDetail = processExitDetail(errorCode, text);
-    const refinedDetail = baseDetail === 'execution_failed' ? executionFailedDetail(input.events) : baseDetail;
+    const refinedDetail = baseDetail === 'execution_failed' ? executionFailedDetail(events) : baseDetail;
     const defaultRetryable =
       refinedDetail === 'stream_error' ||
       refinedDetail === 'fatal_rpc_error';
@@ -964,7 +1153,7 @@ export function classifyRunFailure(
       // Only the generic AGENT_EXECUTION_FAILED catch-all is refined; the
       // specific exit_code / terminated_unknown labels already carry meaning.
       refinedDetail,
-      inferFailureStageFromEvents(input.events, 'child_close'),
+      inferFailureStageFromEvents(events, 'child_close'),
       retryableHint ?? defaultRetryable,
       (retryableHint ?? defaultRetryable) ? 'retry' : 'none',
     );
@@ -977,4 +1166,48 @@ export function classifyRunFailure(
     retryableHint ?? false,
     retryableHint ? 'retry' : 'none',
   );
+}
+
+/**
+ * The error code the text-only probe below classifies under: the generic
+ * "the agent failed and said this" code, so the verdict is decided by the text
+ * and nothing else.
+ */
+const TEXT_ONLY_PROBE_ERROR_CODE = 'AGENT_EXECUTION_FAILED';
+
+/**
+ * True when this failure text reads as an ACP handshake rejection the agent CLI
+ * gave no reason for — the one shape "this CLI build cannot start a session;
+ * change it, then retry" actually answers, because the build is the only
+ * variable left.
+ *
+ * Answered by running the classifier itself rather than by a second signature
+ * list, so the prescription the user reads and the bucket the run is filed
+ * under are the same decision. A handshake failure that names a cause the
+ * classifier recognises — signed out, throttled, out of balance, upstream down,
+ * prompt too long — is claimed by that cause's branch and reported false here,
+ * so the user is sent after the fix that actually applies.
+ *
+ * @param text - Failure text as surfaced by the ACP session (`rpcErrorMessage`).
+ */
+export function isAcpCliSessionRefusalText(text: string | null | undefined): boolean {
+  if (typeof text !== 'string' || !isAcpHandshakeRpcErrorText(text)) return false;
+  const failure = classifyRunFailureBase({
+    result: 'failed',
+    status: { status: 'failed', error: text },
+    errorCode: TEXT_ONLY_PROBE_ERROR_CODE,
+  });
+  return failure?.failure_detail === 'agent_protocol_error'
+    && failure.failure_stage === 'session_init';
+}
+
+export function classifyRunFailure(
+  input: RunFailureClassificationInput,
+): RunFailureClassification | undefined {
+  const failure = classifyRunFailureBase(input);
+  if (!failure || !input.terminalTrigger) return failure;
+  return {
+    ...failure,
+    terminal_trigger: input.terminalTrigger,
+  };
 }

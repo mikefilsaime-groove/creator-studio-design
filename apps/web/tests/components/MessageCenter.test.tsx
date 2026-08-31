@@ -64,6 +64,82 @@ afterEach(() => {
 });
 
 describe('MessageCenter', () => {
+  const targetedAnnouncement = (): MessageCenterMessage => ({
+    id: 'go-plan-sunset-message',
+    messageKey: 'go-plan-sunset-2026-08',
+    audienceType: 'targeted',
+    typeName: 'Account notice',
+    title: 'Go Plan update',
+    body: 'Account-specific details',
+    ctaLabel: null,
+    ctaUrl: null,
+    publishedAt: '2026-08-26T00:00:00.000Z',
+    readAt: null,
+  });
+
+  it('shows and acknowledges the preset dialog for the logged-in allowlisted message', async () => {
+    mockFetch({ loggedIn: true, messages: [targetedAnnouncement()] });
+    const onPendingChange = vi.fn();
+    render(
+      <I18nProvider initial="zh-CN">
+        <MessageCenter
+          priorityAnnouncementActive
+          onPriorityAnnouncementPendingChange={onPendingChange}
+        />
+      </I18nProvider>,
+    );
+
+    expect(await screen.findByRole('alertdialog')).toBeTruthy();
+    expect(screen.getByText('关于停售 Go 订阅的公告')).toBeTruthy();
+    await waitFor(() => expect(onPendingChange).toHaveBeenCalledWith(true));
+
+    fireEvent.click(screen.getByRole('button', { name: '我知道了' }));
+
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([url, init]) => (
+      String(url).includes('/go-plan-sunset-message/read') && init?.method === 'POST'
+    ))).toBe(true));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(onPendingChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('keeps the strong dialog open and reports a failed required acknowledgement', async () => {
+    mockFetch({
+      loggedIn: true,
+      messages: [targetedAnnouncement()],
+      onRead: async () => new Response(null, { status: 500 }),
+    });
+    render(
+      <I18nProvider initial="zh-CN">
+        <MessageCenter priorityAnnouncementActive />
+      </I18nProvider>,
+    );
+
+    expect(await screen.findByRole('alertdialog')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '我知道了' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('确认失败，请重试。');
+    expect(screen.getByRole('alertdialog')).toBeTruthy();
+  });
+
+  it('never promotes the allowlisted message for an anonymous client', async () => {
+    mockFetch({ loggedIn: false, messages: [targetedAnnouncement()] });
+    const onPendingChange = vi.fn();
+    render(
+      <I18nProvider initial="zh-CN">
+        <MessageCenter
+          priorityAnnouncementActive
+          onPriorityAnnouncementPendingChange={onPendingChange}
+        />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([url]) => (
+      String(url).includes('/message-center-public/messages?')
+    ))).toBe(true));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(onPendingChange).not.toHaveBeenCalledWith(true);
+  });
+
   it('formats published dates using the selected locale', async () => {
     const publishedAt = new Date(defaultMessages[0]!.publishedAt);
     const zhDate = new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium' }).format(publishedAt);
@@ -87,6 +163,23 @@ describe('MessageCenter', () => {
     expect(String(anonymousPull?.[0])).not.toContain('startedAt=');
   });
 
+  it('falls back to the public feed when the AMR runtime is unavailable', async () => {
+    mockFetch({
+      onStatus: async () => Response.json({ error: 'amr-runtime-unavailable' }, { status: 503 }),
+    });
+
+    renderMessageCenter();
+    const dialog = await openCenter();
+
+    expect(within(dialog).getByText('Creator Studio Design 0.14 is available')).toBeTruthy();
+    expect(
+      vi.mocked(fetch).mock.calls.some(([url]) =>
+        String(url).includes('/api/integrations/vela/message-center-public/messages?'),
+      ),
+    ).toBe(true);
+    expect(screen.queryByText('Check failed. Please retry.')).toBeNull();
+  });
+
   it('keeps anonymous read state locally and restores it', async () => {
     renderMessageCenter();
     await openCenter();
@@ -103,21 +196,32 @@ describe('MessageCenter', () => {
     await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([url, init]) => String(url).includes('/release/read') && init?.method === 'POST')).toBe(true));
   });
 
-  it('filters messages and marks all read', async () => {
+  it('shows read and unread messages in one flat list without filter or bulk actions', async () => {
     renderMessageCenter();
-    await openCenter();
-    fireEvent.click(screen.getByRole('button', { name: 'Unread' }));
-    expect(screen.getByText('Creator Studio Design 0.14 is available')).toBeTruthy();
-    expect(screen.queryByText('Credits added')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Mark all read' }));
-    await waitFor(() => expect(screen.getByText('All caught up')).toBeTruthy());
+    const dialog = await openCenter();
+
+    expect(within(dialog).queryByRole('button', { name: 'All' })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: 'Unread' })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: 'Read' })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: 'Mark all read' })).toBeNull();
+    expect(within(dialog).getByText('Creator Studio Design 0.14 is available')).toBeTruthy();
+    expect(within(dialog).getByText('Credits added')).toBeTruthy();
   });
 
-  it('opens CTA URLs with the existing external-link behavior', async () => {
+  it('expands the whole message row and opens its CTA', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderMessageCenter();
     await openCenter();
-    fireEvent.click(screen.getByRole('button', { name: /Creator Studio Design 0\.14 is available/ }));
+    const row = screen.getByRole('button', { name: /Creator Studio Design 0\.14 is available/ });
+
+    expect(row).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: 'View update' })).toBeNull();
+
+    fireEvent.click(row);
+
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    expect(row.closest('article')?.className).toContain('itemExpanded');
+    expect(screen.getByText('The new release is ready.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'View update' }));
     expect(open).toHaveBeenCalledWith('https://open-design.ai/update', '_blank', 'noopener,noreferrer');
   });
@@ -364,7 +468,7 @@ describe('MessageCenter', () => {
       expect(localStorage.getItem('open-design.message-center.anonymous-read-ids.v1')).toContain('release'),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mark all read' }));
+    fireEvent.click(screen.getByRole('button', { name: /Security notice/ }));
     await waitFor(() =>
       expect(localStorage.getItem('open-design.message-center.anonymous-read-ids.v1')).toContain('security'),
     );
@@ -465,6 +569,17 @@ describe('MessageCenter', () => {
     const trigger = screen.getByTestId('message-center-trigger');
     await openCenter();
     fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByTestId('message-center-dialog')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('shows a close button and restores trigger focus when it is clicked', async () => {
+    renderMessageCenter();
+    const trigger = screen.getByTestId('message-center-trigger');
+    const dialog = await openCenter();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close message center' }));
+
     expect(screen.queryByTestId('message-center-dialog')).toBeNull();
     expect(document.activeElement).toBe(trigger);
   });

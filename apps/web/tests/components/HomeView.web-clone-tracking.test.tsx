@@ -132,9 +132,10 @@ describe('web-clone example-card tracking', () => {
   });
 
   // Contract lock: the shipped Website-clone example set is intentionally
-  // narrowed to one neutral reference site. Assert the exact count + domain so the rail can't silently
+  // narrowed to the first-party Creator Studio Design site to avoid shipping third-party
+  // brand copies. Assert the exact count + domain so the rail can't silently
   // drift back to the old multi-site set without updating this contract.
-  it('resolves exactly the contracted Website-clone reference card', async () => {
+  it('resolves exactly the contracted Creator Studio Design Website-clone site card', async () => {
     writeHomeGuideStage('done');
     stubPlugins();
     renderHome();
@@ -149,7 +150,7 @@ describe('web-clone example-card tracking', () => {
     ).toBe(true);
   });
 
-  it('renders the contracted reference card with an eager favicon', async () => {
+  it('renders the contracted Creator Studio Design site card with a local eager logo', async () => {
     writeHomeGuideStage('done');
     stubPlugins();
     renderHome();
@@ -164,7 +165,7 @@ describe('web-clone example-card tracking', () => {
     expect(logo?.getAttribute('fetchpriority')).toBe('high');
   });
 
-  it('falls back to a monogram when the reference favicon cannot load', async () => {
+  it('falls back when the local Creator Studio Design site card logo cannot load', async () => {
     writeHomeGuideStage('done');
     stubPlugins();
     renderHome();

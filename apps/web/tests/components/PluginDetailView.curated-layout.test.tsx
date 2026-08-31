@@ -184,7 +184,7 @@ describe('PluginDetailView curated installed-extension layout', () => {
 
     const skills = screen.getByRole('region', { name: /knowledge skills/i });
     expect(within(skills).getByText('skills/source-review/SKILL.md')).toBeTruthy();
-    expect(screen.getByText('@OpenDesign')).toBeTruthy();
+    expect(screen.getByText('@Creator Studio Design')).toBeTruthy();
     expect(screen.getByText('Creator Studio Design official')).toBeTruthy();
 
     const advanced = screen.getByTestId('plugin-meta-advanced');
@@ -249,7 +249,7 @@ describe('PluginDetailView curated installed-extension layout', () => {
     expect(screen.getByRole('region', { name: /数据连接/ })).toBeTruthy();
     expect(screen.getByRole('region', { name: /知识技能/ })).toBeTruthy();
     expect(screen.getByText('Creator Studio Design 官方')).toBeTruthy();
-    expect(screen.getByText('@OpenDesign')).toBeTruthy();
+    expect(screen.getByText('@Creator Studio Design')).toBeTruthy();
   });
 
   it('renders a safe paragraph from the repository humanize-ppt knowledge skill', async () => {

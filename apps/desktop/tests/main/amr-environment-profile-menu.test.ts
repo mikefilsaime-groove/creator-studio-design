@@ -7,19 +7,23 @@ import {
   normalizeAmrEnvironmentProfile,
   resolveDesktopApplicationName,
   resolveAboutPanelVersion,
+  resolveFirstAvailableBaseUrl,
 } from "../../src/main/index.js";
 
 describe("AMR Environment Profile desktop menu helpers", () => {
-  it("replaces Electron's development application name with the public product name", () => {
-    const names: string[] = [];
-    const electronApp = { setName: (name: string) => names.push(name) };
+  it("falls through a busy discovery source to the direct daemon URL", async () => {
+    await expect(resolveFirstAvailableBaseUrl([
+      async () => null,
+      async () => "http://127.0.0.1:17456",
+      async () => "http://127.0.0.1:17573",
+    ])).resolves.toBe("http://127.0.0.1:17456");
+  });
 
-    expect(applyDesktopApplicationName(electronApp)).toBe("Creator Studio Design");
-    expect(applyDesktopApplicationName(electronApp, "Creator Studio Design Beta")).toBe(
-      "Creator Studio Design Beta",
-    );
-    expect(names).toEqual(["Creator Studio Design", "Creator Studio Design Beta"]);
-    expect(resolveDesktopApplicationName("  ")).toBe("Creator Studio Design");
+  it("continues after a discovery source throws", async () => {
+    await expect(resolveFirstAvailableBaseUrl([
+      async () => { throw new Error("sidecar busy"); },
+      async () => "http://127.0.0.1:17456",
+    ])).resolves.toBe("http://127.0.0.1:17456");
   });
 
   it("normalizes missing or invalid profile values to prod", () => {

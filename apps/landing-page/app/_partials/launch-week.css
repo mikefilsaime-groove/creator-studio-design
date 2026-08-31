@@ -25,7 +25,7 @@
 }
 
 /* ============================================================
-   Open Design Launch Week — mockup v1
+   OpenDesign Launch Week — mockup v1
    Direction C: pinned campaign cabin (left) + scrolling drops rail (right)
    Desktop-first. Assets referenced from ../assets/.
    ============================================================ */
@@ -39,7 +39,7 @@
   --olive: #6b6b1f;
 
   /* Four locked colour layers — never cross these:
-     acid  = Open Design / LIVE / CTA / selection / decisive action
+     acid  = OpenDesign / LIVE / CTA / selection / decisive action
      red   = KILL, verdicts, danger
      ink   = CLASSIFIED, withheld
      day-* = chapter identity ONLY (paint strokes, day numeral, hairline rules).
@@ -304,7 +304,7 @@ html:has(main.lw) {
   clip-path: var(--torn-marker);
   transform: rotate(-.6deg);
 }
-/* selection marquee — Open Design's own canvas UI, borrowed as house furniture.
+/* selection marquee — OpenDesign's own canvas UI, borrowed as house furniture.
    Also the layer that makes this read as a product page, not a printed poster. */
 .lw .hero-brand { position: relative; width: fit-content; max-width: 100%; margin: 0 auto;
 }
@@ -1118,6 +1118,10 @@ html:has(main.lw) {
 
 /* ---------- narrow screens ---------- */
 @media (max-width: 900px) {
+  /* A fixed-height hero clips whatever doesn't fit. On a phone the content is
+     the thing that must win, so let the section grow past one screen instead. */
+  .lw .hero { height: auto; min-height: calc(100svh - var(--lw-header, 85px)); }
+
   /* Five day-labels cannot share one row on a phone; they stack and the tape
      marks today the same way it does on desktop. */
   .lw .killticker {
@@ -1186,4 +1190,42 @@ html:has(main.lw) {
   .lw .hero-note { padding-left: 0; border-left: 0; border-top: 1.5px solid rgba(7,7,7,.22); padding-top: 14px; }
   .lw .join-heading { flex-direction: column; align-items: flex-start; gap: 14px; }
   .lw .join-deck { text-align: left; }
+}
+
+/* ── Community CTA: brand marks + the reason to click ────────────────
+   Joey read the two buttons as easy to skim past — they were set in the
+   same mono as everything else around them. The marks give each one a
+   shape the eye catches before it reads, and the line underneath answers
+   the question the buttons never did: why join at all.
+   Marks are laid out on the text baseline and sized to cap height so they
+   read as part of the label rather than as decoration beside it. */
+.lw .button .btn-mark {
+  height: 1.18em;
+  width: auto;
+  vertical-align: -0.2em;
+  margin-right: 0.5em;
+  /* Discord blurple fights the acid fill at full strength; a hair of
+     desaturation settles it without going grey. */
+  filter: saturate(0.92);
+}
+
+.lw .hero-ctas .cta-note {
+  flex-basis: 100%;
+  margin: 0.85rem 0 0;
+  font-family: var(--utility);
+  font-size: 0.75rem;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, var(--ink) 62%, transparent);
+}
+
+@media (max-width: 900px) {
+  /* The stack turns the row into a column, and a 100% basis there means full
+     HEIGHT — the note wraps into a second column beside the buttons and off
+     the screen. On a phone it is simply the next item down. */
+  .lw .hero-ctas .cta-note {
+    flex-basis: auto;
+    text-align: center;
+    font-size: 0.72rem;
+    margin-top: 0.7rem;
+  }
 }

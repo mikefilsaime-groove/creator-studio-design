@@ -164,7 +164,7 @@ describe('od message-center CLI', () => {
       method: 'GET',
       url: '/api/integrations/vela/message-center/messages?locale=en-US&filter=unread&limit=50',
     });
-    expect(result.stdout).toContain('release\tunread\tProduct update\t2026-07-16T12:00:00.000Z\tCreator Studio Design 0.14 is available');
+    expect(result.stdout).toContain('release\tunread\tProduct update\t2026-07-16T12:00:00.000Z\tOpenDesign 0.14 is available');
     expect(result.stdout).toContain('unreadCount\t1');
   });
 

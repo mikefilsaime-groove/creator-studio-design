@@ -1,4 +1,8 @@
-export type CountedReleaseChannel = "beta" | "betas" | "prerelease" | "preview";
+export const EXACT_RELEASE_NAME_PATTERN = /^[a-z0-9]{1,12}$/;
+export const RESERVED_RELEASE_NAMES = Object.freeze(["local"] as const);
+
+/** Counted lanes are prerelease or a data-defined exact release name. */
+export type CountedReleaseChannel = string;
 export type ReleaseChannel = CountedReleaseChannel | "stable";
 export type ReleasePlatform = "mac" | "macIntel" | "win" | "linux";
 
@@ -38,9 +42,7 @@ export type ReleaseInstallIdentity = {
 
 export const RELEASE_CHANNELS = Object.freeze({
   BETA: "beta",
-  BETAS: "betas",
   PRERELEASE: "prerelease",
-  PREVIEW: "preview",
   STABLE: "stable",
 } as const);
 
@@ -63,31 +65,7 @@ export const PRODUCT_IDENTITY = Object.freeze({
 const PRODUCT_NAME = PRODUCT_IDENTITY.name;
 const DEFAULT_NAMESPACE = PRODUCT_IDENTITY.slug;
 
-const descriptors: Record<ReleaseChannel, ReleaseChannelDescriptor> = {
-  beta: {
-    appId: `${PRODUCT_IDENTITY.appId}.beta`,
-    baseVersionField: "baseVersion",
-    channel: "beta",
-    displayLabel: "Beta",
-    githubReleaseEnabled: false,
-    internal: true,
-    productName: `${PRODUCT_NAME} Beta`,
-    counterField: "releaseNumber",
-    releaseVersionField: "releaseVersion",
-    storagePrefix: "beta",
-  },
-  betas: {
-    appId: `${PRODUCT_IDENTITY.appId}.betas`,
-    baseVersionField: "baseVersion",
-    channel: "betas",
-    counterField: "releaseNumber",
-    displayLabel: "Betas",
-    githubReleaseEnabled: false,
-    internal: true,
-    productName: `${PRODUCT_NAME} Betas`,
-    releaseVersionField: "releaseVersion",
-    storagePrefix: "betas",
-  },
+const descriptors: Record<"prerelease" | "stable", ReleaseChannelDescriptor> = {
   prerelease: {
     appId: `${PRODUCT_IDENTITY.appId}.prerelease`,
     baseVersionField: "baseVersion",
@@ -99,18 +77,6 @@ const descriptors: Record<ReleaseChannel, ReleaseChannelDescriptor> = {
     productName: `${PRODUCT_NAME} Prerelease`,
     releaseVersionField: "releaseVersion",
     storagePrefix: "prerelease",
-  },
-  preview: {
-    appId: `${PRODUCT_IDENTITY.appId}.preview`,
-    baseVersionField: "baseVersion",
-    channel: "preview",
-    counterField: "releaseNumber",
-    displayLabel: "Preview",
-    githubReleaseEnabled: false,
-    internal: false,
-    productName: `${PRODUCT_NAME} Preview`,
-    releaseVersionField: "releaseVersion",
-    storagePrefix: "preview",
   },
   stable: {
     appId: PRODUCT_IDENTITY.appId,
@@ -127,32 +93,46 @@ const descriptors: Record<ReleaseChannel, ReleaseChannelDescriptor> = {
 };
 
 export function isReleaseChannel(value: unknown): value is ReleaseChannel {
-  return typeof value === "string" && value in descriptors;
+  return typeof value === "string"
+    && value !== "local"
+    && (value === "stable" || value === "prerelease" || EXACT_RELEASE_NAME_PATTERN.test(value));
 }
 
 export function releaseChannelDescriptor(channel: string): ReleaseChannelDescriptor {
   if (!isReleaseChannel(channel)) {
-    throw new Error(`RELEASE_CHANNEL must be beta, betas, prerelease, preview, or stable; got ${channel}`);
+    throw new Error(`RELEASE_CHANNEL must be stable, prerelease, or a non-reserved exact name matching [a-z0-9]{1,12}; got ${channel}`);
   }
-  return descriptors[channel];
+  if (channel === "stable" || channel === "prerelease") return descriptors[channel];
+  const displayLabel = channel[0]!.toUpperCase() + channel.slice(1);
+  return {
+    appId: `${PRODUCT_IDENTITY.appId}.${channel}`,
+    baseVersionField: "baseVersion",
+    channel,
+    counterField: "releaseNumber",
+    displayLabel,
+    githubReleaseEnabled: false,
+    internal: true,
+    productName: `${PRODUCT_NAME} ${displayLabel}`,
+    releaseVersionField: "releaseVersion",
+    storagePrefix: channel,
+  };
 }
 
 export function releaseChannelFromVersion(version: string | null | undefined): ReleaseChannel | null {
   if (version == null || version.length === 0) return null;
+  const match = /^\d+\.\d+\.\d+-([a-z0-9]{1,12})\.\d+$/.exec(version);
+  if (isReleaseChannel(match?.[1])) return match[1];
+  // Development builds such as `beta-internal.N` are not public exact
+  // versions, but they still inherit the corresponding updater feed.
   if (/(?:^|[-.])beta(?:[-.]|$)/i.test(version)) return "beta";
-  if (/(?:^|[-.])betas(?:[-.]|$)/i.test(version)) return "betas";
-  if (/(?:^|[-.])preview(?:[-.]|$)/i.test(version)) return "preview";
   if (/(?:^|[-.])prerelease(?:[-.]|$)/i.test(version)) return "prerelease";
   return null;
 }
 
 export function releaseChannelFromNamespace(namespace: string, defaultNamespace: string = DEFAULT_NAMESPACE): ReleaseChannel | null {
   if (namespace === defaultNamespace || isReleaseChannelNamespace(namespace, "stable")) return "stable";
-  if (isReleaseChannelNamespace(namespace, "beta")) return "beta";
-  if (isReleaseChannelNamespace(namespace, "betas")) return "betas";
-  if (isReleaseChannelNamespace(namespace, "prerelease")) return "prerelease";
-  if (isReleaseChannelNamespace(namespace, "preview")) return "preview";
-  return null;
+  const match = /^release-([a-z0-9]{1,12})(?:$|[-_.])/.exec(namespace);
+  return isReleaseChannel(match?.[1]) ? match[1] : null;
 }
 
 export function isReleaseChannelNamespace(namespace: string, channel: ReleaseChannel): boolean {
@@ -227,7 +207,7 @@ export function releaseMetadataVersionFields(channel: ReleaseChannel, releaseVer
   const descriptor = releaseChannelDescriptor(channel);
   const parsed = parseReleaseVersion(releaseVersion, channel);
   const baseVersion = parsed.baseVersion;
-  if (parsed.channel === "stable") {
+  if (!("number" in parsed)) {
     return {
       [descriptor.baseVersionField]: baseVersion,
       releaseVersion,

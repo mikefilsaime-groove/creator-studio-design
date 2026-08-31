@@ -307,9 +307,16 @@ describe('GET /api/integrations/vela/wallet', () => {
 
   it('fetches the AMR wallet balance with the local control key and caches it briefly', async () => {
     const walletApi = await startWalletApi((req, res) => {
-      expect(req.url).toBe('/api/v1/wallet/balance');
       expect(req.headers.authorization).toBe('Bearer ck-wallet-balance');
       res.setHeader('content-type', 'application/json');
+      if (req.url === '/api/v1/billing/coding-plan-models') {
+        res.end(JSON.stringify({
+          membershipTier: 'go',
+          models: ['deepseek-v4-flash', 'glm-5.2'],
+        }));
+        return;
+      }
+      expect(req.url).toBe('/api/v1/wallet/balance');
       res.end(JSON.stringify({
         balanceUsd: '0.1000',
         updatedAt: '2026-06-23T06:05:18.782Z',
@@ -327,6 +334,7 @@ describe('GET /api/integrations/vela/wallet', () => {
         source: string;
         status: string;
         user: { email?: string } | null;
+        codingPlanModels?: string[] | null;
       }>(`${baseUrl}/api/integrations/vela/wallet`);
       const second = await getJson<{ balanceUsd: string | null; source: string }>(
         `${baseUrl}/api/integrations/vela/wallet`,
@@ -337,9 +345,13 @@ describe('GET /api/integrations/vela/wallet', () => {
       expect(first.body.balanceUsd).toBe('0.1000');
       expect(first.body.source).toBe('vela_api');
       expect(first.body.user?.email).toBe('wallet@example.com');
+      expect(first.body.codingPlanModels).toEqual(['deepseek-v4-flash', 'glm-5.2']);
       expect(second.body.balanceUsd).toBe('0.1000');
       expect(second.body.source).toBe('daemon_cache');
-      expect(walletApi.requests).toEqual(['Bearer ck-wallet-balance']);
+      expect(walletApi.requests).toEqual([
+        'Bearer ck-wallet-balance',
+        'Bearer ck-wallet-balance',
+      ]);
       expect(JSON.stringify(first.body)).not.toContain('ck-wallet-balance');
       expect(JSON.stringify(first.body)).not.toContain('rt-wallet-balance');
     } finally {
@@ -538,11 +550,15 @@ describe('GET /api/integrations/vela/wallet', () => {
   });
 
   it('does not serve a cached wallet balance after the control key is rejected', async () => {
-    let requestCount = 0;
-    const walletApi = await startWalletApi((_req, res) => {
-      requestCount += 1;
+    let walletRequestCount = 0;
+    const walletApi = await startWalletApi((req, res) => {
       res.setHeader('content-type', 'application/json');
-      if (requestCount === 1) {
+      if (req.url === '/api/v1/billing/coding-plan-models') {
+        res.end(JSON.stringify({ membershipTier: 'free', models: [] }));
+        return;
+      }
+      walletRequestCount += 1;
+      if (walletRequestCount === 1) {
         res.end(JSON.stringify({
           balanceUsd: '0.1000',
           updatedAt: '2026-06-23T06:05:18.782Z',
@@ -630,7 +646,10 @@ describe('GET /api/integrations/vela/wallet', () => {
       expect(body.source).toBe('unavailable');
       expect(body.error?.code).toBe('network');
       expect(body.error?.message).toMatch(/temporarily unavailable/i);
-      expect(walletApi.requests).toEqual(['Bearer ck-stalled-wallet']);
+      expect(walletApi.requests).toEqual([
+        'Bearer ck-stalled-wallet',
+        'Bearer ck-stalled-wallet',
+      ]);
     } finally {
       await walletApi.close();
     }
@@ -638,6 +657,60 @@ describe('GET /api/integrations/vela/wallet', () => {
 });
 
 describe('GET /api/integrations/vela/status', () => {
+  it('reports AMR runtime unavailable instead of signed out when the vela binary cannot be resolved', async () => {
+    const previousPath = process.env.PATH;
+    const previousAgentHome = process.env.OD_AGENT_HOME;
+    const previousResourceRoot = process.env.OD_RESOURCE_ROOT;
+    const previousVelaBin = process.env.VELA_BIN;
+    const previousVelaOpenCodeBin = process.env.VELA_OPENCODE_BIN;
+    process.env.PATH = '';
+    process.env.OD_AGENT_HOME = tmpHome;
+    delete process.env.OD_RESOURCE_ROOT;
+    delete process.env.VELA_BIN;
+    delete process.env.VELA_OPENCODE_BIN;
+
+    const isolatedApp = express();
+    isolatedApp.use(express.json());
+    registerVelaRoutes(isolatedApp, {
+      paths: { RUNTIME_DATA_DIR: tmpHome },
+      appConfig: {
+        readAppConfig: async () => ({ agentCliEnv: {} }),
+      },
+      http: {},
+      env: {
+        HOME: tmpHome,
+        OPEN_DESIGN_AMR_PROFILE: 'local',
+        PATH: '',
+      },
+    });
+    const isolatedServer = createServer(isolatedApp);
+    await new Promise<void>((resolve) => isolatedServer.listen(0, '127.0.0.1', resolve));
+    const isolatedAddress = isolatedServer.address() as AddressInfo;
+    const isolatedUrl = `http://127.0.0.1:${isolatedAddress.port}`;
+
+    try {
+      const { status, body } = await getJson<{ error?: string; loggedIn?: boolean }>(
+        `${isolatedUrl}/api/integrations/vela/status`,
+      );
+
+      expect(status).toBe(503);
+      expect(body.error).toBe('amr-runtime-unavailable');
+      expect(body.loggedIn).toBeUndefined();
+    } finally {
+      await new Promise<void>((resolve) => isolatedServer.close(() => resolve()));
+      if (previousPath === undefined) delete process.env.PATH;
+      else process.env.PATH = previousPath;
+      if (previousAgentHome === undefined) delete process.env.OD_AGENT_HOME;
+      else process.env.OD_AGENT_HOME = previousAgentHome;
+      if (previousResourceRoot === undefined) delete process.env.OD_RESOURCE_ROOT;
+      else process.env.OD_RESOURCE_ROOT = previousResourceRoot;
+      if (previousVelaBin === undefined) delete process.env.VELA_BIN;
+      else process.env.VELA_BIN = previousVelaBin;
+      if (previousVelaOpenCodeBin === undefined) delete process.env.VELA_OPENCODE_BIN;
+      else process.env.VELA_OPENCODE_BIN = previousVelaOpenCodeBin;
+    }
+  });
+
   it('reports loggedIn=false when ~/.amr/config.json is absent', async () => {
     const { status, body } = await getJson<{
       loggedIn: boolean;
@@ -3261,6 +3334,7 @@ describe('parseAmrEntryAnalyticsPayload — entry sources added in this PR', () 
     const cases: Array<[string, string]> = [
       ['settings_amr_upgrade', 'settings'],
       ['inline_amr_upgrade', 'chat_panel'],
+      ['go_plan_sunset_modal', 'home'],
       ['deepseek_unpaid_modal', 'home'],
       ['deepseek_workbench_badge', 'home'],
       ['deepseek_model_switcher_upgrade', 'chat_panel'],
@@ -3289,6 +3363,36 @@ describe('parseAmrEntryAnalyticsPayload — entry sources added in this PR', () 
     expect(parsed).toMatchObject({
       campaignId: 'deepseek_v4_flash',
       conversionSource: 'deepseek_workbench_badge',
+    });
+  });
+
+  // The ingest allowlist is fail-closed: an unrecognised campaign id voids the
+  // WHOLE entry, not just its campaign field. So a live campaign missing from
+  // the set loses every attributed entry it produces — and the campaign's own
+  // success metrics (活动归因付费人数 / 金额) are defined as payments carrying
+  // its `campaign_id`, which means the campaign would report zero while
+  // converting normally.
+  it('accepts the current campaign id, not only the finished one', () => {
+    const parsed = parseAmrEntryAnalyticsPayload({
+      ...payloadFor('deepseek_workbench_badge', 'home'),
+      campaignId: 'deepseek_v4_pro',
+      conversionSource: 'deepseek_workbench_badge',
+    });
+    expect(parsed).toMatchObject({
+      campaignId: 'deepseek_v4_pro',
+      conversionSource: 'deepseek_workbench_badge',
+    });
+  });
+
+  it('accepts the targeted Go Plan sunset campaign dimensions', () => {
+    const parsed = parseAmrEntryAnalyticsPayload({
+      ...payloadFor('go_plan_sunset_modal', 'home'),
+      campaignId: 'go_plan_sunset_202608',
+      conversionSource: 'go_plan_sunset_modal',
+    });
+    expect(parsed).toMatchObject({
+      campaignId: 'go_plan_sunset_202608',
+      conversionSource: 'go_plan_sunset_modal',
     });
   });
 

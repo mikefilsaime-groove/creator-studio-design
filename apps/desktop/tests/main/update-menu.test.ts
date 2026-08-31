@@ -78,7 +78,7 @@ describe("macOS update menu", () => {
       labels: DEFAULT_DESKTOP_UPDATE_MENU_LABELS,
       platform: "darwin",
       status: status("downloaded", {
-        artifact: { type: "dmg", url: "https://example.test/OpenDesign.dmg" },
+        artifact: { type: "dmg", url: "https://example.test/Creator Studio Design.dmg" },
       }),
     })).toMatchObject({ label: "Install Update…", enabled: true, action: "open-dialog" });
     expect(deriveDesktopUpdateMenuItem({

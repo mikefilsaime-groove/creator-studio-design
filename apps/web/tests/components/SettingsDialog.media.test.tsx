@@ -31,17 +31,6 @@ describe.skip('SettingsDialog media providers (not shipped in Creator Studio Des
     );
   });
 
-  it('shows Codex Subscription without API key fields', () => {
-    renderDialog({
-      ...DEFAULT_CONFIG,
-      mediaProviders: {},
-    });
-
-    expect(screen.getByText('Codex Subscription')).toBeTruthy();
-    expect(screen.queryByLabelText('Codex Subscription API key')).toBeNull();
-    expect(screen.queryByLabelText('Codex Subscription Base URL')).toBeNull();
-  });
-
   it('shows daemon fallback notice and reloads media providers from daemon', async () => {
     const reloadMock = vi.fn(async () => ({
       openai: {
