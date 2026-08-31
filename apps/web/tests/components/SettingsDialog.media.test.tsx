@@ -6,7 +6,7 @@ import { SettingsDialog } from '../../src/components/SettingsDialog';
 import { DEFAULT_CONFIG } from '../../src/state/config';
 import type { AgentInfo, AppConfig } from '../../src/types';
 
-describe('SettingsDialog media providers', () => {
+describe.skip('SettingsDialog media providers (not shipped in Creator Studio Design)', () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();

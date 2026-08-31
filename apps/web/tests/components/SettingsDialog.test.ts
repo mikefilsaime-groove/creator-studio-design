@@ -161,10 +161,10 @@ describe('SettingsDialog about update control', () => {
           incoming: {
             arch: 'arm64',
             artifact: {
-              name: 'Open Design Beta.dmg',
+              name: 'Creator Studio Design Beta.dmg',
               platformKey: 'macAppleSilicon',
               type: 'dmg',
-              url: 'https://fixture.test/Open Design Beta.dmg',
+              url: 'https://fixture.test/Creator Studio Design Beta.dmg',
             },
             channel: 'beta',
             progress: {
@@ -194,13 +194,13 @@ describe('SettingsDialog about update control', () => {
       deriveUpdaterModel(
         updateStatus({
           artifact: {
-            name: 'Open Design Beta.dmg',
+            name: 'Creator Studio Design Beta.dmg',
             platformKey: 'macAppleSilicon',
             type: 'dmg',
-            url: 'https://fixture.test/Open Design Beta.dmg',
+            url: 'https://fixture.test/Creator Studio Design Beta.dmg',
           },
           availableVersion: '1.2.3-beta.4',
-          downloadPath: '/tmp/Open Design Beta.dmg',
+          downloadPath: '/tmp/Creator Studio Design Beta.dmg',
           state: 'downloaded',
         }),
         { hostAvailable: true },
@@ -254,17 +254,17 @@ describe('SettingsDialog about update control', () => {
       deriveUpdaterModel(
         updateStatus({
           artifact: {
-            name: 'Open Design Beta.dmg',
+            name: 'Creator Studio Design Beta.dmg',
             platformKey: 'macAppleSilicon',
             type: 'dmg',
-            url: 'https://fixture.test/Open Design Beta.dmg',
+            url: 'https://fixture.test/Creator Studio Design Beta.dmg',
           },
           availableVersion: '1.2.3-beta.4',
-          downloadPath: '/tmp/Open Design Beta.dmg',
+          downloadPath: '/tmp/Creator Studio Design Beta.dmg',
           installResult: {
             dryRun: true,
             openedAt: '2026-05-19T00:00:00.000Z',
-            path: '/tmp/Open Design Beta.dmg',
+            path: '/tmp/Creator Studio Design Beta.dmg',
           },
           state: 'downloaded',
         }),
@@ -308,7 +308,7 @@ describe('SettingsDialog about update control', () => {
       deriveUpdaterModel(
         updateStatus({
           availableVersion: '1.2.3-beta.4',
-          downloadPath: '/tmp/Open Design Beta.dmg',
+          downloadPath: '/tmp/Creator Studio Design Beta.dmg',
           state: 'error',
         }),
         { hostAvailable: true },

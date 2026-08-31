@@ -1591,7 +1591,13 @@ export function EntryShell({
   const homeExecutionSwitcher = (
     <InlineModelSwitcher
       compact
-      config={config}
+      config={{
+        ...config,
+        agentId: agents.some((agent) => agent.id === config.agentId)
+          ? config.agentId
+          : agents.find((agent) => agent.available)?.id ?? agents[0]?.id ?? 'codex',
+        mode: 'daemon',
+      }}
       agents={agents}
       providerModelsCache={activeProviderModelsCache}
       onProviderModelsCacheChange={activeSetProviderModelsCache}
@@ -2044,6 +2050,123 @@ export function EntryShell({
 
 function OnboardingView({
   config,
+  agents,
+  agentsLoading = false,
+  daemonLive,
+  onModeChange,
+  onAgentChange,
+  onConfigPersist,
+  onRefreshAgents,
+  onFinish,
+}: Parameters<typeof LegacyOnboardingView>[0]) {
+  const [refreshing, setRefreshing] = useState(false);
+  const supportedAgents = agents.filter((agent) => agent.id === 'claude' || agent.id === 'codex');
+  const availableAgents = supportedAgents.filter((agent) => agent.available);
+  const configuredAgent = availableAgents.find((agent) => agent.id === config.agentId);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(
+    configuredAgent?.id ?? availableAgents[0]?.id ?? '',
+  );
+
+  useEffect(() => {
+    if (availableAgents.some((agent) => agent.id === selectedAgentId)) return;
+    setSelectedAgentId(availableAgents[0]?.id ?? '');
+  }, [agents, selectedAgentId]);
+
+  const refreshAgents = async () => {
+    setRefreshing(true);
+    try {
+      const nextAgents = await onRefreshAgents();
+      const nextSupported = nextAgents.filter(
+        (agent) => (agent.id === 'claude' || agent.id === 'codex') && agent.available,
+      );
+      if (!nextSupported.some((agent) => agent.id === selectedAgentId)) {
+        setSelectedAgentId(nextSupported[0]?.id ?? '');
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const finish = async () => {
+    if (!selectedAgentId) return;
+    const nextConfig: AppConfig = {
+      ...config,
+      agentId: selectedAgentId,
+      mode: 'daemon',
+    };
+    onModeChange('daemon');
+    onAgentChange(selectedAgentId);
+    await onConfigPersist(nextConfig);
+    onFinish();
+  };
+
+  return (
+    <section className="onboarding-view onboarding-view--cloud" aria-label="Creator Studio Design setup">
+      <div className={`onboarding-cloud__pane ${onboardingSourceStyles.pane}`}>
+        <div className={`onboarding-cloud__center ${onboardingSourceStyles.center}`}>
+          <img src="/app-icon.png" alt="" width={72} height={72} />
+          <h1 className="onboarding-cloud__title">Creator Studio Design</h1>
+          <p className="onboarding-cloud__body">
+            Connect Claude Code or Codex using the subscription already signed in on this computer.
+          </p>
+          <div className={onboardingSourceStyles.options} role="radiogroup" aria-label="Coding agent">
+            {supportedAgents.map((agent) => {
+              const selected = agent.id === selectedAgentId;
+              return (
+                <Button
+                  key={agent.id}
+                  variant="subtle"
+                  role="radio"
+                  aria-checked={selected}
+                  disabled={!agent.available}
+                  className={`${onboardingSourceStyles.option} ${
+                    selected ? onboardingSourceStyles.optionActive : ''
+                  }`}
+                  onClick={() => setSelectedAgentId(agent.id)}
+                >
+                  <span className={onboardingSourceStyles.optionIcon}>
+                    <AgentIcon id={agent.id} size={24} />
+                  </span>
+                  <span className={onboardingSourceStyles.optionCopy}>
+                    <strong className={onboardingSourceStyles.optionTitle}>{agent.name}</strong>
+                    <span className={onboardingSourceStyles.optionBody}>
+                      {agent.available ? 'Ready to use' : 'Install and sign in, then rescan'}
+                    </span>
+                  </span>
+                  <span className={onboardingSourceStyles.radio} aria-hidden="true" />
+                </Button>
+              );
+            })}
+          </div>
+          {!agentsLoading && supportedAgents.length === 0 ? (
+            <p className="onboarding-cloud__error" role="alert">
+              Claude Code and Codex were not detected. Install one of them, sign in, and rescan.
+            </p>
+          ) : null}
+          <div className="onboarding-view__actions">
+            <Button variant="subtle" onClick={() => void refreshAgents()} disabled={refreshing || agentsLoading}>
+              <Icon name="reload" size={15} />
+              {refreshing || agentsLoading ? 'Scanning…' : 'Rescan'}
+            </Button>
+            <Button onClick={() => void finish()} disabled={!daemonLive || !selectedAgentId}>
+              Continue
+            </Button>
+          </div>
+        </div>
+        <footer className="onboarding-cloud__footer">
+          <LanguageMenu placement="up" align="start" />
+          <span>© {new Date().getFullYear()} Creator Studio Design</span>
+        </footer>
+      </div>
+      <div className="onboarding-cloud__art" aria-hidden="true">
+        <img src="/app-icon.png" alt="" />
+      </div>
+    </section>
+  );
+}
+
+function LegacyOnboardingView({
+  config,
   providerModelsCache: sharedProviderModelsCache,
   onProviderModelsCacheChange,
   agents,
@@ -2380,8 +2503,6 @@ function OnboardingView({
     onFinish();
   }, [
     agentsLoading,
-    amrSignedIn,
-    amrStatusResolved,
     config.agentId,
     config.mode,
     config.onboardingCompleted,
@@ -3406,6 +3527,15 @@ function OnboardingView({
                       : t('settings.onboardingCloudSignIn')}
               </span>
             </button>
+            {!cloudBusy ? (
+              <button
+                type="button"
+                className="onboarding-cloud__cancel"
+                onClick={() => setStep(1)}
+              >
+                {t('settings.onboardingContinue')}
+              </button>
+            ) : null}
             {amrLoginError ? (
               <span className="onboarding-cloud__error" role="alert">
                 {amrLoginError}

@@ -35,7 +35,6 @@ import { openFirstPartyMailto } from "./mailto-open.js";
 import { openValidatedDirectory } from "./open-path.js";
 import { exportArtifact as exportArtifactFromHtml } from "./artifact-export.js";
 import { createElectronPdfTarget, exportPdfFromHtml, savePrintReadyDocumentAsPdf } from "./pdf-export.js";
-import { SPLASH_VIDEO_DATA_URL } from "./splash-video.js";
 import { RendererCrashLoopBreaker } from "./renderer-crash-loop.js";
 import type { PrintReadyPdfOptions } from "./pdf-export.js";
 import type { DesktopUpdater } from "./updater.js";
@@ -45,7 +44,6 @@ import {
   parseUpdateActionRequest,
   updateRestartSafetyError,
 } from "./update-preflight.js";
-
 const execFileAsync = promisify(execFile);
 const PREVIEW_NAVIGATION_FAILURE_IPC_CHANNEL = "od:preview-navigation-failed";
 const ABORTED_NAVIGATION_ERROR_CODE = -3;
@@ -926,13 +924,13 @@ const MAC_WINDOW_CHROME_CSS = `
   }
 `;
 
-// Light-background startup splash shown while the web runtime boots. It plays
-// the brand intro clip once and then holds on its final settled logo frame until
-// the main window is ready. The clip is embedded as a base64 data URL so it
-// renders identically in dev and in packaged builds (see `splash-video.ts`).
+// Light-background startup splash shown while the web runtime boots. The same
+// Scale logo used by the packaged app icon is loaded from the bundled branding
+// resources, so the splash, Dock, taskbar, and installer never drift apart.
 function createPendingHtml(): string {
   const start = splashStagePayload("starting");
   const initialPct = Math.max(0, Math.min(100, Math.round((start.step / start.total) * 100)));
+  const logoDataUrl = splashLogoDataUrl();
   return `data:text/html;charset=utf-8,${encodeURIComponent(`<!doctype html>
 <html>
   <head>
@@ -951,12 +949,24 @@ function createPendingHtml(): string {
         display: flex;
         justify-content: center;
       }
-      video {
-        background: #f2f4f5;
-        height: auto;
-        max-height: 100%;
-        max-width: 100%;
-        width: auto;
+      .splash-brand {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        transform: translateY(-34px);
+      }
+      .splash-logo {
+        height: 176px;
+        object-fit: contain;
+        width: 176px;
+      }
+      .splash-name {
+        color: #211f42;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
       }
       .boot-stage {
         bottom: 56px;
@@ -1010,14 +1020,10 @@ function createPendingHtml(): string {
     </style>
   </head>
   <body>
-    <video
-      id="splash"
-      autoplay
-      muted
-      playsinline
-      disablepictureinpicture
-      src="${SPLASH_VIDEO_DATA_URL}"
-    ></video>
+    <div class="splash-brand">
+      <img class="splash-logo" src="${logoDataUrl}" alt="" />
+      <div class="splash-name">Creator Studio Design</div>
+    </div>
     <div class="boot-progress" aria-hidden="true">
       <div class="boot-progress-fill" id="boot-progress-fill" data-pct="${initialPct}" style="width: ${initialPct}%;"></div>
     </div>
@@ -1025,17 +1031,6 @@ function createPendingHtml(): string {
       <span class="boot-stage-step" id="boot-stage-step">${start.step}/${start.total}</span><span id="boot-stage-text">${start.label}</span><span class="boot-dots" aria-hidden="true"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></span>
     </div>
     <script>
-      (function () {
-        var video = document.getElementById("splash");
-        if (!video) return;
-        var play = function () {
-          var attempt = video.play();
-          if (attempt && typeof attempt.catch === "function") attempt.catch(function () {});
-        };
-        video.addEventListener("loadedmetadata", function () { video.currentTime = 0; });
-        video.addEventListener("loadeddata", play);
-        play();
-      })();
       // Accepts the structured { step, total, label } payload (and tolerates a
       // bare label string for back-compat). The step counter + progress bar give
       // a slow cold boot a sense of how far along it is; the bar only ever grows
@@ -1091,8 +1086,8 @@ interface RendererCrashScreenContext {
   exitCode: number | null;
 }
 
-const CRASH_REPORT_ISSUES_URL = "https://github.com/nexu-io/open-design/issues/new";
-const SUPPORT_EMAIL = "support@open-design.ai";
+const CRASH_REPORT_ISSUES_URL = "https://github.com/mikefilsaime-groove/creator-studio-design/issues/new";
+const SUPPORT_EMAIL = "support@clickcampaigns.ai";
 // Every address the app is allowed to hand to the OS mail client. Keep this in
 // sync with the renderer's own contact affordances (`CONTACT_EMAIL_URL` in
 // `apps/web/src/components/EntryNavRail.tsx`); an address that is not listed
@@ -1102,8 +1097,8 @@ const FIRST_PARTY_EMAILS = new Set([SUPPORT_EMAIL, "contact@open.design"]);
 // Narrow allowlist for the crash screen's "Email us" action: only a mailto
 // addressed to our own support address, carrying nothing but the crash-screen's
 // own `subject`/`body`, opens. Validating just protocol+pathname is not enough —
-// `mailto:support@open-design.ai?bcc=attacker@example.com` (or `?to=`/`?cc=`)
-// keeps `pathname === "support@open-design.ai"` yet smuggles extra recipients
+// `mailto:support@clickcampaigns.ai?bcc=attacker@example.com` (or `?to=`/`?cc=`)
+// keeps `pathname === "support@clickcampaigns.ai"` yet smuggles extra recipients
 // and headers through to `shell.openExternal`. Because this predicate widens the
 // renderer-exposed `shell:open-external` bridge past http, a compromised
 // renderer could otherwise launch the mail client with arbitrary recipients, so
@@ -1556,7 +1551,15 @@ export function createSplashWindow(): SplashWindowHandle {
 }
 
 function resolveDesktopIconPath(): string {
+  if (app.isPackaged) {
+    return join(process.resourcesPath, "open-design", "branding", "app-icon.png");
+  }
   return resolve(dirname(fileURLToPath(import.meta.url)), "../../../web/public/app-icon.png");
+}
+
+function splashLogoDataUrl(): string {
+  const icon = nativeImage.createFromPath(resolveDesktopIconPath());
+  return icon.isEmpty() ? "" : icon.toDataURL();
 }
 
 function applyDockIcon(): void {

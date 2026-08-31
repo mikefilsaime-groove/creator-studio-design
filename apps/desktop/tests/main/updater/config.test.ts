@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { DESKTOP_UPDATE_CHANNELS, SIDECAR_SOURCES } from "@open-design/sidecar-proto";
+import { PRODUCT_IDENTITY } from "@open-design/release";
 import { describe, expect, it } from "vitest";
 
 import { DESKTOP_UPDATE_ENV, resolveDesktopUpdaterConfig } from "../../../src/main/updater/config.js";
@@ -25,7 +26,7 @@ describe("desktop updater config", () => {
       });
 
       expect(config.channel).toBe(DESKTOP_UPDATE_CHANNELS.BETA);
-      expect(config.metadataUrl).toContain("/beta/latest/metadata.json");
+      expect(config.metadataUrl).toBe(PRODUCT_IDENTITY.updateMetadataUrl);
     } finally {
       rmSync(root, { force: true, recursive: true });
     }
@@ -63,7 +64,7 @@ describe("desktop updater config", () => {
       });
 
       expect(config.channel).toBe(DESKTOP_UPDATE_CHANNELS.PRERELEASE);
-      expect(config.metadataUrl).toContain("/prerelease/latest/metadata.json");
+      expect(config.metadataUrl).toBe(PRODUCT_IDENTITY.updateMetadataUrl);
     } finally {
       rmSync(root, { force: true, recursive: true });
     }

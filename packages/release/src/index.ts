@@ -53,12 +53,21 @@ export const RELEASE_PLATFORM_NAMESPACE_SUFFIXES = Object.freeze({
   win: "win",
 } as const satisfies Record<ReleasePlatform, string>);
 
-const PRODUCT_NAME = "Open Design";
-const DEFAULT_NAMESPACE = "open-design";
+export const PRODUCT_IDENTITY = Object.freeze({
+  appId: "gg.creatorstudio.design",
+  githubRepository: "mikefilsaime-groove/creator-studio-design",
+  name: "Creator Studio Design",
+  slug: "creator-studio-design",
+  updateMetadataUrl:
+    "https://github.com/mikefilsaime-groove/creator-studio-design/releases/latest/download/metadata.json",
+} as const);
+
+const PRODUCT_NAME = PRODUCT_IDENTITY.name;
+const DEFAULT_NAMESPACE = PRODUCT_IDENTITY.slug;
 
 const descriptors: Record<"prerelease" | "stable", ReleaseChannelDescriptor> = {
   prerelease: {
-    appId: "io.open-design.desktop.prerelease",
+    appId: `${PRODUCT_IDENTITY.appId}.prerelease`,
     baseVersionField: "baseVersion",
     channel: "prerelease",
     counterField: "releaseNumber",
@@ -70,7 +79,7 @@ const descriptors: Record<"prerelease" | "stable", ReleaseChannelDescriptor> = {
     storagePrefix: "prerelease",
   },
   stable: {
-    appId: "io.open-design.desktop",
+    appId: PRODUCT_IDENTITY.appId,
     baseVersionField: "baseVersion",
     channel: "stable",
     counterField: null,
@@ -120,7 +129,7 @@ export function releaseChannelFromVersion(version: string | null | undefined): R
   return null;
 }
 
-export function releaseChannelFromNamespace(namespace: string, defaultNamespace = DEFAULT_NAMESPACE): ReleaseChannel | null {
+export function releaseChannelFromNamespace(namespace: string, defaultNamespace: string = DEFAULT_NAMESPACE): ReleaseChannel | null {
   if (namespace === defaultNamespace || isReleaseChannelNamespace(namespace, "stable")) return "stable";
   const match = /^release-([a-z0-9]{1,12})(?:$|[-_.])/.exec(namespace);
   return isReleaseChannel(match?.[1]) ? match[1] : null;

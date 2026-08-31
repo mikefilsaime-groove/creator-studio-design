@@ -30,7 +30,7 @@ import styles from './WhatsNewPopup.module.css';
 // (see ./UpdaterPopup.tsx) — this surface must never claim to install anything.
 
 // Fallback for the CTA when the highlight document omits an explicit link.
-const RELEASES_INDEX_URL = 'https://github.com/nexu-io/open-design/releases';
+const RELEASES_INDEX_URL = 'https://github.com/mikefilsaime-groove/creator-studio-design/releases';
 
 /**
  * The version this dialog is allowed to state, or null when nothing real can

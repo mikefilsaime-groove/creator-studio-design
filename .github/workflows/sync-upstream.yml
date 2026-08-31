@@ -1,0 +1,38 @@
+name: Sync upstream Creator Studio Design base
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: creator-studio-design-upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Merge the newest upstream base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/nexu-io/open-design.git
+          git fetch upstream main
+          branch="upstream-sync/${GITHUB_RUN_ID}"
+          git switch -c "$branch"
+          git merge --no-edit upstream/main
+          git push --set-upstream origin "$branch"
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "chore: sync the latest upstream base" \
+            --body "Automated upstream merge for review. Creator Studio branding, authentication, runtime restrictions, and release identity remain protected by fork-specific tests."

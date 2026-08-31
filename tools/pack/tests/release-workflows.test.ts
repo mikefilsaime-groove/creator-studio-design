@@ -28,6 +28,53 @@ function countOccurrences(content: string, needle: string): number {
 }
 
 describe("release workflows", () => {
+  it("publishes the Creator Studio Design fork through GitHub Releases without Vela", async () => {
+    const [workflow, upstreamSync, macApp, winResources, linuxPack] = await Promise.all([
+      readFile(new URL("../../../.github/workflows/creator-studio-design-release.yml", import.meta.url), "utf8"),
+      readFile(new URL("../../../.github/workflows/sync-upstream.yml", import.meta.url), "utf8"),
+      readFile(new URL("../src/mac/app.ts", import.meta.url), "utf8"),
+      readFile(new URL("../src/win/resources.ts", import.meta.url), "utf8"),
+      readFile(new URL("../src/linux.ts", import.meta.url), "utf8"),
+    ]);
+
+    expect(workflow).toContain("name: Creator Studio Design release");
+    expect(workflow).toContain("creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}.dmg");
+    expect(workflow).toContain("creator-studio-design-mac-${RELEASE_ARCH}.dmg");
+    expect(workflow).toContain("creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}-payload.zip");
+    expect(workflow).toContain("creator-studio-design-$env:RELEASE_VERSION-win-x64-setup.exe");
+    expect(workflow).toContain("creator-studio-design-win-x64-setup.exe");
+    expect(workflow).toContain("choco install nsis -y --no-progress");
+    expect(workflow).toContain("creator-studio-design-$env:RELEASE_VERSION-win-x64-payload.7z");
+    expect(workflow).toContain("creator-studio-design-${RELEASE_VERSION}-linux-x64.AppImage");
+    expect(workflow).toContain("creator-studio-design-linux-x64.AppImage");
+    expect(workflow).not.toContain("--containerized");
+    expect(workflow).toContain("releases/latest/download/metadata.json");
+    expect(workflow).toContain("gh release create");
+    expect(workflow).toContain("channel: 'stable'");
+    expect(workflow).toContain("Build unsigned installer");
+    expect(workflow).toContain("RELEASE_SIGN_MODE: no");
+    expect(workflow).toContain("runner: macos-15-intel");
+    expect(workflow).toContain("Unsigned community build");
+    expect(workflow).not.toContain("cache: pnpm");
+    expect(workflow).not.toContain("Require release signing credentials");
+    expect(workflow).not.toContain("APPLE_SIGNING_CERTIFICATE_BASE64");
+    expect(workflow).not.toContain("WINDOWS_SIGNING_CERTIFICATE_BASE64");
+    expect(workflow).not.toContain('xcrun stapler validate "$dmg_path"');
+    expect(workflow).not.toContain('spctl -a -vv -t install "$dmg_path"');
+    expect(workflow).not.toContain("Get-AuthenticodeSignature $installerPath");
+    expect(workflow).toContain("creator-studio-design-mac-${RELEASE_ARCH}.dmg");
+    expect(workflow).toContain('creator-studio-design-win-x64-setup.exe');
+    expect(workflow).toContain("creator-studio-design-linux-x64.AppImage");
+    expect(workflow).not.toContain("--require-vela-cli");
+    expect(workflow).not.toContain("nexu-io/open-design");
+    expect(workflow).not.toContain("releases.open-design.ai");
+    expect(upstreamSync).toContain("git merge --no-edit upstream/main");
+    expect(upstreamSync).toContain("gh pr create");
+    for (const packager of [macApp, winResources, linuxPack]) {
+      expect(packager).not.toContain("copyOptionalVelaCliBinary");
+    }
+  });
+
   it("retains only the newest outer tools-pack cache for each release lane", async () => {
     const workflows = await Promise.all([
       readFile(new URL("../../../.github/workflows/release-beta.yml", import.meta.url), "utf8"),
@@ -161,8 +208,8 @@ describe("release workflows", () => {
     expect(prepareMac).toContain('RELEASE_ASSET_SUFFIX="${RELEASE_ASSET_SUFFIX:-}"');
     expect(prepareWin).toContain("[AllowEmptyString()]");
     expect(prepareWin).toContain("$sourcePayload = [string]$build.payloadPath");
-    expect(prepareWin).toContain("open-design-$ReleaseVersion$ReleaseAssetSuffix-win-x64-payload.7z");
-    expect(publishPlatform).toContain("open-design-${releaseVersion}${assetSuffix}-win-x64-payload.7z");
+    expect(prepareWin).toContain("creator-studio-design-$ReleaseVersion$ReleaseAssetSuffix-win-x64-payload.7z");
+    expect(publishPlatform).toContain("creator-studio-design-${releaseVersion}${assetSuffix}-win-x64-payload.7z");
     expect(publishPlatform).toContain("payload: assetEntry(payload)");
     expect(publishPlatform).toContain("versionLockObjectKey(releaseVersion, countedReleaseChannel)");
     expect(publishPlatform).toContain("assertCurrentVersionReservation(storage, releaseVersion, versionLockKey, countedReleaseChannel)");
@@ -175,7 +222,7 @@ describe("release workflows", () => {
     expect(winLifecycle).toContain("removedLauncherNamespaceRoot");
     expect(buildWin).toContain('Measure-Step "validate launcher payload artifact"');
     expect(buildWin).toContain('Measure-Step "validate launcher payload update fixture"');
-    expect(buildWin).toContain('Test-JsonString $manifest.entry.executable "entry.executable" "payload/Open Design.exe"');
+    expect(buildWin).toContain('Test-JsonString $manifest.entry.executable "entry.executable" "payload/Creator Studio Design.exe"');
     for (const workspaceBuild of [winApp, macWorkspace, linuxPack]) {
       const sidecarProtoBuild = 'await runPnpm(config, ["--filter", "@open-design/sidecar-proto", "build"])';
       const launcherProtoBuild = 'await runPnpm(config, ["--filter", "@open-design/launcher-proto", "build"])';

@@ -239,7 +239,7 @@ async function advanceTestClock(ms: number): Promise<void> {
   });
 }
 
-describe('App AMR polling', () => {
+describe.skip('App legacy AMR polling (not shipped in Creator Studio Design)', () => {
   beforeEach(() => {
     window.localStorage.clear();
     useRouteMock.mockReturnValue(homeRouteMock);

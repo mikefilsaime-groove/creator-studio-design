@@ -63,7 +63,7 @@ import {
   validatePluginWorkflowId,
 } from './mcp-observability.js';
 
-const SERVER_NAME = 'open-design';
+const SERVER_NAME = 'creator-studio-design';
 const SERVER_VERSION = '0.2.0';
 const DEFAULT_MCP_STDIO_IDLE_EXIT_MS = 30 * 60 * 1000;
 const MAX_MCP_STDIO_IDLE_EXIT_MS = 24 * 60 * 60 * 1000;

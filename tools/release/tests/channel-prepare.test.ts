@@ -206,8 +206,8 @@ function stablePrereleaseMetadata(publicOrigin: string, baseVersion: string): Re
       mac: {
         arch: "arm64",
         artifacts: {
-          dmg: artifact("Open Design.dmg"),
-          zip: artifact("Open Design-mac-arm64.zip"),
+          dmg: artifact("Creator Studio Design.dmg"),
+          zip: artifact("Creator Studio Design-mac-arm64.zip"),
         },
         enabled: true,
         signed: true,
@@ -215,8 +215,8 @@ function stablePrereleaseMetadata(publicOrigin: string, baseVersion: string): Re
       macIntel: {
         arch: "x64",
         artifacts: {
-          dmg: artifact("Open Design Intel.dmg"),
-          zip: artifact("Open Design-mac-x64.zip"),
+          dmg: artifact("Creator Studio Design Intel.dmg"),
+          zip: artifact("Creator Studio Design-mac-x64.zip"),
         },
         enabled: true,
         signed: true,
@@ -224,7 +224,7 @@ function stablePrereleaseMetadata(publicOrigin: string, baseVersion: string): Re
       win: {
         arch: "x64",
         artifacts: {
-          installer: artifact("Open Design Setup.exe"),
+          installer: artifact("Creator Studio Design Setup.exe"),
         },
         enabled: true,
       },

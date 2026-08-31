@@ -520,7 +520,7 @@ describe('DesignSystemCreationFlow', () => {
 
     render(<DesignSystemCreationFlow onBack={() => {}} onCreated={onCreated} />);
 
-    addSourceUrl('git@github.com:nexu-io/open-design.git');
+    addSourceUrl('git@github.com:mikefilsaime-groove/creator-studio-design.git');
     continueToGeneration();
     confirmExtraction();
 
@@ -531,8 +531,8 @@ describe('DesignSystemCreationFlow', () => {
     expect(requestInit).toBeTruthy();
     const body = JSON.parse(requestInit!.body) as { url?: string; designMd?: string };
     expect(body.url).toBeUndefined();
-    expect(body.designMd).toEqual(expect.stringContaining('https://github.com/nexu-io/open-design'));
-    expect(body.designMd).toEqual(expect.stringContaining('GitHub repositories: https://github.com/nexu-io/open-design'));
+    expect(body.designMd).toEqual(expect.stringContaining('https://github.com/mikefilsaime-groove/creator-studio-design'));
+    expect(body.designMd).toEqual(expect.stringContaining('GitHub repositories: https://github.com/mikefilsaime-groove/creator-studio-design'));
   });
 
   it('keeps protocol-less website paths as website URLs', async () => {
@@ -2170,7 +2170,7 @@ describe('DesignSystemCreationFlow', () => {
     expect(screen.getByText('Coming soon')).toBeTruthy();
     expect(screen.getByText('Not configured')).toBeTruthy();
 
-    fireEvent.change(input, { target: { value: 'https://github.com/nexu-io/open-design/' } });
+    fireEvent.change(input, { target: { value: 'https://github.com/mikefilsaime-groove/creator-studio-design/' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     expect(screen.getByText('nexu-io/open-design')).toBeTruthy();
@@ -2279,7 +2279,7 @@ describe('DesignSystemCreationFlow', () => {
       const input = screen.getByPlaceholderText('https://example.com or https://github.com/owner/repo') as HTMLInputElement;
       expect(input.disabled).toBe(false);
 
-      fireEvent.change(input, { target: { value: 'https://github.com/nexu-io/open-design/' } });
+      fireEvent.change(input, { target: { value: 'https://github.com/mikefilsaime-groove/creator-studio-design/' } });
       fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
       expect(screen.getByText('nexu-io/open-design')).toBeTruthy();
@@ -2419,7 +2419,7 @@ describe('DesignSystemCreationFlow', () => {
     fireEvent.change(screen.getByPlaceholderText(/Mission Impastabowl/i), {
       target: { value: 'GitHub: product workspace' },
     });
-    addSourceUrl('https://github.com/nexu-io/open-design');
+    addSourceUrl('https://github.com/mikefilsaime-groove/creator-studio-design');
     continueToGeneration();
     confirmExtraction();
 
@@ -2434,7 +2434,7 @@ describe('DesignSystemCreationFlow', () => {
     expect(mocks.writeProjectTextFile).toHaveBeenCalledWith(
       project.id,
       'context/source-context.md',
-      expect.stringContaining('https://github.com/nexu-io/open-design'),
+      expect.stringContaining('https://github.com/mikefilsaime-groove/creator-studio-design'),
       undefined,
       null,
     );
@@ -2448,7 +2448,7 @@ describe('DesignSystemCreationFlow', () => {
     expect(mocks.writeProjectTextFile).toHaveBeenCalledWith(
       project.id,
       'context/source-context.md',
-      expect.stringContaining('"$OD_NODE_BIN" "$OD_BIN" tools connectors github-design-context --repo \'https://github.com/nexu-io/open-design\' --output context/github/nexu-io-open-design.md'),
+      expect.stringContaining('"$OD_NODE_BIN" "$OD_BIN" tools connectors github-design-context --repo \'https://github.com/mikefilsaime-groove/creator-studio-design\' --output context/github/mikefilsaime-groove-creator-studio-design.md'),
       undefined,
       null,
     );
@@ -2600,7 +2600,7 @@ describe('DesignSystemCreationFlow', () => {
     fireEvent.change(screen.getByPlaceholderText(/Mission Impastabowl/i), {
       target: { value: 'GitHub: product workspace' },
     });
-    addSourceUrl('https://github.com/nexu-io/open-design');
+    addSourceUrl('https://github.com/mikefilsaime-groove/creator-studio-design');
     continueToGeneration();
     confirmExtraction();
 

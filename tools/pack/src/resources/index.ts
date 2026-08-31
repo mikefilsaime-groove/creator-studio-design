@@ -91,6 +91,9 @@ export async function copyBundledResourceTrees({
       recursive: true,
     });
   }
+  const brandingRoot = join(resourceRoot, "branding");
+  await mkdir(brandingRoot, { recursive: true });
+  await cp(macResources.iconPng, join(brandingRoot, "app-icon.png"));
 }
 
 export const DSH_RUNTIME_RESOURCE_DIRECTORY = join("agent-runtimes", "deepseek-harness");

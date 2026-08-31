@@ -1,10 +1,11 @@
 import {
+  PRODUCT_IDENTITY,
   releaseChannelFromNamespace,
   releaseChannelFromVersion,
   releaseInstallIdentity,
 } from "@open-design/release";
 
-const DEFAULT_WINDOW_TITLE = "Open Design";
+const DEFAULT_WINDOW_TITLE = PRODUCT_IDENTITY.name;
 
 export function resolvePackagedWindowTitle(config: { appVersion: string | null; namespace: string }): string {
   const channel =

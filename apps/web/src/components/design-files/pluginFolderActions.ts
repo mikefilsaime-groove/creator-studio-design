@@ -24,7 +24,7 @@ export function buildPluginFolderAgentActionPrompt(
   ].join('\n');
 }
 
-// `contribute` opens a draft PR against the `nexu-io/open-design` community
+// `contribute` opens a draft PR against the Creator Studio Design community
 // catalog. The agent drives the whole git/gh sequence — fork, branch, copy
 // the plugin into `plugins/community/<name>/`, commit, push, then hand the
 // `gh pr create --web` URL back so the author reviews and clicks Create in

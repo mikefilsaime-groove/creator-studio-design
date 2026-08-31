@@ -1,7 +1,7 @@
 // Contract test for the prompts the plugin-folder card buttons send to the
 // agent. `install` uses the simple shared template; `contribute` drives the
 // `gh repo fork → branch → commit → gh pr create --web` flow against
-// `nexu-io/open-design`; `publish` drives `gh repo create / push` against the
+// `mikefilsaime-groove/creator-studio-design`; `publish` drives `gh repo create / push` against the
 // author's own `plugin.repo` URL. The tests below lock the *shape* of each
 // prompt (keywords + folder interpolation) without coupling to exact wording,
 // so prose tweaks don't break the suite but accidental removal of a critical

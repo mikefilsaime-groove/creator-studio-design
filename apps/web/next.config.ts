@@ -199,9 +199,10 @@ const nextConfig: NextConfig = {
             { source: '/frames/:path*', destination: `${DAEMON_ORIGIN}/frames/:path*` },
           ];
         },
-        devIndicators: {
-          position: 'bottom-right',
-        },
+        // Keep local Electron branding identical to packaged builds. Next's
+        // floating "N" developer badge is useful in a browser, but reads like
+        // a second product mark inside the desktop shell.
+        devIndicators: false,
       }
       : {}),
 };

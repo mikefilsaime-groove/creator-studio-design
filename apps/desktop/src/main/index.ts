@@ -164,6 +164,25 @@ export function applyLoopbackConnectionLimitSwitch(electronApp: Electron.App): v
   }
 }
 
+/**
+ * Electron's development binary reports its native application name as
+ * "Electron" unless the host overrides it. Set the public product name before
+ * installing the macOS application menu so the first menu and system app name
+ * match the window, Dock, and packaged bundle identities.
+ */
+export function applyDesktopApplicationName(
+  electronApp: Pick<Electron.App, "setName">,
+  requestedName?: string,
+): string {
+  const name = resolveDesktopApplicationName(requestedName);
+  electronApp.setName(name);
+  return name;
+}
+
+export function resolveDesktopApplicationName(requestedName?: string): string {
+  return requestedName?.trim() || "Creator Studio Design";
+}
+
 export type DesktopMainOptions = {
   beforeShutdown?: () => Promise<void>;
   onExternalShow?: () => void | Promise<void>;
@@ -413,7 +432,7 @@ type DesktopMenuController = {
 
 function installDesktopMenu(
   runtime: SidecarRuntimeContext<SidecarStamp>,
-  options: Pick<DesktopMainOptions, "discoverDaemonUrl" | "discoverWebUrl"> & {
+  options: Pick<DesktopMainOptions, "discoverDaemonUrl" | "discoverWebUrl" | "windowTitle"> & {
     onOpenUpdateDialog?: () => void;
     updater: DesktopUpdater;
   },
@@ -422,6 +441,7 @@ function installDesktopMenu(
   let lastKnownAmrProfile: AmrEnvironmentProfile = "prod";
   let updateMenuLabels = DEFAULT_DESKTOP_UPDATE_MENU_LABELS;
   let updateStatus = options.updater.snapshot();
+  const applicationName = resolveDesktopApplicationName(options.windowTitle);
   const developMenuAccelerator = process.platform === "darwin" ? "Command+Option+Shift+D" : "Control+Alt+Shift+D";
 
   const showDevelopMenuError = (message: string, error: unknown): void => {
@@ -499,7 +519,10 @@ function installDesktopMenu(
       ...(process.platform === "darwin"
         ? [
             {
-              label: app.name,
+              // macOS ignores Electron's development app.setName() value in
+              // some launch modes, so never source the public menu label from
+              // the Electron binary's fallback identity.
+              label: applicationName,
               submenu: [
                 { role: "about" as const },
                 ...(updateMenuItem.visible
@@ -586,26 +609,13 @@ function installDesktopMenu(
           {
             label: "Documentation",
             click() {
-              void shell.openExternal("https://github.com/nexu-io/open-design#readme");
-            },
-          },
-          { type: "separator" },
-          {
-            label: "Contact Us",
-            click() {
-              void shell.openExternal("https://x.com/OpenDesignHQ");
+              void shell.openExternal("https://github.com/mikefilsaime-groove/creator-studio-design#readme");
             },
           },
           {
             label: "Report Issue",
             click() {
-              void shell.openExternal("https://github.com/nexu-io/open-design/issues/new");
-            },
-          },
-          {
-            label: "Join Discord",
-            click() {
-              void shell.openExternal("https://discord.gg/mHAjSMV6gz");
+              void shell.openExternal("https://github.com/mikefilsaime-groove/creator-studio-design/issues/new");
             },
           },
           { type: "separator" },
@@ -731,6 +741,8 @@ export async function runDesktopMain(
   // apps/packaged/src/logging.ts; both must stay in sync until the
   // helper is promoted to a shared workspace package.
   attachDesktopProcessErrorFilter();
+
+  applyDesktopApplicationName(app, options.windowTitle);
 
   // dev (tools-dev) enters here without a prior `whenReady` — so this
   // is where the `--lang` switch actually lands. In packaged builds

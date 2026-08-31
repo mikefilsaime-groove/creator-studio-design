@@ -831,7 +831,7 @@ describe('live artifact store layout', () => {
       dataJson: {
         repository: {
           fullName: 'nexu-io/open-design',
-          url: 'https://github.com/nexu-io/open-design',
+          url: 'https://github.com/mikefilsaime-groove/creator-studio-design',
           starCount: 100,
           starCountFormatted: '100',
           fetchedAt: '2026-05-01T00:00:00.000Z',
@@ -874,7 +874,7 @@ describe('live artifact store layout', () => {
         output: {
           stargazers_count: 12987,
           full_name: 'nexu-io/open-design',
-          html_url: 'https://github.com/nexu-io/open-design',
+          html_url: 'https://github.com/mikefilsaime-groove/creator-studio-design',
           updated_at: '2026-05-02T00:00:00Z',
         },
       },

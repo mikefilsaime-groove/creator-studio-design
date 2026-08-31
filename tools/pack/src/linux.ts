@@ -35,8 +35,8 @@ import { processWebSourcemaps } from "./web-sourcemaps.js";
 
 const execFileAsync = promisify(execFile);
 
-const PRODUCT_NAME = "Open Design";
-const APP_IMAGE_PRODUCT_NAME = "Open-Design";
+const PRODUCT_NAME = "Creator Studio Design";
+const APP_IMAGE_PRODUCT_NAME = "Creator-Studio-Design";
 const DESKTOP_LOG_ECHO_ENV = "OD_DESKTOP_LOG_ECHO";
 // The containerized build sets this to the standalone pnpm binary fetched by
 // buildDockerArgs; runProductionInstall reads it to avoid invoking `npm` inside
@@ -183,9 +183,6 @@ export function buildDockerArgs(
     `--namespace ${config.namespace}`,
     "--dir /tools-pack",
   ];
-  if (config.requireVelaCli) {
-    innerArgs.push("--require-vela-cli");
-  }
   if (config.portable) {
     innerArgs.push("--portable");
   }
@@ -220,29 +217,6 @@ export function buildDockerArgs(
   ];
   if (config.telemetryRelayUrl != null) {
     dockerArgs.push("-e", `OPEN_DESIGN_TELEMETRY_RELAY_URL=${config.telemetryRelayUrl}`);
-  }
-  const velaBinHost = process.env.OPEN_DESIGN_VELA_CLI_BIN?.trim();
-  if (velaBinHost) {
-    // The container only mounts /project, /tools-pack and cache/home dirs by
-    // default, so a Vela CLI living outside those (a host path like
-    // `~/.local/bin/vela` is the common dev case) would be invisible inside.
-    // Bind-mount the containing directory read-only and rewrite the env to
-    // the container-side path so `copyOptionalVelaCliBinary` can actually
-    // read it.
-    const hostVelaDir = dirname(velaBinHost);
-    const velaBinBase = basename(velaBinHost);
-    const containerVelaDir = "/opt/vela-cli";
-    dockerArgs.push("-v", `${hostVelaDir}:${containerVelaDir}:ro`);
-    dockerArgs.push("-e", `OPEN_DESIGN_VELA_CLI_BIN=${containerVelaDir}/${velaBinBase}`);
-  }
-  if (config.amrProfile != null) {
-    dockerArgs.push("-e", `OPEN_DESIGN_AMR_PROFILE=${config.amrProfile}`);
-  }
-  // The vela web origin is resolved on the host (from the build-time secret)
-  // but the packaged config is written inside the container, so the containerized
-  // build needs it forwarded or the workspace-team gate stays closed.
-  if (config.velaWebUrl != null) {
-    dockerArgs.push("-e", `OD_VELA_WEB_URL=${config.velaWebUrl}`);
   }
   dockerArgs.push(
     "-w",
@@ -541,11 +515,6 @@ async function copyResourceTree(config: ToolPackConfig, paths: LinuxPaths): Prom
   await mkdir(join(paths.resourceRoot, "bin"), { recursive: true });
   await cp(process.execPath, join(paths.resourceRoot, "bin", "node"));
   await chmod(join(paths.resourceRoot, "bin", "node"), 0o755);
-  await copyOptionalVelaCliBinary({
-    platform: "linux",
-    requireBundled: config.requireVelaCli,
-    resourceRoot: paths.resourceRoot,
-  });
 }
 
 // --- Step 4: writeAssembledApp helper ---
@@ -576,10 +545,10 @@ async function writeAssembledApp(
     main: "main.cjs",
     dependencies,
     description: "Local-first design product: detects your installed code-agent CLI, runs design skills + design systems, streams artifacts into a sandboxed preview.",
-    author: "Open Design Team",
+    author: "Creator Studio Design Team",
     repository: {
       type: "git",
-      url: "https://github.com/nexu-io/open-design.git"
+      url: "https://github.com/mikefilsaime-groove/creator-studio-design.git"
     }
   };
   await writeFile(paths.assembledPackageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
@@ -590,7 +559,6 @@ async function writeAssembledApp(
     paths.packagedConfigPath,
     `${JSON.stringify(
       {
-        ...(config.amrProfile == null ? {} : { amrProfile: config.amrProfile }),
         appVersion: version,
         namespace: config.namespace,
         nodeCommandRelative: "open-design/bin/node",
@@ -625,7 +593,7 @@ async function writeLinuxBuilderConfig(config: ToolPackConfig, paths: LinuxPaths
   const packageVersion = electronBuilderVersionForAppVersion(packagedVersion);
 
   const builderConfig: Record<string, unknown> = {
-    appId: "io.open-design.desktop",
+    appId: "gg.creatorstudio.design",
     artifactName: `${PRODUCT_NAME}-${namespaceToken}.\${ext}`,
     asar: false,
     buildDependenciesFromSource: false,
@@ -670,8 +638,8 @@ async function writeLinuxBuilderConfig(config: ToolPackConfig, paths: LinuxPaths
       target,
       icon: linuxResources.icon,
       category: "Development",
-      synopsis: "Open Design",
-      maintainer: "Open Design Contributors",
+      synopsis: "Creator Studio Design",
+      maintainer: "Creator Studio Design Contributors",
     },
     // Keep the AppImage launch fallback explicit. Our top-level AppRun wrapper
     // clears ELECTRON_RUN_AS_NODE before these Chromium flags reach Electron,
@@ -1555,7 +1523,7 @@ export async function installPackedLinuxHeadless(config: ToolPackConfig): Promis
   const dataDir = dirname(config.roots.runtime.namespaceBaseRoot);
   const script = [
     "#!/bin/sh",
-    `# Open Design headless launcher — namespace: ${config.namespace}`,
+    `# Creator Studio Design headless launcher — namespace: ${config.namespace}`,
     `OD_PACKAGED_NAMESPACE=${JSON.stringify(config.namespace)} OD_DATA_DIR=${JSON.stringify(dataDir)} OD_RESOURCE_ROOT=${JSON.stringify(paths.resourceRoot)} exec ${JSON.stringify(nodePath)} ${JSON.stringify(entryPath)} "$@"`,
   ].join("\n") + "\n";
 

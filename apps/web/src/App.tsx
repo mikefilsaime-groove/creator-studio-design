@@ -852,6 +852,47 @@ export function App() {
   );
 }
 
+const CREATOR_STUDIO_AGENT_IDS = new Set(['claude', 'codex']);
+
+function loadCreatorStudioConfig() {
+  const current = loadConfig();
+  const agentId = current.agentId != null && CREATOR_STUDIO_AGENT_IDS.has(current.agentId)
+    ? current.agentId
+    : null;
+  const agentModels = Object.fromEntries(
+    Object.entries(current.agentModels ?? {}).filter(([id]) => CREATOR_STUDIO_AGENT_IDS.has(id)),
+  );
+  const agentCliEnv = Object.fromEntries(
+    Object.entries(current.agentCliEnv ?? {}).filter(([id]) => CREATOR_STUDIO_AGENT_IDS.has(id)),
+  );
+  const agentCliEnvIntent = Object.fromEntries(
+    Object.entries(current.agentCliEnvIntent ?? {}).filter(([id]) => CREATOR_STUDIO_AGENT_IDS.has(id)),
+  );
+  const next = {
+    ...current,
+    agentCliEnv,
+    agentCliEnvIntent,
+    agentId,
+    agentModels,
+    apiKey: '',
+    apiProviderBaseUrl: null,
+    apiProtocolConfigs: {},
+    baseUrl: '',
+    byokImageModel: '',
+    byokPendingProviderKey: undefined,
+    byokProviderConfigDrafts: {},
+    byokSpeechModel: '',
+    byokSpeechVoice: '',
+    byokVideoModel: '',
+    mediaProviders: {},
+    mode: 'daemon' as const,
+    model: '',
+    pet: current.pet == null ? undefined : { ...current.pet, enabled: false },
+  };
+  saveConfig(next);
+  return next;
+}
+
 function AppInner() {
   const { t } = useI18n();
   const iframeKeepAlivePool = useIframeKeepAlivePool();
@@ -942,7 +983,7 @@ function AppInner() {
       root.classList.remove('is-window-blurred');
     };
   }, [clientType, hostPlatform]);
-  const [config, setConfig] = useState<AppConfig>(() => loadConfig());
+  const [config, setConfig] = useState<AppConfig>(() => loadCreatorStudioConfig());
   const configRef = useRef(config);
   configRef.current = config;
   const latestPersistedConfigRef = useRef(config);

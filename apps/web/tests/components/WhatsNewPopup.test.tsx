@@ -53,7 +53,7 @@ const RUNNING_APP_VERSION = '0.16.1';
 const mockedFetchWhatsNew = fetchWhatsNew as unknown as ReturnType<typeof vi.fn>;
 const mockedOpenExternalUrl = openExternalUrl as unknown as ReturnType<typeof vi.fn>;
 
-const RELEASES_INDEX_URL = 'https://github.com/nexu-io/open-design/releases';
+const RELEASES_INDEX_URL = 'https://github.com/mikefilsaime-groove/creator-studio-design/releases';
 
 const SHOW_PAYLOAD: WhatsNewResponse = {
   // Stale/irrelevant here: the dialog titles itself with the running version.

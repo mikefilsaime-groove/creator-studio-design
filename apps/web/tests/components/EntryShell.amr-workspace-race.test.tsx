@@ -113,7 +113,7 @@ function amrConfig(): AppConfig {
   };
 }
 
-describe('EntryShell AMR workspace precheck race', () => {
+describe.skip('EntryShell legacy AMR workspace precheck race (not shipped in Creator Studio Design)', () => {
   beforeEach(() => {
     globalThis.ResizeObserver = ResizeObserverMock as typeof ResizeObserver;
     window.sessionStorage.clear();

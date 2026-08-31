@@ -284,7 +284,7 @@ export async function prepareLegacyPayloadDesktopHandoff(options: {
     return { kind: "none", reason: "invalid-launcher-state" };
   }
   const channel = releaseChannelFromVersion(appVersion)
-    ?? releaseChannelFromNamespace(options.namespace, "default")
+    ?? releaseChannelFromNamespace(options.namespace, "creator-studio-design")
     ?? "stable";
   const launcherPaths = resolveLauncherPaths({
     channel,

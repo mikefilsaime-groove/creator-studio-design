@@ -18,16 +18,12 @@
   <a href="https://x.com/OpenDesignHQ">Follow @OpenDesignHQ</a>
 </p>
 
-<p align="center">
-  <a href="https://github.com/nexu-io/open-design/releases"><img alt="release" src="https://img.shields.io/github/v/release/nexu-io/open-design?style=flat&color=blueviolet&label=release&include_prereleases&display_name=tag" /></a>
-  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat" /></a>
-  <a href="https://discord.gg/mHAjSMV6gz"><img alt="discord" src="https://img.shields.io/discord/1479002485040480266?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2&cacheSeconds=3600" /></a>
-  <a href="QUICKSTART.md"><img alt="quickstart" src="https://img.shields.io/badge/quickstart-3%20commands-green?style=flat" /></a>
-</p>
+[Download the latest Creator Studio Design release](https://github.com/mikefilsaime-groove/creator-studio-design/releases/latest)
 
-<p align="center"><b>English</b> · <a href="docs/i18n/README.es.md">Español</a> · <a href="docs/i18n/README.pt-BR.md">Português</a> · <a href="docs/i18n/README.de.md">Deutsch</a> · <a href="docs/i18n/README.fr.md">Français</a> · <a href="docs/i18n/README.zh-CN.md">简体中文</a> · <a href="docs/i18n/README.zh-TW.md">繁體中文</a> · <a href="docs/i18n/README.ko.md">한국어</a> · <a href="docs/i18n/README.ja-JP.md">日本語</a> · <a href="docs/i18n/README.ar.md">العربية</a> · <a href="docs/i18n/README.ru.md">Русский</a> · <a href="docs/i18n/README.uk.md">Українська</a> · <a href="docs/i18n/README.tr.md">Türkçe</a> · <a href="docs/i18n/README.th.md">ภาษาไทย</a></p>
+## Requirements
 
----
+- Claude Code or Codex CLI installed and signed in with your existing Claude or ChatGPT subscription.
+- macOS, Windows, or Linux.
 
 ## What is OpenDesign
 
@@ -302,34 +298,34 @@ client-specific snippet; it uses absolute paths and does not rely on the bare
 `od` command.
 
 ```bash
-# One-line install into the agent you're using:
-od mcp install <agent>
-# <agent> = claude | codex | reasonix | raven | cursor | copilot | openclaw
-#         | antigravity | pi | vibe | hermes | cline | kimi | kiro
-#         | trae | opencode
-
-# Hosted equivalent for curl-based setup:
-curl -fsSL https://open-design.ai/install.sh | sh -s <agent>
+corepack enable
+pnpm install
+pnpm tools-dev
 ```
 
-`install.sh` is a thin shell wrapper around `od mcp install`; it exists so the
-hosted URL returns shell instead of the landing-page HTML fallback and fails
-fast if your shell resolves a non-Open-Design `od` binary.
+Use `pnpm tools-dev inspect desktop status` to inspect the Electron runtime. Do not use a root `pnpm dev`, `pnpm build`, or `pnpm test` command; package and lifecycle commands are intentionally scoped.
 
 > **macOS / WSL2 users:** `/usr/bin/od` is a system octal-dump command and can
 > shadow OpenDesign's `od` command. Desktop-app users should prefer the
 > **Settings → MCP server** snippet; WSL2 users should follow the
 > [`WSL2 setup guide`](docs/wsl-setup.md) first.
 
-Then, inside the agent:
+The `Creator Studio Design release` GitHub Action builds:
 
-```
-> Use open-design to generate a landing page with the Linear design system
-```
+- unsigned macOS Apple Silicon and Intel installers;
+- unsigned Windows installer and portable archive;
+- Linux AppImage;
+- launcher payloads and checksummed updater metadata.
 
 In a filesystem-backed local CLI run, the agent composes the selected functional skill or design template with your `DESIGN.md`, writes the canonical project files, and OpenDesign previews those files. A BYOK/plain-API run without filesystem tools instead returns one complete `<artifact>` block.
 
-### 🐳 Run with Docker
+These community installers do not require paid Apple or Windows developer certificates. On first launch, macOS users may need to Control-click the app and choose **Open**; Windows users may need to choose **More info** and **Run anyway** if SmartScreen warns.
+
+The `Sync upstream Creator Studio Design base` workflow brings the newest upstream base into a review branch so product identity, open-access behavior, execution restrictions, and packaging checks can be validated before merging.
+
+## Validation
+
+Before a release, run:
 
 ```bash
 git clone https://github.com/nexu-io/open-design.git
@@ -768,4 +764,4 @@ Detailed provenance → [`docs/references.md`](docs/references.md).
 
 ## License
 
-Apache-2.0. Bundled skills and templates with their own `LICENSE` files retain those licenses, including `design-templates/guizang-ppt/` (MIT, [@op7418](https://github.com/op7418)), `design-templates/html-ppt/` (MIT, [@lewislulu](https://github.com/lewislulu)), and `skills/web-clone/` (MIT, [@Jane-xiaoer](https://github.com/Jane-xiaoer)).
+See [LICENSE](LICENSE) and the repository's applicable notice and third-party attribution files.

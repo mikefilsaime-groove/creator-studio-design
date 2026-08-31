@@ -1,5 +1,5 @@
 {{- /*
-Open Design Helm chart helpers. Spec §15.5.
+Creator Studio Design Helm chart helpers. Spec §15.5.
 
 Names:
   open-design.name        chart-name (`open-design`)

@@ -518,7 +518,7 @@ if (args[0] === 'repo' && args[1] === 'clone') {
   const init = spawnSync(process.env.OD_REAL_GIT, ['init'], { cwd: dest, stdio: 'inherit' });
   process.exit(init.status ?? 0);
 }
-if (args[0] === 'pr' && args[1] === 'create') ok('https://github.com/nexu-io/open-design/pull/123');
+if (args[0] === 'pr' && args[1] === 'create') ok('https://github.com/mikefilsaime-groove/creator-studio-design/pull/123');
 console.error('unexpected gh command: ' + args.join(' '));
 process.exit(1);
 `,
@@ -616,7 +616,7 @@ process.exit(result.status ?? 0);
                 JSON.stringify(contributeEndpointBody),
               ).toBe(200);
               expect(contributeEndpointBody.ok).toBe(true);
-              expect(contributeEndpointBody.url).toBe('https://github.com/nexu-io/open-design/pull/123');
+              expect(contributeEndpointBody.url).toBe('https://github.com/mikefilsaime-groove/creator-studio-design/pull/123');
             },
           );
         },

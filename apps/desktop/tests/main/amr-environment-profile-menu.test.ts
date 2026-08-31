@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyDesktopApplicationName,
   createAmrEnvironmentProfileMenuItems,
   mergeAmrEnvironmentProfileConfig,
   normalizeAmrEnvironmentProfile,
+  resolveDesktopApplicationName,
   resolveAboutPanelVersion,
   resolveFirstAvailableBaseUrl,
 } from "../../src/main/index.js";

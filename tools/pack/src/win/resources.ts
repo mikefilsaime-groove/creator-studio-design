@@ -24,6 +24,7 @@ async function createResourceTreeCacheKey(config: ToolPackConfig, workspaceBuild
   return hashJson({
     assetsCommunityPets: await hashPath(join(config.workspaceRoot, "assets", "community-pets")),
     assetsFrames: await hashPath(join(config.workspaceRoot, "assets", "frames")),
+    creatorStudioIcon: await hashPath(macResources.iconPng),
     craft: await hashPath(join(config.workspaceRoot, "craft")),
     designSystems: await hashPath(join(config.workspaceRoot, "design-systems")),
     designTemplates: await hashPath(join(config.workspaceRoot, "design-templates")),
@@ -79,11 +80,6 @@ export async function prepareResourceTree(
       await mkdir(join(resourceRoot, "bin"), { recursive: true });
       await cp(winResources.sevenZipExe, join(resourceRoot, "bin", "7z.exe"));
       await cp(winResources.sevenZipDll, join(resourceRoot, "bin", "7z.dll"));
-      await copyOptionalVelaCliBinary({
-        platform: "win",
-        requireBundled: config.requireVelaCli,
-        resourceRoot,
-      });
       return { resourceName: "open-design" };
     },
   };

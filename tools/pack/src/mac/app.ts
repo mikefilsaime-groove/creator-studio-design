@@ -162,7 +162,6 @@ export function renderMacPackagedConfig(options: {
 }): string {
   return `${JSON.stringify(
     {
-      ...(options.config.amrProfile == null ? {} : { amrProfile: options.config.amrProfile }),
       appVersion: options.appVersion,
       ...(options.usePrebundledStandaloneWeb ? { daemonCliEntryRelative: MAC_PREBUNDLED_DAEMON_CLI_RELATIVE_PATH } : {}),
       ...(options.usePrebundledStandaloneWeb
@@ -348,7 +347,7 @@ export async function writeAssembledApp(
     `${JSON.stringify(
       {
         dependencies,
-        description: "Open Design packaged runtime",
+        description: "Creator Studio Design packaged runtime",
         main: "./main.cjs",
         name: "open-design-packaged-app",
         ...(optionalDependencies == null ? {} : { optionalDependencies }),

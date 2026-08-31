@@ -22,7 +22,6 @@ function createPackagedConfig(
   entrypoints: PackagedConfigEntrypoints = {},
 ): Record<string, unknown> {
   return {
-    ...(config.amrProfile == null ? {} : { amrProfile: config.amrProfile }),
     appVersion: packagedVersion,
     ...entrypoints,
     namespace: config.namespace,
