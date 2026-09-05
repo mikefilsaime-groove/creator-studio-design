@@ -2943,20 +2943,26 @@ export function SettingsDialog({
       const baseMessage = kindForSuccess === 'api'
         ? t('settings.testSuccessApi', { ms, sample })
         : t('settings.testSuccessCli', { agentName, ms, sample });
+      const successMessage =
+        kindForSuccess === 'cli' &&
+        result.resolvedModel &&
+        result.resolvedModel !== testedModel
+          ? `${baseMessage} ${t('settings.model')}: ${result.resolvedModel}`
+          : baseMessage;
       if (kindForSuccess === 'cli' && cfg.agentId === 'codex') {
         const codexStrings = codexPathStrings(locale);
         if (
           result.usedExecutableSource === 'configured' &&
           result.configuredExecutablePath
         ) {
-          return `${baseMessage} ${codexStrings.configuredSuccess(result.configuredExecutablePath)}`;
+          return `${successMessage} ${codexStrings.configuredSuccess(result.configuredExecutablePath)}`;
         }
         if (
           result.usedExecutableSource === 'fallback_invalid' &&
           result.configuredExecutablePath &&
           result.detectedExecutablePath
         ) {
-          return `${baseMessage} ${codexStrings.invalidFallback(
+          return `${successMessage} ${codexStrings.invalidFallback(
             result.configuredExecutablePath,
             result.detectedExecutablePath,
           )}`;
@@ -2966,13 +2972,13 @@ export function SettingsDialog({
           result.configuredExecutablePath &&
           result.detectedExecutablePath
         ) {
-          return `${baseMessage} ${codexStrings.failedFallback(
+          return `${successMessage} ${codexStrings.failedFallback(
             result.configuredExecutablePath,
             result.detectedExecutablePath,
           )}`;
         }
       }
-      return result.detail ? `${baseMessage} ${result.detail}` : baseMessage;
+      return result.detail ? `${successMessage} ${result.detail}` : successMessage;
     }
     switch (result.kind) {
       case 'auth_failed':
@@ -4481,37 +4487,6 @@ export function SettingsDialog({
                 </button>
               </div>
               </div>
-              {cfg.mode === 'daemon' && !amrCardSignedIn ? (
-                // Only prompt to sign into Creator Studio Design Cloud when NOT already
-                // signed in — the AMR/vela session IS the cloud identity (one
-                // session drives both), so a logged-in user has nothing to do
-                // here and the callout was showing spuriously.
-                <div className="settings-cloud-signin-callout">
-                  <div>
-                    <strong>{t('settings.cloudCalloutTitle')}</strong>
-                    <p>{t('settings.cloudCalloutBody')}</p>
-                  </div>
-                  {/* Same device-auth flow as the 授权 button on the Creator Studio Design
-                      agent card below — the AMR/vela session IS the cloud
-                      identity, so signing in here is that one flow. This used to
-                      navigate to onboarding, which walked the user through the
-                      whole first-run tour to reach the same authorization. */}
-                  <AmrLoginPill
-                    className="settings-cloud-signin-callout__button"
-                    hideSignedOutStatus
-                    hideSignedInStatus
-                    initialStatus={amrCardStatus}
-                    skipInitialRefresh
-                    signInLabel={t('settings.cloudCalloutButton')}
-                    signInIcon="log-in"
-                    amrEntrySourceDetail="settings_cloud_callout"
-                    metricsConsent={cfg.telemetry?.metrics === true}
-                    installationId={cfg.installationId}
-                    onStatusChange={setAmrCardStatus}
-                    onSignedOut={onAmrSignedOut}
-                  />
-                </div>
-              ) : null}
               {cfg.mode === 'api' ? (
                 <div
                   className="protocol-chips protocol-chips--providers"

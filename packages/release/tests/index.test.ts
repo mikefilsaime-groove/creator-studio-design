@@ -57,7 +57,7 @@ describe("@open-design/release", () => {
     expect(releaseNamespace("prerelease", "win")).toBe("release-prerelease-win");
     expect(releaseNamespace("prerelease", "macIntel")).toBe("release-prerelease-intel");
     expect(releaseChannelDescriptor("qa2")).toMatchObject({
-      appId: "io.open-design.desktop.qa2",
+      appId: "gg.creatorstudio.design.qa2",
       channel: "qa2",
       productName: "Creator Studio Design Qa2",
       storagePrefix: "qa2",
@@ -78,7 +78,7 @@ describe("@open-design/release", () => {
     expect(releaseChannelFromVersion("1.2.3-beta-internal.1")).toBe("beta");
     expect(releaseChannelFromVersion("1.2.3-prerelease.1")).toBe("prerelease");
     expect(releaseChannelFromNamespace("release-preview-linux")).toBe("preview");
-    expect(releaseChannelFromNamespace("open-design")).toBe("stable");
+    expect(releaseChannelFromNamespace("creator-studio-design")).toBe("stable");
     expect(releaseChannelFromNamespace("beta-local-flow")).toBeNull();
     expect(releaseChannelFromNamespace("release-local")).toBeNull();
   });
