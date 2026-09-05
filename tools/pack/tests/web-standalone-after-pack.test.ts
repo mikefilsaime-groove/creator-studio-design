@@ -106,6 +106,12 @@ async function writeHyperframesRuntimeFixture(options: {
     ? join(appPath, "Creator Studio Design.exe")
     : join(appPath, "Contents", "MacOS", "Creator Studio Design");
   await mkdir(path.dirname(bundledNodePath), { recursive: true });
+  if (process.platform !== "win32") {
+    const quotedNodePath = process.execPath.replaceAll("'", "'\\''");
+    await writeFile(bundledNodePath, `#!/bin/sh\nexec '${quotedNodePath}' "$@"\n`, "utf8");
+    await chmod(bundledNodePath, 0o755);
+    return;
+  }
   try {
     await link(process.execPath, bundledNodePath);
   } catch {

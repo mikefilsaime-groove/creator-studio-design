@@ -70,7 +70,7 @@ describe("desktop updater config", () => {
     }
   });
 
-  it("defaults preview builds to the preview update channel", () => {
+  it("uses the Creator Studio Design release feed for preview-labelled builds", () => {
     const root = makeRoot();
     try {
       const config = resolveDesktopUpdaterConfig({
@@ -83,7 +83,7 @@ describe("desktop updater config", () => {
       });
 
       expect(config.channel).toBe("preview");
-      expect(config.metadataUrl).toContain("/preview/latest/metadata.json");
+      expect(config.metadataUrl).toBe(PRODUCT_IDENTITY.updateMetadataUrl);
     } finally {
       rmSync(root, { force: true, recursive: true });
     }
