@@ -41,7 +41,9 @@ export function buildExecutableDiagnostic(
   return {
     reason: 'not-on-path',
     severity: 'error',
-    message: `${def.name} (\`${def.bin}\`) was not found on your PATH.`,
+    message: def.id === 'codex' && process.platform === 'win32'
+      ? 'Creator Studio Design could not find a runnable Codex CLI in PATH or the Codex desktop installation. Install Codex CLI, or select its codex.exe path, then rescan.'
+      : `${def.name} (\`${def.bin}\`) was not found on your PATH.`,
     searchedDirs: agentSearchDirs().slice(0, MAX_SEARCHED_DIRS),
     fixActions: [
       { kind: 'openInstall' },
@@ -66,9 +68,11 @@ export function buildNotInvocableDiagnostic(
     return {
       reason: 'not-executable',
       severity: 'error',
-      message: `${def.name} was found but is not executable. Restore its execute permission or choose a different binary, then rescan.`,
+      message: process.platform === 'win32'
+        ? `${def.name} was found, but Windows blocked it from running. Install the standalone CLI or select another executable, then rescan.`
+        : `${def.name} was found but is not executable. Restore its execute permission or choose a different binary, then rescan.`,
       ...(launch.launchPath ? { detail: launch.launchPath } : {}),
-      fixActions: [...setEnvIntent(def.id), { kind: 'rescan' }],
+      fixActions: [...(process.platform === 'win32' ? [{ kind: 'openInstall' as const }] : []), ...setEnvIntent(def.id), { kind: 'rescan' }],
     };
   }
   return {
