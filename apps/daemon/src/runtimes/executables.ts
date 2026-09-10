@@ -7,6 +7,7 @@ import { wellKnownUserToolchainBins } from '@open-design/platform';
 import { resolveSandboxRuntimeConfigFromEnv } from '../sandbox-mode.js';
 import { expandHomePath } from './paths.js';
 import type { RuntimeAgentDef } from './types.js';
+import { clearWindowsCodexAppCache, windowsCodexAppCandidates } from './codex-windows-app.js';
 
 const RUNTIME_PROJECT_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -312,12 +313,14 @@ function packagedBuiltInExecutable(
 // installed Codex only through the app therefore see a "not installed" agent
 // card even though a healthy native `codex` binary exists on disk, because
 // neither PATH nor the user-toolchain search dirs cover the app bundle. Probe
-// the well-known bundle locations so app-only installs are detected. This is a
-// last-resort fallback that ranks below PATH, so an explicit `npm i -g` /
+// the well-known bundle locations so app-only installs are detected.
+// Windows also stages a native CLI in its local app cache or MSIX resources.
+// This fallback ranks below PATH, so an explicit `npm i -g` /
 // Homebrew / version-manager install always wins.
-function codexAppBundleExecutable(def: RuntimeAgentDef): string | null {
+function codexAppBundleExecutable(def: RuntimeAgentDef, skip: Set<string>): string | null {
   if (def?.id !== 'codex') return null;
   for (const candidate of codexAppBundleCandidates()) {
+    if (process.platform === 'win32' && skip.has(candidate)) continue;
     const resolved = executableFilePath(candidate);
     if (resolved) return resolved;
   }
@@ -330,10 +333,9 @@ function codexAppBundleExecutable(def: RuntimeAgentDef): string | null {
 // candidate list directly to catch a path typo or ordering regression in the
 // common real-world install case.
 export function codexAppBundleCandidates(): string[] {
-  // The Codex app bundle is a macOS-only concept; other platforms have no
-  // analogous standalone install of the `codex` CLI to probe for here.
-  if (process.platform !== 'darwin') return [];
   const { home, hasOverride } = resolveDetectionHome();
+  if (process.platform === 'win32') return windowsCodexAppCandidates(home, hasOverride);
+  if (process.platform !== 'darwin') return [];
   const bundleSuffix = ['Codex.app', 'Contents', 'Resources', 'codex'];
   // User-scoped install (~/Applications). Honors the override home so
   // sandboxed detection runs and tests stay deterministic.
@@ -384,6 +386,7 @@ export function rememberUnusableExecutable(agentId: string, resolvedPath: string
  */
 export function forgetUnusableExecutables(agentId: string): void {
   unusableExecutables.delete(agentId);
+  if (agentId === 'codex') clearWindowsCodexAppCache();
 }
 
 export function inspectAgentExecutableResolution(
@@ -426,7 +429,8 @@ export function inspectAgentExecutableResolution(
   // dead, which is why those are filtered out above rather than ranked below.
   const pathResolvedPath: string | null = pathCandidates[0] ?? null;
   const builtInPath = packagedBuiltInExecutable(def, configuredEnv);
-  const appBundlePath = codexAppBundleExecutable(def);
+  const appBundlePath = configuredOverridePath || builtInPath || pathResolvedPath
+    ? null : codexAppBundleExecutable(def, skip);
   return {
     configuredOverridePath,
     pathResolvedPath,

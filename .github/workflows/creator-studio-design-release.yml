@@ -121,6 +121,8 @@ jobs:
         run: corepack enable; corepack prepare pnpm@${env:PNPM_VERSION} --activate
       - name: Install workspace
         run: pnpm install --frozen-lockfile
+      - name: Verify Windows Codex discovery
+        run: pnpm --filter @open-design/daemon exec vitest run -c vitest.config.ts tests/runtimes/windows-codex-discovery.test.ts
       - name: Build packaging control plane
         run: pnpm --filter @open-design/tools-pack build
       - name: Install NSIS

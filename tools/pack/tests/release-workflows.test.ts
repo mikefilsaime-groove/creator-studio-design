@@ -40,6 +40,11 @@ describe("release workflows", () => {
     ]);
 
     expect(workflow).toContain("name: Creator Studio Design release");
+    const windows = sectionBetween(workflow, "  windows:", "  linux:");
+    expect(windows).toContain("runs-on: windows-2025");
+    expect(windows).toContain("tests/runtimes/windows-codex-discovery.test.ts");
+    expect(windows.indexOf("Verify Windows Codex discovery")).toBeLessThan(windows.indexOf("Build Windows installer"));
+    expect(sectionAfter(workflow, "  release:")).toContain("needs: [mac, windows, linux]");
     expect(workflow).toContain("creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}.dmg");
     expect(workflow).toContain("creator-studio-design-mac-${RELEASE_ARCH}.dmg");
     expect(workflow).toContain("creator-studio-design-${RELEASE_VERSION}-mac-${RELEASE_ARCH}-payload.zip");
