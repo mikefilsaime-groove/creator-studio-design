@@ -104,6 +104,9 @@ test('[P1] RTL: chat scrollbar gutter is not covered by the resize handle', asyn
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
 
   const chatLog = page.locator('.chat-log');
+  await expect
+    .poll(() => chatLog.evaluate((element) => window.getComputedStyle(element).direction))
+    .toBe('rtl');
   const box = await requireBoundingBox(chatLog);
   const y = box.y + box.height / 2;
 
@@ -114,8 +117,9 @@ test('[P1] RTL: chat scrollbar gutter is not covered by the resize handle', asyn
   // control probe in RTL); after the logical-property fix both are green.
   for (const inset of [1, 3]) {
     const probe = await probeHit(page, box.x + inset, y);
-    expect(probe.hitHandle, `expected chat panel at ${inset}px probe, hit <${probe.tag} class="${probe.className}">`).toBe(false);
-    expect(probe.insideChatLog).toBe(true);
+    const diagnostic = `expected chat panel at ${inset}px probe, hit <${probe.tag} class="${probe.className}" cursor="${probe.cursor}">`;
+    expect(probe.hitHandle, diagnostic).toBe(false);
+    expect(probe.insideChatLog, diagnostic).toBe(true);
   }
 });
 
@@ -156,8 +160,8 @@ async function readChatPanelWidth(handle: Locator): Promise<number> {
 
 async function gotoEntryHome(page: Page) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await page.getByText('Loading OpenDesign…').waitFor({ state: 'detached', timeout: 10_000 }).catch(() => {});
-  const privacyDialog = page.getByRole('dialog').filter({ hasText: 'Help us improve OpenDesign' });
+  await page.getByText('Loading Creator Studio Design…').waitFor({ state: 'detached', timeout: 10_000 }).catch(() => {});
+  const privacyDialog = page.getByRole('dialog').filter({ hasText: 'Help us improve Creator Studio Design' });
   if (await privacyDialog.isVisible()) {
     await privacyDialog.getByRole('button', { name: /I get it|not now|got it|don't share/i }).click();
     await expect(privacyDialog).toHaveCount(0);
@@ -175,7 +179,7 @@ async function createProject(page: Page, projectName: string) {
 
 async function expectWorkspaceReady(page: Page) {
   await expect(page).toHaveURL(/\/projects\//);
-  await expect(page.getByText('Loading OpenDesign…')).toHaveCount(0);
+  await expect(page.getByText('Loading Creator Studio Design…')).toHaveCount(0);
   await expect(page.getByTestId('chat-composer')).toBeVisible();
   await expect(page.getByTestId('chat-composer-input')).toBeVisible();
   await expect(page.getByTestId('file-workspace')).toBeVisible();

@@ -1,5 +1,5 @@
 import { expect, test } from '@/playwright/suite';
-import { routeAgents } from '@/playwright/mock-factory';
+import { routeAgents, suppressWhatsNew } from '@/playwright/mock-factory';
 import { ensureRailOpen } from '@/playwright/rail';
 import type { Page } from '@playwright/test';
 
@@ -9,6 +9,10 @@ const READ_KEY = 'open-design.message-center.anonymous-read-ids.v1';
 test.describe.configure({ timeout: 30_000 });
 
 async function seedEntryHome(page: Page, options?: { locale?: string }) {
+  // The entry home mounts `WhatsNewPopup` (EntryShell.tsx) and its backdrop sits
+  // at z-index 1500 — above the z-index 120 chrome that owns the rail/settings
+  // controls this spec clicks. A live release card would swallow those clicks.
+  await suppressWhatsNew(page);
   await page.addInitScript(({ key, locale }) => {
     window.localStorage.clear();
     window.sessionStorage.clear();
@@ -74,7 +78,7 @@ async function seedEntryHome(page: Page, options?: { locale?: string }) {
 
 async function gotoEntryHome(page: Page, timeout = 10_000) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('Loading OpenDesign…')).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.getByText('Loading Creator Studio Design…')).toHaveCount(0, { timeout: 15_000 });
   await expect(page.getByTestId('home-hero')).toBeVisible({ timeout });
   await ensureRailOpen(page);
 }
@@ -190,7 +194,7 @@ test('[P1] targeted Go Plan announcement opens automatically once and stays dism
   // normal Home helper here: it opens the rail, which is deliberately blocked
   // by the modal backdrop we are trying to witness.
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('Loading OpenDesign…')).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.getByText('Loading Creator Studio Design…')).toHaveCount(0, { timeout: 15_000 });
   await expect(page.getByTestId('home-hero')).toBeVisible();
 
   const announcement = page.getByTestId('go-plan-sunset-dialog');
@@ -202,7 +206,7 @@ test('[P1] targeted Go Plan announcement opens automatically once and stays dism
   await expect(announcement).toHaveCount(0);
 
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('Loading OpenDesign…')).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.getByText('Loading Creator Studio Design…')).toHaveCount(0, { timeout: 15_000 });
   await expect(page.getByTestId('home-hero')).toBeVisible();
   await expect(announcement).toHaveCount(0);
 });
