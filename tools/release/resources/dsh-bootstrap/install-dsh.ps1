@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 $NodeVersion = '24.19.0'
-$DshVersion = '0.1.1-rc.2'
+$DshVersion = '0.1.2-rc.1'
 $PnpmVersion = '11.7.0'
 # Freeze npm's view of the registry to just after $DshVersion was published.
 #
@@ -21,7 +21,7 @@ $PnpmVersion = '11.7.0'
 #
 # The cutoff must stay LATER than $DshVersion's publish time and EARLIER than
 # the next release candidate's. Update both values together.
-$DshResolutionCutoff = '2026-08-21T13:00:00Z'
+$DshResolutionCutoff = '2026-09-03T07:00:00Z'
 
 function Fail([string]$Message) {
   throw "DeepSeek Harness installer: $Message"
@@ -45,7 +45,7 @@ function Test-NodeVersion([string]$Version) {
 if (-not $HOME) { Fail 'HOME is not set.' }
 
 $LocalData = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path $HOME 'AppData\Local' }
-$InstallRoot = if ($env:OD_DSH_INSTALL_ROOT) { $env:OD_DSH_INSTALL_ROOT } else { Join-Path $LocalData 'OpenDesign\toolchains\dsh' }
+$InstallRoot = if ($env:OD_DSH_INSTALL_ROOT) { $env:OD_DSH_INSTALL_ROOT } else { Join-Path $LocalData 'Creator Studio Design\toolchains\dsh' }
 $BinDir = if ($env:OD_DSH_INSTALL_BIN_DIR) { $env:OD_DSH_INSTALL_BIN_DIR } else { Join-Path $HOME '.local\bin' }
 $Launcher = Join-Path $BinDir 'dsh.cmd'
 $DistBase = if ($env:OD_DSH_INSTALL_DIST_BASE) { $env:OD_DSH_INSTALL_DIST_BASE.TrimEnd('/') } else { "https://nodejs.org/dist/v$NodeVersion" }
@@ -93,7 +93,7 @@ exit /b %ERRORLEVEL%
 function Finish([string]$Label) {
   Write-Host "DeepSeek Harness $DshVersion is ready ($Label)."
   Write-Host "Command: $Launcher"
-  Write-Host 'OpenDesign can discover this command without editing your PATH.'
+  Write-Host 'Creator Studio Design can discover this command without editing your PATH.'
   if (-not $NoLaunch) {
     Write-Host 'Starting dsh web. Configure your API key in Settings -> Models; press Ctrl+C to stop.'
     & $Launcher web
@@ -164,7 +164,7 @@ try {
 
   $runtimeStaging = Join-Path $InstallRoot ".runtime-dsh-$DshVersion.$PID"
   New-Item -ItemType Directory -Force -Path $runtimeStaging | Out-Null
-  Write-Host "Installing dsh $DshVersion and pnpm $PnpmVersion in OpenDesign's user toolchain..."
+  Write-Host "Installing dsh $DshVersion and pnpm $PnpmVersion in Creator Studio Design's user toolchain..."
   & (Join-Path $NodeTarget 'npm.cmd') install --prefix $runtimeStaging --no-save --no-package-lock --omit=dev --before $DshResolutionCutoff "@deepseek-ai/dsh@$DshVersion" "pnpm@$PnpmVersion"
   if ($LASTEXITCODE -ne 0) { Fail "npm install exited with code $LASTEXITCODE." }
 

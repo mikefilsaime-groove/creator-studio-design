@@ -44,6 +44,29 @@ declare global {
   }
 }
 
+function isOnboardingReloadRaceError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes('Execution context was destroyed') ||
+    message.includes('Target page, context or browser has been closed') ||
+    message.includes('Target closed')
+  );
+}
+
+async function safeEvaluate<T>(page: Page, pageFunction: () => T): Promise<T | undefined>;
+async function safeEvaluate<T, A>(page: Page, pageFunction: (arg: A) => T, arg: A): Promise<T | undefined>;
+async function safeEvaluate<T, A>(page: Page, pageFunction: (arg: A) => T, arg?: A): Promise<T | undefined> {
+  try {
+    if (arg === undefined) {
+      return await (page.evaluate as unknown as (fn: () => T) => Promise<T>)(pageFunction as () => T);
+    }
+    return await (page.evaluate as unknown as (fn: (arg: A) => T, arg: A) => Promise<T>)(pageFunction, arg as A);
+  } catch (error) {
+    if (isOnboardingReloadRaceError(error)) return undefined;
+    throw error;
+  }
+}
+
 test.describe.configure({ timeout: T.xlong });
 
 test.beforeEach(async ({ page }) => {
@@ -60,12 +83,12 @@ test('[P0] @critical onboarding lets AMR Cloud sign in and complete setup after 
 
   await gotoOnboarding(page);
 
-  // Signed-out cloud landing: the primary button reads "Sign in to OpenDesign
+  // Signed-out cloud landing: the primary button reads "Sign in to Creator Studio Design
   // Cloud" and IS the AMR sign-in trigger (it replaced the old "Sign in to
   // continue" AMR-card CTA).
   const primary = cloudPrimaryButton(page);
   await expect(primary).toBeVisible();
-  await expect(primary).toHaveText(/Sign in to OpenDesign|登录 OpenDesign/i);
+  await expect(primary).toHaveText(/Sign in to Creator Studio Design|登录 Creator Studio Design/i);
   const statusCallsBeforeLogin = await page.evaluate(() => window.__amrOnboardingStatusCalls ?? 0);
   await clickCloudPrimary(page);
 
@@ -76,7 +99,7 @@ test('[P0] @critical onboarding lets AMR Cloud sign in and complete setup after 
   // Login success lands on the model-source chooser. Hosted is recommended
   // and selected by default; accepting it completes the streamlined flow.
   await expectModelSourceChooser(page);
-  await continueWithModelSource(page, /OpenDesign Hosted/i);
+  await continueWithModelSource(page, /Creator Studio Design Hosted/i);
   await expectOnboardingFinished(page);
   await pollStoredConfig(page).toMatchObject({
     agentId: 'amr',
@@ -98,14 +121,14 @@ test('[P0] signed-out onboarding can open Local CLI setup without Cloud authoriz
   // the primary action while Local CLI is available as a direct setup path.
   const primary = cloudPrimaryButton(page);
   await expect(primary).toBeVisible();
-  await expect(primary).toHaveText(/Sign in to OpenDesign|登录 OpenDesign/i);
+  await expect(primary).toHaveText(/Sign in to Creator Studio Design|登录 Creator Studio Design/i);
   await page.getByRole('button', { name: /Local (coding )?agent/i }).click();
   await expect(page.locator('.onboarding-view__setup-panel')).toBeVisible();
   await expect(page.getByRole('heading', { name: /Local (coding )?agent/i })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.__amrOnboardingLoginCalls ?? 0)).toBe(0);
 
   await page.getByRole('button', { name: /^Back$|返回/i }).click();
-  await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to OpenDesign|登录 OpenDesign/i);
+  await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to Creator Studio Design|登录 Creator Studio Design/i);
   await expect(page.getByRole('radiogroup')).toHaveCount(0);
 });
 
@@ -125,7 +148,7 @@ test('[P0] signed-out onboarding can open BYOK setup without Cloud authorization
   await expect.poll(() => page.evaluate(() => window.__amrOnboardingLoginCalls ?? 0)).toBe(0);
 
   await page.getByRole('button', { name: /^Back$|返回/i }).click();
-  await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to OpenDesign|登录 OpenDesign/i);
+  await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to Creator Studio Design|登录 Creator Studio Design/i);
   await expect(page.getByRole('radiogroup')).toHaveCount(0);
 });
 
@@ -356,7 +379,7 @@ test('[P0] Cloud status failure does not block signed-out Local CLI or BYOK setu
   await expect(page.getByRole('button', { name: /About you|了解你/i })).toHaveCount(0);
   const primary = cloudPrimaryButton(page);
   await expect(primary).toBeVisible();
-  await expect(primary).toHaveText(/Sign in to OpenDesign|登录 OpenDesign/i);
+  await expect(primary).toHaveText(/Sign in to Creator Studio Design|登录 Creator Studio Design/i);
   await expect(page.getByRole('button', { name: /Local (coding )?agent/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /Bring Your Own Key/i })).toBeVisible();
   await expect(page.getByText(/Optional details for better defaults/i)).toHaveCount(0);
@@ -395,7 +418,7 @@ test('[P0] onboarding cancel during a slow AMR status check does not start login
   await cancelSignIn.click();
 
   const primary = cloudPrimaryButton(page);
-  await expect(primary).toHaveText(/Sign in to OpenDesign|登录 OpenDesign/i);
+  await expect(primary).toHaveText(/Sign in to Creator Studio Design|登录 Creator Studio Design/i);
   // The status read was canceled before a daemon login attempt was created,
   // so there is no attempt-scoped process for the client to cancel.
   await expect.poll(() => page.evaluate(() => window.__amrOnboardingCancelCalls ?? 0)).toBe(0);
@@ -477,7 +500,7 @@ test('[P0] @critical onboarding signed-in AMR path finishes setup with the AMR r
   await expect(primary).toHaveText(/Continue \(signed in\)|继续（已登录）/i);
   await clickCloudPrimary(page);
   await expectModelSourceChooser(page);
-  await continueWithModelSource(page, /OpenDesign Hosted/i);
+  await continueWithModelSource(page, /Creator Studio Design Hosted/i);
   await expectOnboardingFinished(page);
   await pollStoredConfig(page).toMatchObject({
     agentId: 'amr',
@@ -504,7 +527,7 @@ test('[P0] onboarding AMR runtime selection carries into the first Home run requ
 
   await clickCloudPrimary(page);
   await expectModelSourceChooser(page);
-  await continueWithModelSource(page, /OpenDesign Hosted/i);
+  await continueWithModelSource(page, /Creator Studio Design Hosted/i);
   await expectOnboardingFinished(page);
 
   const runBodies: Array<Record<string, unknown>> = [];
@@ -551,7 +574,7 @@ test('[P0] completed BYOK setup stays usable while the unrelated Cloud session i
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByTestId('home-hero-input')).toBeVisible();
   await expect(page.getByRole('heading', { name: /Choose your model source|选择模型来源/i })).toHaveCount(0);
-  // PRODUCT INVARIANT: Cloud identity gates OpenDesign Cloud execution only.
+  // PRODUCT INVARIANT: Cloud identity gates Creator Studio Design Cloud execution only.
   // A configured BYOK runtime neither redirects to onboarding nor starts a
   // passive Cloud login merely because the independent AMR status is signed out.
   await expect.poll(() => page.evaluate(() => window.__amrOnboardingLoginCalls ?? 0)).toBe(0);
@@ -640,7 +663,7 @@ test('[P0] active Cloud sign-out preserves BYOK and unrelated preferences while 
   await page.getByTestId('sign-out-confirm-accept').click();
 
   await expect(connectLandingHeading(page)).toBeVisible();
-  await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to OpenDesign|登录 OpenDesign/i);
+  await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to Creator Studio Design|登录 Creator Studio Design/i);
   await expect(page.getByTestId('home-hero-input')).toHaveCount(0);
   await pollStoredConfig(page).toMatchObject({
     mode: 'daemon',
@@ -815,7 +838,7 @@ test('[P0] signed-out users are redirected from Home to Cloud sign-in', async ({
   await dismissPrivacyDialog(page);
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(connectLandingHeading(page)).toBeVisible();
-  await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to OpenDesign|登录 OpenDesign/i);
+  await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to Creator Studio Design|登录 Creator Studio Design/i);
   await expect(page.getByTestId('home-hero-input')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.__amrOnboardingLoginCalls ?? 0)).toBe(0);
 });
@@ -842,7 +865,7 @@ for (const destination of [
 
     await expect(page).toHaveURL(/\/onboarding$/);
     await expect(connectLandingHeading(page)).toBeVisible();
-    await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to OpenDesign|登录 OpenDesign/i);
+    await expect(cloudPrimaryButton(page)).toHaveText(/Sign in to Creator Studio Design|登录 Creator Studio Design/i);
     await expect.poll(() => page.evaluate(() => window.__amrOnboardingLoginCalls ?? 0)).toBe(0);
   });
 }
@@ -1294,7 +1317,7 @@ async function wireOnboardingMocks(
 
   await page.route('**/api/integrations/vela/status', async (route) => {
     statusCalls += 1;
-    await page.evaluate((calls) => {
+    await safeEvaluate(page, (calls) => {
       window.__amrOnboardingStatusCalls = calls;
     }, statusCalls);
     if (options.statusGate) {
@@ -1307,14 +1330,14 @@ async function wireOnboardingMocks(
         body: JSON.stringify({ error: 'status unavailable' }),
       });
       statusResponses += 1;
-      await page.evaluate((responses) => {
+      await safeEvaluate(page, (responses) => {
         window.__amrOnboardingStatusResponses = responses;
       }, statusResponses);
       return;
     }
-    if (loginInFlight && await page.evaluate(() => (
-      window.__amrOnboardingCompleteLogin === true
-    ))) {
+    const shouldCompleteLogin = loginInFlight
+      && (await safeEvaluate(page, () => window.__amrOnboardingCompleteLogin === true)) === true;
+    if (shouldCompleteLogin) {
       loggedIn = true;
       loginInFlight = false;
     }
@@ -1325,11 +1348,11 @@ async function wireOnboardingMocks(
       (!loggedIn &&
         typeof options.delaySignedOutStatusMs === 'number' &&
         options.delaySignedOutStatusMs > 0 &&
-        (await page.evaluate(() => {
+        (await safeEvaluate(page, () => {
           if (!window.__amrOnboardingDelayNextSignedOutStatus) return false;
           window.__amrOnboardingDelayNextSignedOutStatus = false;
           return true;
-        })));
+        })) === true);
     if (shouldDelaySignedOutStatus) {
       const delayMs = shouldDelayAllStatuses
         ? delayAllStatusMs
@@ -1359,11 +1382,11 @@ async function wireOnboardingMocks(
           },
     });
     statusResponses += 1;
-    await page.evaluate((responses) => {
+    await safeEvaluate(page, (responses) => {
       window.__amrOnboardingStatusResponses = responses;
     }, statusResponses);
     if (shouldDelaySignedOutStatus) {
-      await page.evaluate(() => {
+      await safeEvaluate(page, () => {
         window.__amrOnboardingSlowStatusResolved = true;
       });
     }
@@ -1390,7 +1413,7 @@ async function wireOnboardingMocks(
       loggedIn = true;
       loginInFlight = false;
     }
-    await page.evaluate((calls) => {
+    await safeEvaluate(page, (calls) => {
       window.__amrOnboardingLoginCalls = calls;
     }, loginCalls);
     await route.fulfill({
@@ -1408,7 +1431,7 @@ async function wireOnboardingMocks(
     expect(route.request().postDataJSON()).toEqual({ authAttemptId });
     cancelCalls += 1;
     loginInFlight = false;
-    await page.evaluate((calls) => {
+    await safeEvaluate(page, (calls) => {
       window.__amrOnboardingCancelCalls = calls;
     }, cancelCalls);
     await route.fulfill({ json: { canceled: true, pids: [4242] } });
@@ -1428,10 +1451,10 @@ async function gotoOnboarding(page: Page) {
   await waitForLoadingToClear(page);
   await dismissPrivacyDialog(page);
   // The runtime-picker "Choose a runtime" heading was removed. The Connect
-  // step now opens on a centered OpenDesign Cloud sign-in landing whose
+  // step now opens on a centered Creator Studio Design Cloud sign-in landing whose
   // heading is the stable marker that onboarding has rendered.
   await expect(
-    page.getByRole('heading', { name: /Sign in to OpenDesign|登录 OpenDesign/i }),
+    page.getByRole('heading', { name: /Sign in to Creator Studio Design|登录 Creator Studio Design/i }),
   ).toBeVisible();
 }
 
@@ -1452,7 +1475,7 @@ async function clickCloudPrimary(page: Page) {
 // The connect landing heading — the stable "we're still on the cloud sign-in
 // landing" marker that replaced the old "Choose a runtime" heading.
 function connectLandingHeading(page: Page): Locator {
-  return page.getByRole('heading', { name: /Sign in to OpenDesign|登录 OpenDesign/i });
+  return page.getByRole('heading', { name: /Sign in to Creator Studio Design|登录 Creator Studio Design/i });
 }
 
 async function expectModelSourceChooser(page: Page) {

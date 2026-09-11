@@ -23,6 +23,7 @@ type MockAmrPersonalWorkspaceOptions = {
   accountCredits?: number;
   accountPlan?: string;
   accountSummaryAvailable?: boolean;
+  workspaceBalanceAvailable?: boolean;
 };
 
 export const AMR_PERSONAL_WORKSPACE_ITEM = {
@@ -130,14 +131,16 @@ export async function mockAmrPersonalWorkspace(
       await route.fulfill({
         json: {
           summary: null,
-          workspaceBalance: {
-            workspaceId,
-            workspaceMemberId: AMR_PERSONAL_WORKSPACE_CONTEXT.workspaceMemberId,
-            balanceUsd: accountBalanceUsd,
-            billingScopeVersion: 2,
-            expiresAt: null,
-            updatedAt: observedAt,
-          },
+          workspaceBalance: options.workspaceBalanceAvailable === false
+            ? null
+            : {
+                workspaceId,
+                workspaceMemberId: AMR_PERSONAL_WORKSPACE_CONTEXT.workspaceMemberId,
+                balanceUsd: accountBalanceUsd,
+                billingScopeVersion: 2,
+                expiresAt: null,
+                updatedAt: observedAt,
+              },
           workspaceRuntime: {
             workspaceId,
             workspaceMemberId: AMR_PERSONAL_WORKSPACE_CONTEXT.workspaceMemberId,
@@ -209,12 +212,12 @@ export async function mockAmrPersonalWorkspace(
 }
 
 export async function waitForLoadingToClear(page: Page) {
-  await page.getByText('Loading OpenDesign…').waitFor({ state: 'hidden', timeout: T.long }).catch(() => {});
+  await page.getByText('Loading Creator Studio Design…').waitFor({ state: 'hidden', timeout: T.long }).catch(() => {});
 }
 
 export async function dismissPrivacyDialog(page: Page) {
   const privacySurface = page
-    .getByRole('region', { name: /Help us improve OpenDesign/i })
+    .getByRole('region', { name: /Help us improve Creator Studio Design/i })
     .or(page.locator('.privacy-consent-banner'))
     .first();
   await privacySurface.waitFor({ state: 'visible', timeout: 1_000 }).catch(() => {});

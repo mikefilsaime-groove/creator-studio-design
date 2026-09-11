@@ -50,20 +50,15 @@ test('[P1] keeps the project account action host anchored to the right edge', as
   expect(1280 - accountActionsRect.right).toBeLessThanOrEqual(24);
 });
 
-test('[P2] captures the workspace staged contexts surface', async ({ page }) => {
+test('[P2] captures the workspace staged attachments surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
   await gotoVisualWorkspace(page);
 
   await prepareVisualWorkspaceFileList(page);
-  // The row is no longer unconditionally present: 56b538aa4 ("compact the
-  // project composer like #5517") moved the design-system picker out of the
-  // staged-context bar into the composer's icon row, and the picker was the
-  // only thing keeping the bar mounted on a fresh project. `StagedRunContexts`
-  // now renders once the run genuinely carries context, so stage an attachment
-  // — the fixture already answers `/api/projects/*/upload` with
-  // visual-reference.txt — instead of asserting a bar the composer only used to
-  // draw because the picker lived inside it.
+  // Attachments use the composer tray; `staged-contexts` is reserved for
+  // run context such as skills, MCP servers, connectors, and plugins. Keep the
+  // visual witness on the surface the user actually sees after an upload.
   const uploadResponse = page.waitForResponse(
     (response) => response.url().includes('/upload') && response.request().method() === 'POST',
   );
@@ -74,15 +69,13 @@ test('[P2] captures the workspace staged contexts surface', async ({ page }) => 
   });
   expect((await uploadResponse).ok()).toBeTruthy();
 
-  const stagedContexts = page.getByTestId('staged-contexts');
-  await expect(stagedContexts).toBeVisible();
-  // Stronger than the old `not.toBeEmpty()`: name the chip we staged, so an
-  // empty-but-present bar cannot satisfy the capture.
-  await expect(
-    stagedContexts.locator('.staged-name', { hasText: 'visual-reference.txt' }),
-  ).toBeVisible();
+  const stagedAttachments = page.getByTestId('staged-attachments');
+  await expect(stagedAttachments).toBeVisible();
+  // Document cards may middle-truncate their visible basename. The full file
+  // name remains the stable title contract on the card.
+  await expect(stagedAttachments.getByTitle('visual-reference.txt', { exact: true })).toBeVisible();
 
-  await captureVisual(page, 'visual-workspace-staged-contexts');
+  await captureVisual(page, 'visual-workspace-staged-attachments');
 });
 
 test('[P1] @critical captures CSS hotspot workspace, preview, and settings surfaces', async ({ page }) => {
@@ -135,7 +128,7 @@ test('[P2] captures the topbar execution switcher surface', async ({ page }) => 
   );
 });
 
-test('[P1] captures the topbar OpenDesign model picker with no account surface', async ({ page }) => {
+test('[P1] captures the topbar Creator Studio Design model picker with no account surface', async ({ page }) => {
   test.setTimeout(60_000);
 
   await configureVisualPage(page, {
@@ -163,7 +156,7 @@ test('[P1] captures the topbar OpenDesign model picker with no account surface',
   const popover = page.getByTestId('inline-model-switcher-popover');
   await expect(popover).toBeVisible();
   // InlineModelSwitcher refetches the AMR status whenever the popover opens
-  // with OpenDesign installed, so a landed response proves the signed-in
+  // with Creator Studio Design installed, so a landed response proves the signed-in
   // render happened.
   await expect.poll(() => velaStatusRequests).toBeGreaterThan(requestsBeforeOpen);
 
@@ -173,7 +166,7 @@ test('[P1] captures the topbar OpenDesign model picker with no account surface',
   // 升级 entry all belong to the non-compact shape that the top bar stopped
   // mounting — account and billing surfaces live in the nav rail and Settings
   // now. Coverage did not disappear with the assertions: the live plan/balance/
-  // upgrade card is captured by visual-settings.test.ts's "settings OpenDesign
+  // upgrade card is captured by visual-settings.test.ts's "settings Creator Studio Design
   // account balance" case in this same lane, and the `inline_amr_upgrade`
   // attribution URL by apps/web/tests/components/InlineModelSwitcher.test.tsx
   // ("routes inline upgrades through the signed-in AMR profile").
@@ -256,11 +249,10 @@ test('[P2] captures the topbar BYOK execution switcher surface', async ({ page }
   await gotoVisualHome(page);
 
   const chip = page.getByTestId('inline-model-switcher-chip');
-  // BYOK identity reads off the compact chip now: the selected model's brand
-  // mark leads (the link glyph is only the fallback for a vendor without one)
-  // and the configured model name follows it. That is what the
+  // BYOK identity reads off the compact chip now: the link glyph stands in for
+  // an agent logo and the configured model name follows it. That is what the
   // `aria-selected` mode tab used to prove.
-  await expect(chip.locator('.inline-switcher__chip-model-logo')).toBeVisible();
+  await expect(chip.locator('.inline-switcher__byok-glyph')).toBeVisible();
   await expect(chip).toHaveAttribute('aria-label', /gpt-4o/);
   await chip.click();
   const popover = page.getByTestId('inline-model-switcher-popover');
@@ -305,7 +297,7 @@ test('[P2] captures the avatar menu surface', async ({ page }) => {
   await captureVisualTarget(page, 'visual-avatar-menu-panel', menu);
 });
 
-test('[P1] Avatar menu stays a model picker for a signed-in OpenDesign account', async ({ page }) => {
+test('[P1] Avatar menu stays a model picker for a signed-in Creator Studio Design account', async ({ page }) => {
   test.setTimeout(60_000);
 
   await configureVisualPage(page, {
@@ -331,17 +323,17 @@ test('[P1] Avatar menu stays a model picker for a signed-in OpenDesign account',
 
   const requestsBeforeOpen = velaStatusRequests;
   const menu = await prepareVisualAvatarMenu(page);
-  // AvatarMenu refetches the login status on open whenever OpenDesign is
+  // AvatarMenu refetches the login status on open whenever Creator Studio Design is
   // installed, so a landed response means the signed-in render has happened.
   await expect.poll(() => velaStatusRequests).toBeGreaterThan(requestsBeforeOpen);
 
-  // 4e3161751 (#6156) deleted the OpenDesign account row from this popover —
+  // 4e3161751 (#6156) deleted the Creator Studio Design account row from this popover —
   // plan badge, balance, wallet fallback, upgrade/console links — and retired
   // the nine Vitest suites that asserted it, recasting the survivor as
   // apps/web/tests/components/AvatarMenu.test.tsx's "never renders the account
   // row, plan badge or balance in the popover". This is that invariant at the
   // rendered-app layer. The signed-in account surface itself is captured by
-  // visual-settings.test.ts's "settings OpenDesign account balance" case, and
+  // visual-settings.test.ts's "settings Creator Studio Design account balance" case, and
   // the `avatar_amr_upgrade` deep link — now reachable only by clicking a
   // plan-gated model row, which needs workspace billing permission this lane
   // does not fixture — by that same Vitest file's "routes a locked model only
@@ -349,7 +341,7 @@ test('[P1] Avatar menu stays a model picker for a signed-in OpenDesign account',
   await expect(menu.locator('[data-testid^="avatar-agent-option-"]')).toHaveCount(0);
   await expect(menu.locator('.avatar-amr-row')).toHaveCount(0);
   await expect(menu).not.toContainText('$247.51');
-  // What it does render for a signed-in OpenDesign runtime: that runtime's
+  // What it does render for a signed-in Creator Studio Design runtime: that runtime's
   // model catalog, with the configured model marked active.
   const modelList = menu.getByTestId('avatar-model-list');
   await expect(modelList).toBeVisible();

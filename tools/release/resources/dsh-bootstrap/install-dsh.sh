@@ -2,7 +2,7 @@
 set -eu
 
 NODE_VERSION='24.19.0'
-DSH_VERSION='0.1.1-rc.2'
+DSH_VERSION='0.1.2-rc.1'
 PNPM_VERSION='11.7.0'
 # Freeze npm's view of the registry to just after DSH_VERSION was published.
 #
@@ -17,13 +17,13 @@ PNPM_VERSION='11.7.0'
 #
 # The cutoff must stay LATER than DSH_VERSION's publish time and EARLIER than
 # the next release candidate's. Update both values together.
-DSH_RESOLUTION_CUTOFF='2026-08-21T13:00:00Z'
+DSH_RESOLUTION_CUTOFF='2026-09-03T07:00:00Z'
 
 NO_LAUNCH=0
 
 usage() {
   cat <<'EOF'
-Install the DeepSeek Harness toolchain supported by OpenDesign.
+Install the DeepSeek Harness toolchain supported by Creator Studio Design.
 
 Usage:
   install-dsh.sh [--no-launch]
@@ -121,7 +121,7 @@ finish() {
   label=$1
   info "DeepSeek Harness $DSH_VERSION is ready ($label)."
   info "Command: $LAUNCHER"
-  info 'OpenDesign can discover this command without editing your shell profile.'
+  info 'Creator Studio Design can discover this command without editing your shell profile.'
   if [ "$NO_LAUNCH" -eq 1 ]; then
     return 0
   fi
@@ -139,7 +139,10 @@ else
     Darwin) os=darwin ;;
     Linux)
       os=linux
-      [ ! -f /etc/alpine-release ] || fail 'Alpine Linux is not supported by the official Node.js archive. Install Node.js 24 and run npx @deepseek-ai/dsh@0.1.0-rc.6 web.'
+      # Interpolated, not spelled out: this fallback named a release candidate
+      # two patch lines behind DSH_VERSION, because nothing points at it when
+      # the pin above moves. There is one dsh version in this file.
+      [ ! -f /etc/alpine-release ] || fail "Alpine Linux is not supported by the official Node.js archive. Install Node.js 24 and run npx @deepseek-ai/dsh@$DSH_VERSION web."
       ;;
     *) fail "unsupported operating system: $os" ;;
   esac
@@ -236,7 +239,7 @@ fi
 
 runtime_staging=$INSTALL_ROOT/.runtime-dsh-$DSH_VERSION.$$
 mkdir -p "$runtime_staging"
-info "Installing dsh $DSH_VERSION and pnpm $PNPM_VERSION in OpenDesign's user toolchain..."
+info "Installing dsh $DSH_VERSION and pnpm $PNPM_VERSION in Creator Studio Design's user toolchain..."
 PATH="$managed_node_dir/bin:${PATH:-}" "$managed_node_dir/bin/npm" install \
   --prefix "$runtime_staging" \
   --no-save \

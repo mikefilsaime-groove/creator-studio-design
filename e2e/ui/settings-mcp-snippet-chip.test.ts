@@ -1,6 +1,7 @@
 import { expect, test } from '@/playwright/suite';
 import { T } from '@/timeouts';
 import { openSettingsDialog } from '../lib/playwright/amr.js';
+import { suppressWhatsNew } from '../lib/playwright/mock-factory.js';
 
 // Regression for #4509: the MCP server setup snippet renders inside a dark
 // `<pre><code>` block, but the inner `<code>` used to inherit the global
@@ -12,6 +13,10 @@ import { openSettingsDialog } from '../lib/playwright/amr.js';
 const STORAGE_KEY = 'open-design:config';
 
 test.beforeEach(async ({ page }) => {
+  // The entry home mounts `WhatsNewPopup` (EntryShell.tsx) and its backdrop sits
+  // at z-index 1500 — above the z-index 120 chrome that owns the rail/settings
+  // controls this spec clicks. A live release card would swallow those clicks.
+  await suppressWhatsNew(page);
   await page.addInitScript((key) => {
     window.localStorage.setItem(key, JSON.stringify({
       mode: 'api', apiProtocol: 'openai', apiKey: 'sk-test', baseUrl: 'https://api.deepseek.com',
@@ -117,8 +122,8 @@ test('[P1] MCP OAuth connect callback updates status and supports disconnect', a
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await page.getByText('Loading OpenDesign…').waitFor({ state: 'hidden', timeout: T.medium });
-  const privacyDialog = page.getByRole('dialog').filter({ hasText: 'Help us improve OpenDesign' });
+  await page.getByText('Loading Creator Studio Design…').waitFor({ state: 'hidden', timeout: T.medium });
+  const privacyDialog = page.getByRole('dialog').filter({ hasText: 'Help us improve Creator Studio Design' });
   if (await privacyDialog.isVisible()) {
     await privacyDialog.getByRole('button', { name: /I get it|not now|got it|don't share/i }).click();
   }

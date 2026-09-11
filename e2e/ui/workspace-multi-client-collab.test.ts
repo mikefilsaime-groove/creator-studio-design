@@ -10,6 +10,7 @@ import { startFakeCollabHub } from '@/playwright/fake-collab-hub';
 import { applyStandardMocks } from '@/playwright/mock-factory';
 import { ensureRailOpen } from '@/playwright/rail';
 import { clusterTest as test, expect } from '@/playwright/suite';
+import { clickPreviewToolbarAction } from '@/playwright/workspace';
 import { T } from '@/timeouts';
 
 const WORKSPACE_ID = 'ws-multi-client';
@@ -510,8 +511,12 @@ test('[P0] two isolated clients converge live content, presence, and owner unsha
       await expect(ownerPage.getByTestId('file-workspace')).toBeVisible({
         timeout: T.long,
       });
-      await ownerPage.getByTestId('board-mode-toggle').click();
-      await ownerPage.getByTestId('comment-panel-toggle').click();
+      await clickPreviewToolbarAction(ownerPage, 'board-mode-toggle', /^Comment$/);
+      await clickPreviewToolbarAction(
+        ownerPage,
+        'comment-panel-toggle',
+        /^Comments \(\d+\)$/,
+      );
       await expect(
         ownerPage
           .getByTestId('comment-side-panel')
@@ -1064,7 +1069,7 @@ async function pinWorkspace(page: Page, workspaceMemberId: string): Promise<void
 async function openHome(page: Page): Promise<void> {
   await page.bringToFront();
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: T.xlong });
-  await expect(page.getByText('Loading OpenDesign…')).toHaveCount(0, {
+  await expect(page.getByText('Loading Creator Studio Design…')).toHaveCount(0, {
     timeout: T.xlong,
   });
   // Do not wait on the long-lived SSE response itself: Chromium may not emit
@@ -1072,7 +1077,7 @@ async function openHome(page: Page): Promise<void> {
   // convergence assertions below are the actual connection contract.
   const privacyDialog = page
     .getByRole('dialog')
-    .filter({ hasText: 'Help us improve OpenDesign' });
+    .filter({ hasText: 'Help us improve Creator Studio Design' });
   if (await privacyDialog.isVisible().catch(() => false)) {
     await privacyDialog
       .getByRole('button', { name: /I get it|not now|got it|don't share/i })
