@@ -40,6 +40,24 @@ describe("desktop BrowserWindow chrome options", () => {
     expect(runtimeSource).toContain("width: var(--app-chrome-traffic-space) !important;");
   });
 
+  test("centers the macOS traffic lights on the 44px top chrome (OPEND-3111)", () => {
+    // The chrome row is 44px tall (routines.css `.workspace-shell
+    // .workspace-tabs-chrome.app-chrome-header`), so its midline is 22 and the
+    // 12px traffic-light circles start at 22 - 6 = 16. Keep this in step with
+    // the CSS: apps/web/tests/styles/top-chrome-height.test.ts pins the 44.
+    // The offset lives in MAC_WINDOW_CHROME, spread into the main window.
+    expect(runtimeSource).toContain("trafficLightPosition: { x: 12, y: 16 }");
+    expect(mainAppWindowOptions()).toContain("...MAC_WINDOW_CHROME");
+  });
+
+  test("boots on the fork-owned Creator Studio Design branding instead of an upstream wordmark", () => {
+    expect(runtimeSource).toContain("const logoDataUrl = splashLogoDataUrl()");
+    expect(runtimeSource).toContain('<div class="splash-name">Creator Studio Design</div>');
+    expect(runtimeSource).not.toContain('from "./splash-pixel-scan.js"');
+    expect(runtimeSource).not.toContain("splash-video");
+    expect(runtimeSource).not.toContain("<video");
+  });
+
   test("mirrors macOS fullscreen state onto the renderer for chrome CSS", () => {
     expect(runtimeSource).toContain('window.on("enter-full-screen", () => void syncWindowFullscreenClass(window));');
     expect(runtimeSource).toContain('window.on("leave-full-screen", () => void syncWindowFullscreenClass(window));');

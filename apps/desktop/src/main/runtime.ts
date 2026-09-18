@@ -287,11 +287,11 @@ export function isRendererFailureHttpStatus(httpResponseCode: number): boolean {
 const PENDING_POLL_MS = 120;
 const RUNNING_POLL_MS = 2000;
 // Minimum time the light splash window stays on screen before we reveal the main
-// window. It is sized to outlast the ~1.7s clip so the brand animation always
-// plays through. The splash is shown immediately and in parallel with the
-// daemon/web boot (see the packaged entry), so this time overlaps startup rather
-// than adding to it; the <video> holds on its final frame (it does not loop)
-// while the runtime finishes coming up. See `createSplashWindow`.
+// window. It is sized so the pixel-scan wordmark's first entrance sweep (2.6s,
+// see `splash-pixel-scan.ts`) is well under way before the hand-off. The splash
+// is shown immediately and in parallel with the daemon/web boot (see the
+// packaged entry), so this time overlaps startup rather than adding to it; the
+// sweep loops while the runtime finishes coming up. See `createSplashWindow`.
 const MIN_SPLASH_MS = 2000;
 // While the splash is up, the real web app loads in a hidden main window. We
 // reveal it only once the web bundle reports it has actually mounted (it sets
@@ -781,19 +781,19 @@ const MAC_WINDOW_CHROME =
     ? ({
         titleBarStyle: "hiddenInset" as const,
         // y centers the 12px traffic-light circles on the tab strip's midline.
-        // The base `.workspace-tabs-chrome.app-chrome-header` rule in apps/web
-        // shell.css says 44px, but every real window wraps the tab bar in
-        // `.workspace-shell` (see App.tsx), and `.workspace-shell
-        // .workspace-tabs-chrome.app-chrome-header` in viewer/routines.css
-        // overrides it to 52px (10px above the tab + 32px tab + 10px below) —
-        // confirmed via getBoundingClientRect() against a live desktop window,
-        // not by reading the CSS alone, since that 44px rule reads as "the"
-        // rule until you check what actually wins. Midline is 52 / 2 = 26, so
-        // the circles' top edge is 26 - 6 = 20. A prior pass "corrected" this
-        // to y: 16 off the un-overridden 44px rule, which is what actually
-        // reintroduced the misalignment — don't repeat that without first
-        // measuring the live header height.
-        trafficLightPosition: { x: 12, y: 20 },
+        // Every real window wraps the tab bar in `.workspace-shell` (see
+        // App.tsx), so the rule that wins is `.workspace-shell
+        // .workspace-tabs-chrome.app-chrome-header` in apps/web
+        // viewer/routines.css — 44px since OPEND-3111 (6px above the 32px
+        // controls + 6px below), matching the base `.workspace-tabs-chrome
+        // .app-chrome-header` rule in shell.css and the `.workspace-shell`
+        // grid row. Midline is 44 / 2 = 22, so the circles' top edge is
+        // 22 - 6 = 16. Before changing this, measure the live header with
+        // getBoundingClientRect() against a desktop window — the CSS has
+        // carried a stale override before, and the offset must follow what
+        // actually renders. apps/web/tests/styles/top-chrome-height.test.ts
+        // pins the 44 on the web side; window-chrome.test.ts pins this 16.
+        trafficLightPosition: { x: 12, y: 16 },
         // Frosted-glass window: the desktop wallpaper blurs through the whole
         // window (NSVisualEffectView). The web shell keeps html/body
         // transparent in desktop mode (see apps/web app-wash.css) so the
