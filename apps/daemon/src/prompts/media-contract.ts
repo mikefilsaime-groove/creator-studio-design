@@ -103,9 +103,11 @@ it; a sentence that only says "it failed" is not an acceptable substitute.
   recovers, and if it keeps happening, contact us." Simplified Chinese,
   exactly:
   图片没生成出来,不是你的操作有误 —— 这次是 Creator Studio Design 自己的问题,我们已经记下了。重试一般能恢复;反复出现的话联系我们。
+- Missing wrapper runtime -- the matching-shell check shows \`OD_NODE_BIN\` or \`OD_BIN\` empty (\`echo $env:OD_NODE_BIN\` on PowerShell; \`echo "$OD_NODE_BIN"\` on POSIX). This is not \`contact-support\`. Reply exactly: Creator Studio Design couldn't find its Node runtime, so the image wasn't generated. Quit and reopen the desktop app, then try again. Simplified Chinese, exactly:
+  Creator Studio Design 找不到 Node 运行时，图片没生成。请完全退出并重新打开桌面应用后再试。
 - No \`nextStep\` at all -- an older daemon, or a failure that never reached the
-  dispatcher: use the \`contact-support\` sentence. If image generation was
-  expected and you never invoked the dispatcher, that is your own miss and it
+  dispatcher for a reason other than a missing wrapper runtime: use the \`contact-support\` sentence. If image generation was
+  expected and you never invoked the dispatcher even though the matching-shell wrapper env was set, that is your own miss and it
   takes the same sentence; do not invent a cause for it.
 
 Video and audio use the same sentences with the medium swapped -- 视频 / 音频 in
@@ -229,23 +231,19 @@ prompt and the narration.
 
 ### Environment the daemon injected for you
 
-The daemon spawns you with these env vars set (verify with \`echo\`):
+The daemon spawns you with these env vars set. Verify with the matching-shell syntax — in PowerShell \`echo $OD_NODE_BIN\` is always empty; use \`echo $env:OD_NODE_BIN\`:
 
 - \`OD_NODE_BIN\`    — absolute path to the Node-compatible runtime that started the daemon. Packaged desktop installs provide this even when the user has no system \`node\` on PATH.
-- \`OD_BIN\`         — absolute path to the OD CLI script. On POSIX shells run with \`"$OD_NODE_BIN" "$OD_BIN" …\`.
-- \`OD_PROJECT_ID\`  — the active project's id. Pass it as \`--project "$OD_PROJECT_ID"\`.
+- \`OD_BIN\`         — absolute path to the OD CLI script. On POSIX shells run with \`"$OD_NODE_BIN" "$OD_BIN" …\`. On PowerShell run \`& $env:OD_NODE_BIN $env:OD_BIN …\`. On cmd.exe run \`"%OD_NODE_BIN%" "%OD_BIN%" …\`.
+- \`OD_PROJECT_ID\`  — the active project's id. Pass it as \`--project "$OD_PROJECT_ID"\` (or \`$env:OD_PROJECT_ID\` / \`%OD_PROJECT_ID%\`).
 - \`OD_PROJECT_DIR\` — the project's files folder (your cwd). Generated files land here.
 - \`OD_DAEMON_URL\`  — base URL of the local daemon, e.g. \`http://127.0.0.1:7456\`.
 
-If any of these are unset, the user is running you outside the OD daemon —
-ask them to relaunch from the OD app (or pass the values explicitly).
-TODO (post-v1): teach the media dispatcher to auto-spawn a transient
-daemon when invoked outside the OD app, so a user running \`claude\`
-directly in the project dir doesn't have to relaunch.
+If the matching-shell check shows \`OD_NODE_BIN\` or \`OD_BIN\` empty, use the missing-runtime user sentence. Do not invent a Creator Studio Design outage and do not use \`contact-support\` for a missing runtime.
 
 ### Invocation
 
-Run via your shell tool (Bash on Claude Code, exec on Codex/Gemini, etc.):
+Run via your shell tool (Bash on Claude Code, PowerShell on Windows Codex, exec on Gemini, etc.):
 
 \`\`\`bash
 "$OD_NODE_BIN" "$OD_BIN" media generate \\
@@ -264,6 +262,14 @@ Run via your shell tool (Bash on Claude Code, exec on Codex/Gemini, etc.):
   [--audio-kind music|speech|sfx]   # audio only
   [--voice <provider-voice-id>]     # audio:speech only; omit to use provider default
   [--language <lang>]               # audio:speech only; language boost (e.g. Chinese,Yue for Cantonese)
+\`\`\`
+
+\`\`\`powershell
+& $env:OD_NODE_BIN $env:OD_BIN media generate --project $env:OD_PROJECT_ID --surface <image|video|audio> --model <model-id> --output <filename> --prompt "<full prompt>"
+\`\`\`
+
+\`\`\`cmd
+"%OD_NODE_BIN%" "%OD_BIN%" media generate --project "%OD_PROJECT_ID%" --surface <image|video|audio> --model <model-id> --output <filename> --prompt "<full prompt>"
 \`\`\`
 
 Always quote the prompt value. Use \`--prompt "<full prompt>"\` (or the
@@ -393,12 +399,13 @@ exits with a distinct code per outcome:
 - \`exit 5\` — terminal **failed**. Stderr carries the upstream error.
 - \`exit 2\` — still **running**. Final stdout line is
   \`{"taskId":"…","status":"running","nextSince":<n>}\`. Re-run
-  \`"$OD_NODE_BIN" "$OD_BIN" media wait <taskId> --since <n>\` to continue from where you left
+  \`"$OD_NODE_BIN" "$OD_BIN" media wait <taskId> --since <n>\` (PowerShell: \`& $env:OD_NODE_BIN $env:OD_BIN media wait <taskId> --since <n>\`) to continue from where you left
   off (\`--since\` skips already-seen progress lines so you don't see the
   same chatter twice).
 
-The pattern in your shell tool (uses python3 to parse JSON — do NOT use jq, it
-may not be installed):
+The pattern in your shell tool (parse JSON with the injected Node runtime or
+PowerShell \`ConvertFrom-Json\` — do NOT use python3 or jq; neither is
+guaranteed on Windows):
 
 \`\`\`bash
 out=\$("$OD_NODE_BIN" "$OD_BIN" media generate --surface image --model flux-pro-ultra --prompt "…")
@@ -407,14 +414,14 @@ if [ "\$ec" -ne 0 ]; then
   echo "\$out" >&2; exit "\$ec"
 fi
 last=\$(printf '%s\\n' "\$out" | tail -1)
-task_id=\$(printf '%s\\n' "\$last" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('taskId',''))" 2>/dev/null)
-since=\$(printf '%s\\n' "\$last" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('nextSince',0))" 2>/dev/null)
+task_id=\$("$OD_NODE_BIN" -e "const d=JSON.parse(process.argv[1]||'{}');process.stdout.write(d.taskId||'')" -- "\$last")
+since=\$("$OD_NODE_BIN" -e "const d=JSON.parse(process.argv[1]||'{}');process.stdout.write(String(d.nextSince||0))" -- "\$last")
 since="\${since:-0}"
 while [ -n "\$task_id" ]; do
   out=\$("$OD_NODE_BIN" "$OD_BIN" media wait "\$task_id" --since "\$since")
   ec=\$?
   last=\$(printf '%s\\n' "\$out" | tail -1)
-  since=\$(printf '%s\\n' "\$last" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('nextSince',\$since))" 2>/dev/null)
+  since=\$("$OD_NODE_BIN" -e "const d=JSON.parse(process.argv[1]||'{}');process.stdout.write(String(d.nextSince||0))" -- "\$last")
   since="\${since:-0}"
   if [ "\$ec" -eq 0 ]; then
     task_id=""
@@ -424,6 +431,23 @@ while [ -n "\$task_id" ]; do
 done
 # At this point ec is 0 (done) or 5 (failed). Final result on the last stdout line of \$out.
 printf '%s\\n' "\$last"
+\`\`\`
+
+\`\`\`powershell
+if (-not $env:OD_NODE_BIN -or -not $env:OD_BIN) { throw 'OD_NODE_BIN/OD_BIN missing in this shell' }
+$out = & $env:OD_NODE_BIN $env:OD_BIN media generate --surface image --model flux-pro-ultra --prompt "…" | Out-String
+if ($LASTEXITCODE -ne 0) { Write-Error $out; exit $LASTEXITCODE }
+$last = ($out -split "\`n" | Where-Object { $_.Trim() } | Select-Object -Last 1)
+$parsed = $last | ConvertFrom-Json
+while ($parsed.taskId) {
+  $out = & $env:OD_NODE_BIN $env:OD_BIN media wait $parsed.taskId --since $parsed.nextSince | Out-String
+  $ec = $LASTEXITCODE
+  $last = ($out -split "\`n" | Where-Object { $_.Trim() } | Select-Object -Last 1)
+  $parsed = $last | ConvertFrom-Json
+  if ($ec -eq 0) { break }
+  if ($ec -ne 2) { Write-Error $out; exit $ec }
+}
+Write-Output $last
 \`\`\`
 
 Each \`generate\` call lasts at most ~25s and each \`wait\` call at most ~120s,
