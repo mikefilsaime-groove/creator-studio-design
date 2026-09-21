@@ -66,9 +66,11 @@ it; a sentence that only says "it failed" is not an acceptable substitute.
   recovers, and if it keeps happening, contact us." Simplified Chinese,
   exactly:
   图片没生成出来,不是你的操作有误 —— 这次是 Creator Studio Design 自己的问题,我们已经记下了。重试一般能恢复;反复出现的话联系我们。
+- Missing wrapper runtime -- the matching-shell check shows \`OD_NODE_BIN\` or \`OD_BIN\` empty (\`echo $env:OD_NODE_BIN\` on PowerShell; \`echo "$OD_NODE_BIN"\` on POSIX). This is not \`contact-support\`. Reply exactly: Creator Studio Design couldn't find its Node runtime, so the image wasn't generated. Quit and reopen the desktop app, then try again. Simplified Chinese, exactly:
+  Creator Studio Design 找不到 Node 运行时，图片没生成。请完全退出并重新打开桌面应用后再试。
 - No \`nextStep\` at all -- an older daemon, or a failure that never reached the
-  dispatcher: use the \`contact-support\` sentence. If image generation was
-  expected and you never invoked the dispatcher, that is your own miss and it
+  dispatcher for a reason other than a missing wrapper runtime: use the \`contact-support\` sentence. If image generation was
+  expected and you never invoked the dispatcher even though the matching-shell wrapper env was set, that is your own miss and it
   takes the same sentence; do not invent a cause for it.
 
 Video and audio use the same sentences with the medium swapped -- 视频 / 音频 in
@@ -89,13 +91,15 @@ shell command through \`OD_NODE_BIN\` + \`OD_BIN\` is HOW you actually produce b
 Do not try to embed binary content inside \`<artifact>\` tags, and do not
 write image/video/audio bytes by hand. Always call out to the dispatcher.
 
-The daemon injects these environment variables for agent sessions:
+The daemon injects these environment variables for agent sessions. In PowerShell, \`echo $OD_NODE_BIN\` is always empty; use \`echo $env:OD_NODE_BIN\`:
 
 - \`OD_NODE_BIN\` - absolute path to the Node-compatible runtime that started the daemon.
-- \`OD_BIN\` - absolute path to the OD CLI script. On POSIX shells run with \`"$OD_NODE_BIN" "$OD_BIN" ...\`.
+- \`OD_BIN\` - absolute path to the OD CLI script. On POSIX shells run with \`"$OD_NODE_BIN" "$OD_BIN" ...\`. On PowerShell run \`& $env:OD_NODE_BIN $env:OD_BIN ...\`. On cmd.exe run \`"%OD_NODE_BIN%" "%OD_BIN%" ...\`.
 - \`OD_PROJECT_ID\` - active project id. Pass it as \`--project "$OD_PROJECT_ID"\`.
 - \`OD_PROJECT_DIR\` - active project files directory.
 - \`OD_DAEMON_URL\` - base URL of the local daemon.
+
+If the matching-shell check shows \`OD_NODE_BIN\` or \`OD_BIN\` empty, use the missing-runtime user sentence. Do not use \`contact-support\` for a missing runtime.
 
 Run media generation through the dispatcher:
 
@@ -116,6 +120,14 @@ Run media generation through the dispatcher:
   [--audio-kind music|speech|sfx] \\
   [--voice <provider-voice-id>] \\
   [--language <lang>]
+\`\`\`
+
+\`\`\`powershell
+& $env:OD_NODE_BIN $env:OD_BIN media generate --project $env:OD_PROJECT_ID --surface <image|video|audio> --model <model-id> --output <filename> --prompt "<full prompt>"
+\`\`\`
+
+\`\`\`cmd
+"%OD_NODE_BIN%" "%OD_BIN%" media generate --project "%OD_PROJECT_ID%" --surface <image|video|audio> --model <model-id> --output <filename> --prompt "<full prompt>"
 \`\`\`
 
 Always quote the prompt value. Never splice unquoted user text into the
@@ -139,6 +151,14 @@ For long-running renders, continue with:
 
 \`\`\`bash
 "$OD_NODE_BIN" "$OD_BIN" media wait <taskId> --since <nextSince>
+\`\`\`
+
+\`\`\`powershell
+& $env:OD_NODE_BIN $env:OD_BIN media wait <taskId> --since <nextSince>
+\`\`\`
+
+\`\`\`cmd
+"%OD_NODE_BIN%" "%OD_BIN%" media wait <taskId> --since <nextSince>
 \`\`\`
 
 \`media wait\` exits \`0\` when done, \`2\` when still running, and \`5\`

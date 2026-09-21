@@ -60,6 +60,8 @@ import {
   type MediaExecutionPolicy,
   type MediaSurface,
   type OdNextStrategyRequestRecipeV2,
+  renderMediaGenerateWaitLoopRecipes,
+  renderMediaShellInvocationNotes,
 } from '@open-design/contracts';
 
 // Prepended first in every composed prompt so it wins precedence over all
@@ -452,61 +454,33 @@ This project was created through the daemon API with \`skipDiscoveryBrief: true\
 // CLI's own stderr handoff guidance instead of the prompt. The hint only
 // needs to (1) route the agent to the dispatcher instead of provider APIs,
 // (2) state the handoff/exit-code semantics, and (3) pin the behavioral
-// rules agents historically fumbled (PowerShell translation, jq, asking
-// for API keys, substituting fal-ai/* model paths).
+// rules agents historically fumbled (PowerShell $VAR vs $env:VAR, jq,
+// asking for API keys, substituting fal-ai/* model paths).
 const MEDIA_DISPATCH_HINT = `
 
 ---
 
 ## Media generation (if asked)
 
-If the user asks you to generate an image, video, or audio file — regardless of which provider or model they mention (fal, Replicate, OpenAI, etc.) — use the daemon dispatcher via your **Bash tool**. Do NOT call provider REST APIs directly.
+If the user asks you to generate an image, video, or audio file — regardless of which provider or model they mention (fal, Replicate, OpenAI, etc.) — use the daemon dispatcher via your shell tool. Do NOT call provider REST APIs directly.
 
 Creator Studio Design Cloud models use the \`vela/*\` prefix. Never invoke the \`vela\`
 CLI directly for those models: the OD dispatcher owns trusted Workspace
 attribution, polling, downloads, and final project-file placement.
 
-The daemon injects these env vars into your shell (**POSIX bash — not PowerShell**):
+The daemon injects these env vars into your shell. Use the syntax that matches that shell:
 
 - \`OD_NODE_BIN\`   — absolute path to the Node runtime
 - \`OD_BIN\`        — absolute path to the OD CLI script
 - \`OD_PROJECT_ID\` — the active project id
 
+${renderMediaShellInvocationNotes()}
+
 **Always use the generate→wait loop below.** \`media generate\` always exits 0 — either with \`{"file":{...}}\` if done within ~25s, or with \`{"taskId":"..."}\` as a handoff for slow models. Whenever the output contains a \`taskId\`, keep polling with \`media wait\` until exit 0 (done) or exit 5 (failed).
 
-Use **POSIX \`$VAR\` syntax** — do NOT translate to PowerShell (\`$env:VAR\`, \`&\` operator). Uses \`python3\` for JSON parsing (do NOT use \`jq\`):
+${renderMediaGenerateWaitLoopRecipes()}
 
-\`\`\`bash
-# POSIX bash — do NOT convert to PowerShell
-IMAGE_MODEL=IMAGE_MODEL_VALUE
-out=\$("$OD_NODE_BIN" "$OD_BIN" media generate \\
-  --project "$OD_PROJECT_ID" \\
-  --surface image \\
-  --model "$IMAGE_MODEL" \\
-  --prompt "..." \\
-  --aspect 16:9)
-ec=\$?
-if [ "\$ec" -ne 0 ]; then echo "\$out" >&2; exit "\$ec"; fi
-last=\$(printf '%s\\n' "\$out" | tail -1)
-task_id=\$(printf '%s\\n' "\$last" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('taskId',''))" 2>/dev/null)
-since=\$(printf '%s\\n' "\$last" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('nextSince',0))" 2>/dev/null)
-since="\${since:-0}"
-while [ -n "\$task_id" ]; do
-  out=\$("$OD_NODE_BIN" "$OD_BIN" media wait "\$task_id" --since "\$since")
-  ec=\$?
-  last=\$(printf '%s\\n' "\$out" | tail -1)
-  since=\$(printf '%s\\n' "\$last" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('nextSince',\$since))" 2>/dev/null)
-  since="\${since:-0}"
-  if [ "\$ec" -eq 0 ]; then
-    task_id=""
-  elif [ "\$ec" -ne 2 ]; then
-    echo "\$out" >&2; exit "\$ec"
-  fi
-done
-printf '%s\\n' "\$last"
-\`\`\`
-
-The command exits \`0\` with one line of JSON: \`{"file":{...}}\` when done within ~25s, or \`{"taskId":"..."}\` as a SUCCESSFUL handoff for slow models. On a handoff, run the exact \`media wait\` command the CLI prints on stderr and repeat it until exit \`0\` (done) or exit \`5\` (failed); exit \`2\` means still running — not a failure. Parse JSON with \`python3\`, never \`jq\`.
+The command exits \`0\` with one line of JSON: \`{"file":{...}}\` when done within ~25s, or \`{"taskId":"..."}\` as a SUCCESSFUL handoff for slow models. On a handoff, run the exact \`media wait\` command the CLI prints on stderr (POSIX, PowerShell, and cmd.exe forms) and repeat it until exit \`0\` (done) or exit \`5\` (failed); exit \`2\` means still running — not a failure.
 
 ${MEDIA_USER_REPLY_CONTRACT}
 
@@ -556,7 +530,7 @@ function renderMediaDispatchHint(
   const effectiveDefaults = runtimeDefaults ?? defaults;
   const imageModel = effectiveDefaults?.imageModel?.trim() || 'flux-pro-ultra';
   const hint = MEDIA_DISPATCH_HINT
-    .replace('IMAGE_MODEL_VALUE', shellDoubleQuote(imageModel))
+    .replaceAll('IMAGE_MODEL_VALUE', shellDoubleQuote(imageModel))
     .replace(
       'MODEL_SELECTION_GUIDANCE',
       renderMediaDispatchModelGuidance(effectiveDefaults),

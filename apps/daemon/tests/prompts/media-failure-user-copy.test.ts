@@ -39,6 +39,8 @@ const USER_SENTENCES: Record<string, string> = {
   'unsupported': '这次任务里不能生成图片 —— 需要图片的话,新建一个图片项目再试。',
   'contact-support':
     '图片没生成出来,不是你的操作有误 —— 这次是 Creator Studio Design 自己的问题,我们已经记下了。重试一般能恢复;反复出现的话联系我们。',
+  'missing-runtime':
+    'Creator Studio Design 找不到 Node 运行时，图片没生成。请完全退出并重新打开桌面应用后再试。',
 };
 
 /**

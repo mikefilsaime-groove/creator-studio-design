@@ -18,7 +18,7 @@ import { splitResearchSubcommand } from './research/cli-args.js';
 import { resolveDaemonUrl } from './daemon-url.js';
 import { SidecarFactory } from '@open-design/sidecar';
 import { APP_KEYS, SIDECAR_MESSAGES } from '@open-design/sidecar-proto';
-import { EXPORT_FORMATS, EXPORT_IMAGE_FORMATS, mediaFailureNextStep } from '@open-design/contracts';
+import { EXPORT_FORMATS, EXPORT_IMAGE_FORMATS, mediaFailureNextStep, renderMediaGenerateWaitLoopRecipes, renderMediaShellInvocationNotes, renderMediaWaitHandoffHint, renderMediaWrapperCommandRecipes } from '@open-design/contracts';
 import type { ArtifactLintFinding, LintArtifactCliResultEnvelope, LintArtifactResponse, LintFailOn } from '@open-design/contracts';
 import { buildExportCliRequestBody, buildExportCliResultEnvelope, resolveExportCliDeckMode } from './export-cli-request.js';
 import { exportRoutePath } from './export-cli-routing.js';
@@ -2114,7 +2114,7 @@ async function pollUntilDoneOrBudget(daemonUrl, taskId, sinceStart, options = {}
       : `exit code ${stillRunningExitCode} = still running.`;
   process.stderr.write(
     `task ${taskId} still running after ${handoff.elapsed}s. ` +
-      `Run \`"$OD_NODE_BIN" "$OD_BIN" media wait ${taskId} --since ${since}\` to continue in an agent runtime ` +
+      `Run ${renderMediaWaitHandoffHint(taskId, since)} to continue in an agent runtime ` +
       `(${stillRunningHint}).\n`,
   );
   await flushStreamsAndExit(stillRunningExitCode);
@@ -2242,7 +2242,7 @@ async function cliDaemonBaseUrl(flags) {
 function printMediaHelp() {
   console.log(`Usage: od media scaffold --composition-dir .hyperframes-cache/<id> [opts]
        od media generate --surface <image|video|audio> --model <id> [opts]
-       "$OD_NODE_BIN" "$OD_BIN" media generate --surface <image|video|audio> --model <id> [opts]
+${renderMediaWrapperCommandRecipes('media generate --surface <image|video|audio> --model <id> [opts]')}
 
 Scaffold:
   Creates hyperframes.json, meta.json, and index.html without running
@@ -2296,22 +2296,10 @@ Output: a single line of JSON: {"file": { name, size, kind, mime, ... }}
   Standalone wait calls accept the same Workspace pair. Tool-token calls retain
   their injected authorization proof automatically through every poll.
 
-Worked generate→wait loop (POSIX bash — do NOT translate to PowerShell;
-parse JSON with python3, not jq):
+Worked generate→wait loop — use the recipe that matches your shell
+(${renderMediaShellInvocationNotes().replace(/\n/g, ' ')}):
 
-  out=\$("\$OD_NODE_BIN" "\$OD_BIN" media generate --project "\$OD_PROJECT_ID" \\
-    --surface image --model flux-pro-ultra --prompt "..." --aspect 16:9)
-  last=\$(printf '%s\\n' "\$out" | tail -1)
-  task_id=\$(printf '%s\\n' "\$last" | python3 -c "import sys,json; print(json.load(sys.stdin).get('taskId',''))" 2>/dev/null)
-  since=\$(printf '%s\\n' "\$last" | python3 -c "import sys,json; print(json.load(sys.stdin).get('nextSince',0))" 2>/dev/null)
-  while [ -n "\$task_id" ]; do
-    out=\$("\$OD_NODE_BIN" "\$OD_BIN" media wait "\$task_id" --since "\${since:-0}")
-    ec=\$?
-    last=\$(printf '%s\\n' "\$out" | tail -1)
-    since=\$(printf '%s\\n' "\$last" | python3 -c "import sys,json; print(json.load(sys.stdin).get('nextSince',0))" 2>/dev/null)
-    if [ "\$ec" -eq 0 ]; then task_id=""; elif [ "\$ec" -ne 2 ]; then echo "\$out" >&2; exit "\$ec"; fi
-  done
-  printf '%s\\n' "\$last"
+${renderMediaGenerateWaitLoopRecipes().replaceAll('IMAGE_MODEL_VALUE', '"flux-pro-ultra"')}
 
 Skills should call this and then reference the returned filename in their
 artifact / message body. The daemon writes the bytes into the project's

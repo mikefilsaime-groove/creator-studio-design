@@ -59,6 +59,7 @@ describe('MEDIA_USER_REPLY_CONTRACT mirrors', () => {
     expect(daemonBody).toContain('图片生成这会儿不稳定 —— 不是你的问题,过一会儿再试通常就好。');
     expect(daemonBody).toContain('需要更新 Creator Studio Design 才能生成图片。');
     expect(daemonBody).toContain('这次任务里不能生成图片 —— 需要图片的话,新建一个图片项目再试。');
+    expect(daemonBody).toContain('Creator Studio Design 找不到 Node 运行时，图片没生成。请完全退出并重新打开桌面应用后再试。');
     expect(normalized).toContain('Reword it, drop the sensitive details, and try again.');
     expect(normalized).toContain('Pick a different image model and try again.');
     expect(normalized).toContain('Fill it in under Settings and it will work.');
