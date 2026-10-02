@@ -346,6 +346,69 @@ async function fetchWorkspaceWalletSnapshot(
 }
 
 /**
+ * Return whether a previously blocked run has a current, exact-scope funding
+ * path again.  Wallet recovery is deliberately separate from the send gate:
+ * a Coding Plan window can fund a model even while the workspace wallet is
+ * still empty, but only when the daemon proves the same workspace/member and
+ * requested model in its preflight response.
+ */
+export async function hasAmrFundingRecovered(
+  scope?: AmrBalanceGateScope,
+  modelId?: string | null,
+): Promise<boolean> {
+  if (!scope) {
+    const snapshot = await fetchAmrWalletSnapshot({ refresh: true }).catch(() => null);
+    return Boolean(
+      snapshot
+      && !snapshot.stale
+      && snapshot.error == null
+      && (amrWalletBalanceUsd(snapshot) ?? 0) > 0,
+    );
+  }
+
+  const workspaceId = scope.workspaceId.trim();
+  const workspaceMemberId = scope.workspaceMemberId.trim();
+  const requestedModelId = modelId?.trim() ?? '';
+  if (!workspaceId || !workspaceMemberId || !requestedModelId) return false;
+
+  const query = new URLSearchParams({
+    scope: 'workspace',
+    workspaceId,
+    freshness: 'authoritative',
+    includePreflight: '1',
+    modelId: requestedModelId,
+  });
+  const response = await fetch(`/api/workspace/billing?${query.toString()}`, {
+    cache: 'no-store',
+  }).catch(() => null);
+  if (!response?.ok) return false;
+  const body = (await response.json().catch(() => null)) as WorkspaceBillingResponse | null;
+  const preflight = body?.preflight;
+  if (!preflight) return false;
+  if (
+    preflight.workspaceId !== workspaceId
+    || preflight.workspaceMemberId !== workspaceMemberId
+    || preflight.modelId !== requestedModelId
+  ) return false;
+
+  if (preflight.funding === 'wallet') return true;
+  if (preflight.funding !== 'coding_plan' || preflight.modelCovered !== true) return false;
+  const codingPlan = preflight.codingPlan;
+  return Boolean(
+    codingPlan?.eligible
+    && codingPlan.windows.length > 0
+    && codingPlan.windows.every((window) => {
+      if (!/^\d+$/.test(window.remainingCredits)) return false;
+      try {
+        return BigInt(window.remainingCredits) > 0n;
+      } catch {
+        return false;
+      }
+    }),
+  );
+}
+
+/**
  * The wallet whose balance a post-failure surface is allowed to NAME for a run
  * in `scope` — the upgrade card's 剩余额度.
  *

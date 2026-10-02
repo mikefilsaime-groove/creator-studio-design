@@ -69,7 +69,7 @@ Write-Utf8File -Path (Join-Path $releaseDir "latest.yml") -Content @(
   "path: `"$publicOrigin/$versionPrefix/$installerName`""
   "sha512: `"$installerSha512`""
   "releaseDate: `"$releaseDate`""
-  "releaseNotes: `"OpenDesign beta $releaseVersion$assetSuffix`""
+  "releaseNotes: `"Creator Studio Design beta $releaseVersion$assetSuffix`""
 )
 
 $artifacts = [ordered]@{

@@ -1,6 +1,11 @@
 import type { Dict } from "../types";
 
 export const zhCN: Dict = {
+  'billing.wallet': '钱包余额',
+  'billing.codingPlanDesignPlan': 'Design Plan',
+  'billing.codingPlanPeriodHours': '{count} 小时',
+  'billing.codingPlanPeriodDays': '{count} 天',
+  'billing.codingPlanRemainingPercent': '剩余 {percent}%',
   'invite.header.eyebrow': "团队邀请",
   'invite.loading': "正在加载邀请…",
   'invite.landing.title': "加入团队",
@@ -355,6 +360,11 @@ export const zhCN: Dict = {
     "留下邮箱，接收产品更新、新模板、设计系统资源和社区活动。",
   "settings.onboardingConnectTitle": "选择运行方式",
   "settings.onboardingConnectBody": "",
+  "settings.onboardingFreeCredits": "Free Credits",
+  "settings.onboardingFreeCreditsHint": "New users get free starter credits to try DeepSeek V4.1 Flash.",
+  "settings.onboardingOwnAi": "Or use your own AI",
+  "settings.onboardingLocalAi": "Local AI",
+  "settings.onboardingApiKey": "API Key",
   "settings.onboardingCloudTitle": "登录 Creator Studio Design",
   "settings.onboardingCloudBody":
     "登录后可直接用云端 AI 开始设计，无需任何复杂配置。",
@@ -821,11 +831,13 @@ export const zhCN: Dict = {
   "entry.billingTierPro": "专业版",
   "entry.billingTierPlus": "Plus",
   "entry.billingTierMax": "Max",
+  "entry.billingTierGo": "轻享版",
   "entry.billingFamilyCreator": "创作会员",
   "entry.creditsAria": "{tier} · 可用额度",
   "entry.creditsAriaWithBalance": "{tier} · 可用额度 {balance}",
   "entry.creditsGrantTip": "团队版按订阅发放额度，可在计费中查看用量。",
   "entry.creditsUpgrade": "升级",
+  "entry.creditsManage": "管理",
   "entry.creditsOpening": "正在打开...",
   "entry.creditsRemaining": "可用额度",
   "entry.credits": "额度",

@@ -119,7 +119,7 @@ import {
   RUNS_CHANGED_EVENT,
   fetchAmrModels,
   fetchVelaLoginStatus,
-  listProjectRuns,
+  listProjectRunsWithScope,
   type VelaLoginStatus,
 } from './providers/daemon';
 import {
@@ -4132,18 +4132,21 @@ function AppInner() {
     }
 
     let cancelled = false;
+    let id: number | undefined;
     const refresh = async () => {
-      const runs = await listProjectRuns();
+      const { runs, scopeRequired } = await listProjectRunsWithScope();
       if (cancelled) return;
+      // A deterministic PROJECT_SCOPE_REQUIRED will not change on retry.
+      if (scopeRequired) window.clearInterval(id);
       setPetTaskCenter(buildPetTaskCenter(projects, runs));
     };
     const handleRunsChanged = () => {
       void refresh();
     };
 
+    id = window.setInterval(refresh, 2000);
     void refresh();
     window.addEventListener(RUNS_CHANGED_EVENT, handleRunsChanged);
-    const id = window.setInterval(refresh, 2000);
     return () => {
       cancelled = true;
       window.removeEventListener(RUNS_CHANGED_EVENT, handleRunsChanged);
@@ -5820,9 +5823,11 @@ function AppInner() {
           dockLine
         />
       )}
-      {/* Account restoration can finish while login/onboarding is still visible.
-          Keep campaign hosts out of that flow, independently of authentication. */}
-      {!(route.kind === 'home' && route.view === 'onboarding') && (
+      {/* Every placement these hosts may render is a home placement
+          (`opend.home.*`), so the home view is where they belong: not over a
+          project workbench, not over another entry tab, and — since account
+          restoration can finish while login is still up — not over onboarding. */}
+      {route.kind === 'home' && route.view === 'home' && (
         <>
           <TestCampaignModal
             authenticated={isAmrSessionAuthenticated(amrLoginStatus)}
