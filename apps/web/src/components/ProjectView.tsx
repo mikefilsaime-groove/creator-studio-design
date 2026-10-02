@@ -79,6 +79,7 @@ import {
   resolveQuestionFormStrategyTaskExecutionId,
   strategySettledMessageFields,
   strategyTaskParkedOnSucceededRun,
+  strategyTaskRunIndex,
 } from '../runtime/strategy-question-continuation';
 import {
   isTodoWriteToolName,
@@ -2874,6 +2875,8 @@ export function ProjectView({
   const [amrBalanceGateBlock, setAmrBalanceGateBlock] = useState<
     {
       reason: 'insufficient' | 'signed_out';
+      modelId?: string | null;
+      fundingScope?: AmrBalanceGateScope;
       /**
        * 这一档同时唤起哪个弹窗 —— 由**身份**决定(规格 §6.V):`upgrade` 是会员
        * 转化弹窗(owner 那两格共用同一张,T58);`ask_owner` 是「找所有者充值」
@@ -7242,8 +7245,15 @@ export function ProjectView({
                 lastRunEventId: undefined,
                 strategyTaskPrefixLength: replayedContent.length,
                 strategyTaskPrefixEventCount: replayedEvents.length,
+                // The row now streams `nextRunId`, so its logical task
+                // position is that Run's — spreading `prev` would leave the
+                // predecessor's index on it. Same exact-map rule as the live
+                // send path: no daemon mapping, no position.
                 ...(strategyTask?.taskExecutionId
-                  ? { strategyTaskExecutionId: strategyTask.taskExecutionId }
+                  ? {
+                    strategyTaskExecutionId: strategyTask.taskExecutionId,
+                    strategyTaskRunIndex: strategyTaskRunIndex(strategyTask, nextRunId),
+                  }
                   : {}),
               }),
               true,
@@ -8854,6 +8864,12 @@ export function ProjectView({
                   ? 'pricing'
                   : amrBalanceDialogUpgradeIntent(blockedBranch),
               snapshot: gate.snapshot,
+              modelId: amrModelId,
+              fundingScope: projectRunPreflightContext ? {
+                workspaceType: projectRunPreflightContext.workspaceType,
+                workspaceId: projectRunPreflightContext.workspaceId,
+                workspaceMemberId: projectRunPreflightContext.workspaceMemberId,
+              } : undefined,
               conversationId: gateConversationId,
             });
             // 拦截档:把流水里那张卡点亮 —— 弹窗一关就什么都不剩,而人回到聊天
@@ -10298,7 +10314,10 @@ export function ProjectView({
               runId,
               runStatus: 'queued' as const,
               taskAnalytics: resolvedTaskAnalytics,
-              ...(strategyTaskExecutionId ? { strategyTaskExecutionId } : {}),
+              ...(strategyTaskExecutionId ? {
+                strategyTaskExecutionId,
+                strategyTaskRunIndex: strategyTaskRunIndex(strategyTask, runId),
+              } : {}),
               ...(isTaskSuccessor
                 ? {
                     strategyTaskPrefixLength: latestAssistantMsg.content.length,
@@ -10320,7 +10339,10 @@ export function ProjectView({
               runId,
               runStatus: 'queued',
               taskAnalytics: resolvedTaskAnalytics,
-              ...(strategyTaskExecutionId ? { strategyTaskExecutionId } : {}),
+              ...(strategyTaskExecutionId ? {
+                strategyTaskExecutionId,
+                strategyTaskRunIndex: strategyTaskRunIndex(strategyTask, runId),
+              } : {}),
               ...(isTaskSuccessor
                 ? {
                     strategyTaskPrefixLength: prev.content.length,
@@ -10532,7 +10554,10 @@ export function ProjectView({
               runId,
               runStatus: 'queued' as const,
               taskAnalytics: resolvedTaskAnalytics,
-              ...(strategyTaskExecutionId ? { strategyTaskExecutionId } : {}),
+              ...(strategyTaskExecutionId ? {
+                strategyTaskExecutionId,
+                strategyTaskRunIndex: strategyTaskRunIndex(strategyTask, runId),
+              } : {}),
               ...(isTaskSuccessor
                 ? {
                     strategyTaskPrefixLength: latestAssistantMsg.content.length,
@@ -10550,7 +10575,10 @@ export function ProjectView({
               runId,
               runStatus: 'queued',
               taskAnalytics: resolvedTaskAnalytics,
-              ...(strategyTaskExecutionId ? { strategyTaskExecutionId } : {}),
+              ...(strategyTaskExecutionId ? {
+                strategyTaskExecutionId,
+                strategyTaskRunIndex: strategyTaskRunIndex(strategyTask, runId),
+              } : {}),
               ...(isTaskSuccessor
                 ? {
                     strategyTaskPrefixLength: prev.content.length,
@@ -14150,6 +14178,8 @@ export function ProjectView({
       {amrBalanceGateBlock?.dialog === 'upgrade' ? (
         <AmrBalanceDialog
           reason={amrBalanceGateBlock.reason}
+          modelId={amrBalanceGateBlock.modelId}
+          fundingScope={amrBalanceGateBlock.fundingScope}
           balanceUsd={amrBalanceGateBlock.snapshot.balanceUsd}
           profile={amrBalanceGateBlock.snapshot.profile}
           entrySource="chat_balance_gate_upgrade"

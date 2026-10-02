@@ -32,7 +32,6 @@ import {
   type RunContextSelection,
   type ProjectScenarioTaskProfile,
   type WorkspaceProjectSummary,
-  type AgentDeviceLoginResponse,
 } from '@open-design/contracts';
 import type { OpenDesignHostProjectImportSuccess } from '@open-design/host';
 import { useAnalytics } from '../analytics/provider';
@@ -121,7 +120,6 @@ import {
 } from '../runtime/amr-balance-branch';
 import { installDeepSeekHarnessCompanion } from '../providers/agent-companion';
 import {
-  amrBalanceGateFromMemory,
   amrBalanceGateScopeForWorkspaceContext,
   checkAmrBalanceGate,
   retryUnavailableAmrBalanceGate,
@@ -247,6 +245,7 @@ import {
 } from './entryRailBridge';
 import { resolveByokModelPreference } from './byok/validation';
 import onboardingSourceStyles from './OnboardingModelSource.module.css';
+import onboardingWelcomeStyles from './OnboardingWelcome.module.css';
 
 // Persist the entry nav-rail open/collapsed state so it survives both a
 // home -> project -> home navigation (EntryShell unmounts on the project
@@ -772,6 +771,10 @@ export function EntryShell({
     deepSeekV4FlashCampaignAudience === 'unknown'
       ? null
       : deepSeekV4FlashCampaignAudience;
+  // The CMS touchpoints this rail hosts are home placements (`opend.home.*`).
+  // The rail itself rides every entry view, so the home view — not the rail —
+  // is what decides whether they may be on screen.
+  const homeCampaignHostsVisible = view === 'home';
   const workspaceBalanceUsd = workspaceBillingBalanceUsd(
     workspaceBillingResponse,
     workspaceContext,
@@ -1436,59 +1439,13 @@ export function EntryShell({
           config.agentModels?.amr,
         )
       : undefined;
-    // OPEND-3300 / 3309: a wallet this shell already knows is empty is
-    // answered HERE, on the click tick, before the project frame opens — the
-    // dialog lands on Home, no frame, no project, no request. The reading is
-    // the one the rail's 额度 pill shows for the exact scope the send would
-    // run in. One background confirmation re-reads the wallet; only a
-    // non-blocking answer (a recharge the projection had not seen) moves the
-    // send forward, and a dismiss in the meantime wins.
-    if (isAmrSend) {
-      const memoryWorkspaceState = workspaceContextStateRef.current;
-      const memoryWorkspaceContext = memoryWorkspaceState.failure === 'unsupported'
-        ? null
-        : workspaceResourceReadContext(memoryWorkspaceState);
-      const memoryVerdict = amrBalanceGateFromMemory(
-        workspaceBillingBalanceUsd(workspaceBillingResponse, memoryWorkspaceContext),
-        { updatedAt: workspaceBillingResponse?.workspaceBalance?.updatedAt ?? null },
-      );
-      if (memoryVerdict) {
-        const memoryScope = amrBalanceGateScopeForWorkspaceContext(memoryWorkspaceContext);
-        const blockedBranch = resolveAmrBalanceBranch({
-          context: memoryWorkspaceContext,
-          billing: workspaceBilling,
-        });
-        const decision = await new Promise<'retry' | 'dismiss'>((resolve) => {
-          onAmrBalanceGateBlockChange({
-            reason: memoryVerdict.reason,
-            dialog: amrBalanceBlockedDialog(blockedBranch),
-            upgradeIntent: amrBalanceDialogUpgradeIntent(blockedBranch),
-            snapshot: memoryVerdict.snapshot,
-            resolve,
-          });
-          void checkAmrBalanceGate(memoryScope, amrModelId)
-            .then((confirmed) => {
-              // Still empty, or unreadable: the in-memory answer stands and
-              // the dialog stays. Anything else proved the projection stale.
-              if (confirmed.kind !== 'hard' && confirmed.kind !== 'unavailable') {
-                resolve('retry');
-              }
-            })
-            .catch(() => undefined);
-        });
-        onAmrBalanceGateBlockChange(null);
-        if (decision === 'dismiss') return 'blocked' as const;
-        // 'retry': the wallet proved fundable (recharge landed, or the
-        // confirmation read positive). Fall through to the ordinary path.
-      }
-    }
     // OPEND-2614: the project frame opens on the click tick for EVERY agent,
     // before any admission check. Everything below runs behind that frame —
     // this shell is unmounted the moment the hand-off navigates, so nothing
     // after this line may rely on this instance's state or DOM. App owns the
     // hand-off and the way back.
     const handoff = onBeginProjectCreation(createInput);
-    // Creator Studio Design Cloud pre-run balance gate: hard blocks (empty wallet or
+    // OpenDesign Cloud pre-run balance gate: hard blocks (empty wallet or
     // signed out) fire BEFORE the project is created — the dialog now sits over
     // the pending frame, and a dismiss rolls the hand-off back to Home with the
     // composer draft intact. In-project sends are gated separately in
@@ -1541,6 +1498,8 @@ export function EntryShell({
                   ? 'pricing'
                   : amrBalanceDialogUpgradeIntent(blockedBranch),
               snapshot: blocked.snapshot,
+              modelId: amrModelId,
+              fundingScope: gateScope,
               resolve,
             });
           });
@@ -1699,7 +1658,7 @@ export function EntryShell({
    * Onboarding is where a signed-out user signs IN, so the workspace context
    * the shell resolved before it is stale by definition. Without this the rail
    * came back in its signed-out shape — no workspace switcher, no 草稿 / 全部项目
-   * / Workspace 设置, and the "sign in to Creator Studio Design Cloud" callout still in
+   * / Workspace 设置, and the "sign in to OpenDesign Cloud" callout still in
    * the bottom-left corner (#140) — until a focus or the 30s poll happened to
    * re-read it. `CloudSignInTip` fires the same three after its own sign-in.
    *
@@ -1774,13 +1733,7 @@ export function EntryShell({
   const homeExecutionSwitcher = (
     <InlineModelSwitcher
       compact
-      config={{
-        ...config,
-        agentId: agents.some((agent) => agent.id === config.agentId)
-          ? config.agentId
-          : agents.find((agent) => agent.available)?.id ?? agents[0]?.id ?? 'codex',
-        mode: 'daemon',
-      }}
+      config={config}
       agents={agents}
       providerModelsCache={activeProviderModelsCache}
       onProviderModelsCacheChange={activeSetProviderModelsCache}
@@ -1848,7 +1801,7 @@ export function EntryShell({
           }}
           onOpenSearch={() => setProjectSearchOpen(true)}
           open={railOpen}
-          topRightSlot={topRightCampaignAudience || amrLoggedIn === true ? (
+          topRightSlot={topRightCampaignAudience || (homeCampaignHostsVisible && amrLoggedIn === true) ? (
             <>
               {topRightCampaignAudience ? (
                 <WorkbenchCampaignBadge
@@ -1859,17 +1812,21 @@ export function EntryShell({
                   loggedIn={amrLoggedIn}
                 />
               ) : null}
-              {canRenderProductionCampaignBadge(amrLoggedIn === true, amrAccountId) ? <ProductionCampaignBadge authenticated sessionSubject={amrAccountId} /> : null}
+              {homeCampaignHostsVisible
+                && canRenderProductionCampaignBadge(amrLoggedIn === true, amrAccountId) ? <ProductionCampaignBadge authenticated sessionSubject={amrAccountId} /> : null}
               {/* The requirements-specific hover entry is its own authorized
                   touchpoint, beside—not renamed from—the account badge. */}
-              <ProductionCampaignHover
-                authenticated={amrLoggedIn === true}
-                sessionSubject={amrAccountId}
-              />
+              {homeCampaignHostsVisible ? (
+                <ProductionCampaignHover
+                  authenticated={amrLoggedIn === true}
+                  sessionSubject={amrAccountId}
+                />
+              ) : null}
             </>
           ) : null}
           context={railWorkspaceContext}
           billing={workspaceBilling}
+          billingResponse={workspaceBillingResponse}
           balanceUsd={workspaceBalanceUsd}
           onOpenSettings={onOpenSettings}
           onInvite={() => changeView('members')}
@@ -2218,189 +2175,6 @@ export function EntryShell({
 
 function OnboardingView({
   config,
-  agents,
-  agentsLoading = false,
-  daemonLive,
-  onModeChange,
-  onAgentChange,
-  onConfigPersist,
-  onRefreshAgents,
-  onFinish,
-}: Parameters<typeof LegacyOnboardingView>[0]) {
-  const [refreshing, setRefreshing] = useState(false);
-  const supportedAgents = agents.filter((agent) => agent.id === 'claude' || agent.id === 'codex');
-  const availableAgents = supportedAgents.filter((agent) => agent.available);
-  const configuredAgent = supportedAgents.find((agent) => agent.id === config.agentId);
-  const [selectedAgentId, setSelectedAgentId] = useState<string>(
-    configuredAgent?.id ?? availableAgents[0]?.id ?? supportedAgents[0]?.id ?? '',
-  );
-  const [deviceLogin, setDeviceLogin] = useState<
-    | { status: 'idle' }
-    | { status: 'pending'; agentId: string }
-    | { status: 'ready'; agentId: string; userCode: string; verificationUrl: string | null }
-    | { status: 'error'; agentId: string; message: string }
-  >({ status: 'idle' });
-  const deviceLoginGeneration = useRef(0);
-
-  useEffect(() => {
-    if (supportedAgents.some((agent) => agent.id === selectedAgentId)) return;
-    setSelectedAgentId(availableAgents[0]?.id ?? supportedAgents[0]?.id ?? '');
-  }, [agents, selectedAgentId]);
-
-  const refreshAgents = async () => {
-    setRefreshing(true);
-    try {
-      const nextAgents = await onRefreshAgents();
-      const nextSupported = nextAgents.filter(
-        (agent) => agent.id === 'claude' || agent.id === 'codex',
-      );
-      if (!nextSupported.some((agent) => agent.id === selectedAgentId)) {
-        const nextAvailable = nextSupported.filter((agent) => agent.available);
-        setSelectedAgentId(nextAvailable[0]?.id ?? nextSupported[0]?.id ?? '');
-      }
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const requestDeviceLogin = async (agentId: string) => {
-    const generation = deviceLoginGeneration.current + 1;
-    deviceLoginGeneration.current = generation;
-    setDeviceLogin({ status: 'pending', agentId });
-    try {
-      const response = await fetch(`/api/agents/${agentId}/device-login`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: '{}',
-      });
-      const body = await response.json().catch(() => null) as AgentDeviceLoginResponse | null;
-      if (generation !== deviceLoginGeneration.current) return;
-      if (!response.ok || !body || body.ok !== true) {
-        const message = body && body.ok === false && body.error
-          ? body.error
-          : 'Could not get a sign-in code.';
-        setDeviceLogin({ status: 'error', agentId, message });
-        return;
-      }
-      setDeviceLogin({
-        status: 'ready',
-        agentId,
-        userCode: body.userCode,
-        verificationUrl: body.verificationUrl,
-      });
-    } catch {
-      if (generation !== deviceLoginGeneration.current) return;
-      setDeviceLogin({ status: 'error', agentId, message: 'Could not get a sign-in code.' });
-    }
-  };
-
-  const chooseAgent = (agent: AgentInfo) => {
-    setSelectedAgentId(agent.id);
-    if (agent.authStatus === 'ok') {
-      deviceLoginGeneration.current += 1;
-      setDeviceLogin({ status: 'idle' });
-      return;
-    }
-    void requestDeviceLogin(agent.id);
-  };
-
-  const finish = async () => {
-    if (!selectedAgentId) return;
-    const nextConfig: AppConfig = {
-      ...config,
-      agentId: selectedAgentId,
-      mode: 'daemon',
-    };
-    onModeChange('daemon');
-    onAgentChange(selectedAgentId);
-    await onConfigPersist(nextConfig);
-    onFinish();
-  };
-
-  return (
-    <section className="onboarding-view onboarding-view--cloud" aria-label="Creator Studio Design setup">
-      <div className={`onboarding-cloud__pane ${onboardingSourceStyles.pane}`}>
-        <div className={`onboarding-cloud__center ${onboardingSourceStyles.center}`}>
-          <img src="/app-icon.png" alt="" width={72} height={72} />
-          <h1 className="onboarding-cloud__title">Creator Studio Design</h1>
-          <p className="onboarding-cloud__body">
-            Connect Claude Code or Codex using the subscription already signed in on this computer.
-          </p>
-          <div className={onboardingSourceStyles.options} role="radiogroup" aria-label="Coding agent">
-            {supportedAgents.map((agent) => {
-              const selected = agent.id === selectedAgentId;
-              return (
-                <Button
-                  key={agent.id}
-                  variant="subtle"
-                  role="radio"
-                  aria-checked={selected}
-                  className={`${onboardingSourceStyles.option} ${
-                    selected ? onboardingSourceStyles.optionActive : ''
-                  }`}
-                  onClick={() => chooseAgent(agent)}
-                >
-                  <span className={onboardingSourceStyles.optionIcon}>
-                    <AgentIcon id={agent.id} size={24} />
-                  </span>
-                  <span className={onboardingSourceStyles.optionCopy}>
-                    <strong className={onboardingSourceStyles.optionTitle}>{agent.name}</strong>
-                    <span className={onboardingSourceStyles.optionBody}>
-                      {agent.available && agent.authStatus === 'ok'
-                        ? 'Ready to use'
-                        : 'Choose to get a sign-in code'}
-                    </span>
-                  </span>
-                  <span className={onboardingSourceStyles.radio} aria-hidden="true" />
-                </Button>
-              );
-            })}
-          </div>
-          {deviceLogin.status === 'pending' ? (
-            <p role="status">Getting a sign-in code…</p>
-          ) : null}
-          {deviceLogin.status === 'ready' ? (
-            <p role="status">
-              {deviceLogin.agentId === 'codex'
-                ? 'Enter this code in Codex'
-                : 'Enter this code in Claude Code'}
-              <strong className={onboardingSourceStyles.deviceCode} data-testid="agent-device-code">
-                {deviceLogin.userCode}
-              </strong>
-            </p>
-          ) : null}
-          {deviceLogin.status === 'error' ? (
-            <p role="alert">{deviceLogin.message}</p>
-          ) : null}
-          {!agentsLoading && supportedAgents.length === 0 ? (
-            <p className="onboarding-cloud__error" role="alert">
-              Claude Code and Codex were not detected. Install one of them, sign in, and rescan.
-            </p>
-          ) : null}
-          <div className="onboarding-view__actions">
-            <Button variant="subtle" onClick={() => void refreshAgents()} disabled={refreshing || agentsLoading}>
-              <Icon name="reload" size={15} />
-              {refreshing || agentsLoading ? 'Scanning…' : 'Rescan'}
-            </Button>
-            <Button onClick={() => void finish()} disabled={!daemonLive || !selectedAgentId}>
-              Continue
-            </Button>
-          </div>
-        </div>
-        <footer className="onboarding-cloud__footer">
-          <LanguageMenu placement="up" align="start" />
-          <span>© {new Date().getFullYear()} Creator Studio Design</span>
-        </footer>
-      </div>
-      <div className="onboarding-cloud__art" aria-hidden="true">
-        <img src="/app-icon.png" alt="" />
-      </div>
-    </section>
-  );
-}
-
-function LegacyOnboardingView({
-  config,
   providerModelsCache: sharedProviderModelsCache,
   onProviderModelsCacheChange,
   agents,
@@ -2745,6 +2519,8 @@ function LegacyOnboardingView({
     onFinish();
   }, [
     agentsLoading,
+    amrSignedIn,
+    amrStatusResolved,
     config.agentId,
     config.mode,
     config.onboardingCompleted,
@@ -3484,7 +3260,7 @@ function LegacyOnboardingView({
         // Onboarding may sit on this step for a while before finishOnboarding
         // fires refreshWorkspaceSurfacesAfterOnboarding() — without firing
         // these here too, Home's rail can render in its stale signed-out
-        // shape (still showing the "sign in to Creator Studio Design Cloud" callout)
+        // shape (still showing the "sign in to OpenDesign Cloud" callout)
         // for however long that gap lasts. Mirrors CloudSignInTip's own
         // finishSignedIn().
         notifyWorkspaceContextRefresh();
@@ -3868,52 +3644,59 @@ function LegacyOnboardingView({
           <div className="onboarding-cloud__center">
             <h1 className="onboarding-cloud__title">{t('settings.onboardingCloudTitle')}</h1>
             <p className="onboarding-cloud__body">{t('settings.onboardingCloudBody')}</p>
-            <button
-              type="button"
-              className="onboarding-cloud__primary"
-              onClick={() => {
-                if (amrStatusResolving) return;
-                if (amrSignedIn) {
-                  recordAmrEntry(analytics.track, 'onboarding_amr_card', new Date(), {
-                    metricsConsent: config.telemetry?.metrics === true,
-                  });
-                  recordAmrEntry(
-                    analytics.track,
-                    'onboarding_amr_sign_in_continue',
-                    new Date(),
-                    {
-                      metricsConsent: config.telemetry?.metrics === true,
-                      reuseExistingFrom: ['onboarding_amr_card'],
-                    },
-                  );
-                  continueAfterCloudSignIn();
-                  return;
-                }
-                void handleCloudSignIn();
-              }}
-              disabled={cloudBusy || amrLoginCancelPending || amrStatusResolving}
-              aria-busy={cloudBusy || amrStatusResolving ? true : undefined}
-            >
-              <Icon name="log-in" size={17} />
-              <span>
-                {cloudBusy
-                  ? t('settings.amrSigningIn')
-                  : amrStatusResolving
-                    ? t('common.loading')
-                    : amrSignedIn
-                      ? t('settings.onboardingCloudContinue')
-                      : t('settings.onboardingCloudSignIn')}
-              </span>
-            </button>
-            {!cloudBusy ? (
+            <div className={onboardingWelcomeStyles.signInAction}>
+              {!amrSignedIn && !amrStatusResolving && !cloudBusy ? (
+                <span className={onboardingWelcomeStyles.creditCorner}>
+                  <span
+                    className={`${onboardingWelcomeStyles.credits} od-tooltip`}
+                    data-tooltip={t('settings.onboardingFreeCreditsHint')}
+                    aria-label={t('settings.onboardingFreeCreditsHint')}
+                    tabIndex={0}
+                  >
+                    <span className={onboardingWelcomeStyles.creditLabel}>
+                      {t('settings.onboardingFreeCredits')}
+                    </span>
+                  </span>
+                </span>
+              ) : null}
               <button
                 type="button"
-                className="onboarding-cloud__cancel"
-                onClick={() => setStep(1)}
+                className="onboarding-cloud__primary"
+                onClick={() => {
+                  if (amrStatusResolving) return;
+                  if (amrSignedIn) {
+                    recordAmrEntry(analytics.track, 'onboarding_amr_card', new Date(), {
+                      metricsConsent: config.telemetry?.metrics === true,
+                    });
+                    recordAmrEntry(
+                      analytics.track,
+                      'onboarding_amr_sign_in_continue',
+                      new Date(),
+                      {
+                        metricsConsent: config.telemetry?.metrics === true,
+                        reuseExistingFrom: ['onboarding_amr_card'],
+                      },
+                    );
+                    continueAfterCloudSignIn();
+                    return;
+                  }
+                  void handleCloudSignIn();
+                }}
+                disabled={cloudBusy || amrLoginCancelPending || amrStatusResolving}
+                aria-busy={cloudBusy || amrStatusResolving ? true : undefined}
               >
-                {t('settings.onboardingContinue')}
+                <Icon name="log-in" size={17} />
+                <span>
+                  {cloudBusy
+                    ? t('settings.amrSigningIn')
+                    : amrStatusResolving
+                      ? t('common.loading')
+                      : amrSignedIn
+                        ? t('settings.onboardingCloudContinue')
+                        : t('settings.onboardingCloudSignIn')}
+                </span>
               </button>
-            ) : null}
+            </div>
             {amrLoginError ? (
               <span className="onboarding-cloud__error" role="alert">
                 {amrLoginError}
@@ -3960,46 +3743,48 @@ function LegacyOnboardingView({
                 {t('settings.amrCancelSignIn')}
               </button>
             ) : (
-              <div className="onboarding-cloud__alts">
-                <Button
-                  variant="subtle"
-                  className="onboarding-cloud__alt-btn"
-                  onClick={() => {
-                    emitOnboardingClick('local_coding_agent', 'select_runtime', {
-                      runtime_type: 'local_cli',
-                    });
-                    setRuntime('local');
-                    setRuntimeSetupEntry('cloud');
-                    void scanCliAgents({ preferExisting: true });
-                    setStep(2);
-                  }}
-                >
-                  <Icon name="robot" size={16} />
-                  {t('settings.onboardingLocalTitle')}
-                </Button>
-                <span className="onboarding-cloud__alts-or">
-                  {t('settings.onboardingCloudOr')}
-                </span>
-                <Button
-                  variant="subtle"
-                  className="onboarding-cloud__alt-btn"
-                  onClick={() => {
-                    emitOnboardingClick('byok', 'select_runtime', { runtime_type: 'byok' });
-                    setRuntime('byok');
-                    setRuntimeSetupEntry('cloud');
-                    setStep(2);
-                  }}
-                >
-                  <Icon name="key" size={16} />
-                  {t('settings.onboardingByokTitle')}
-                </Button>
+              <div className={onboardingWelcomeStyles.alternatives}>
+                <div className={onboardingWelcomeStyles.divider}>
+                  {t('settings.onboardingOwnAi')}
+                </div>
+                <div className={`onboarding-cloud__alts ${onboardingWelcomeStyles.options}`}>
+                  <Button
+                    variant="subtle"
+                    className="onboarding-cloud__alt-btn"
+                    onClick={() => {
+                      emitOnboardingClick('local_coding_agent', 'select_runtime', {
+                        runtime_type: 'local_cli',
+                      });
+                      setRuntime('local');
+                      setRuntimeSetupEntry('cloud');
+                      void scanCliAgents({ preferExisting: true });
+                      setStep(2);
+                    }}
+                  >
+                    <Icon name="robot" size={16} />
+                    {t('settings.onboardingLocalAi')}
+                  </Button>
+                  <Button
+                    variant="subtle"
+                    className="onboarding-cloud__alt-btn"
+                    onClick={() => {
+                      emitOnboardingClick('byok', 'select_runtime', { runtime_type: 'byok' });
+                      setRuntime('byok');
+                      setRuntimeSetupEntry('cloud');
+                      setStep(2);
+                    }}
+                  >
+                    <Icon name="key" size={16} />
+                    {t('settings.onboardingApiKey')}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
           <footer className="onboarding-cloud__footer">
             <LanguageMenu placement="up" align="start" />
             <span>
-              © {new Date().getFullYear()} Creator Studio Design · {t('settings.onboardingCloudRights')}
+              © {new Date().getFullYear()} OpenDesign · {t('settings.onboardingCloudRights')}
             </span>
           </footer>
         </div>
@@ -4127,7 +3912,7 @@ function LegacyOnboardingView({
           <footer className="onboarding-cloud__footer">
             <LanguageMenu placement="up" align="start" />
             <span>
-              © {new Date().getFullYear()} Creator Studio Design ·{' '}
+              © {new Date().getFullYear()} OpenDesign ·{' '}
               {t('settings.onboardingCloudRights')}
             </span>
           </footer>
