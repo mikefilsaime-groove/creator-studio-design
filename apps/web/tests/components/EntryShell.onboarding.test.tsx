@@ -76,6 +76,20 @@ function cliAgent(overrides: Partial<AgentInfo> = {}): AgentInfo {
   };
 }
 
+function creatorStudioAgent(
+  id: 'claude' | 'codex',
+  available = true,
+): AgentInfo {
+  return {
+    id,
+    name: id === 'claude' ? 'Claude Code' : 'Codex',
+    bin: id === 'claude' ? 'claude' : 'codex',
+    available,
+    version: available ? '1.0.0' : undefined,
+    models: [{ id: 'default', label: 'Default' }],
+  };
+}
+
 // DeepSeek Harness before its companion is installed: unavailable, yet the
 // picker still lists it so the user has somewhere to start setup from.
 function dshSetupRequiredAgent(overrides: Partial<AgentInfo> = {}): AgentInfo {
@@ -297,7 +311,7 @@ async function clickCloudSignIn() {
 }
 
 async function findCloudSignInButton() {
-  return screen.findByRole('button', { name: /Sign in \/ Sign up/i });
+  return screen.findByRole('button', { name: /Sign in to Creator Studio Design/i });
 }
 
 async function openLocalRuntimeSetup() {
@@ -742,7 +756,11 @@ describe('EntryShell Home submit handoff', () => {
   });
 });
 
-describe('EntryShell onboarding OpenDesign AMR runtime', () => {
+// Creator Studio Design intentionally replaces upstream's hosted AMR/BYOK
+// onboarding with a local Claude Code/Codex chooser. Keep the upstream suite
+// visible for future syncs, but do not run assertions for surfaces this fork
+// does not ship.
+describe.skip('EntryShell onboarding Creator Studio Design AMR runtime', () => {
   it('gates Home on an authoritative signed-out Cloud session without clearing saved setup', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({ loggedIn: false, profile: 'prod', configPath: '/x', user: null }),
@@ -756,10 +774,8 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     const props = renderHome({ config, amrLoggedIn: false });
 
     expect(
-      await screen.findByRole('heading', { name: 'Welcome to OpenDesign' }),
+      await screen.findByRole('heading', { name: 'Sign in to Creator Studio Design' }),
     ).toBeTruthy();
-    expect(await screen.findByText('Free Credits')).toBeTruthy();
-    expect(screen.getByLabelText('New users get free starter credits to try DeepSeek V4.1 Flash.')).toBeTruthy();
     expect(window.location.pathname).toBe('/onboarding');
     expect(props.onConfigPersist).not.toHaveBeenCalled();
     expect(props.onModeChange).not.toHaveBeenCalled();
@@ -783,7 +799,7 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     expect(await screen.findByTestId('home-hero-input')).toBeTruthy();
     expect(window.location.pathname).toBe('/');
     expect(
-      screen.queryByRole('heading', { name: 'Welcome to OpenDesign' }),
+      screen.queryByRole('heading', { name: 'Sign in to Creator Studio Design' }),
     ).toBeNull();
   });
 
@@ -798,14 +814,14 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     ) as typeof fetch;
     renderOnboarding();
 
-    const continueButton = await screen.findByRole('button', { name: /Continue \(signed in\)/i });
-    expect(screen.queryByText('Free Credits')).toBeNull();
-    fireEvent.click(continueButton);
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Continue \(signed in\)/i }),
+    );
 
     expect(
       await screen.findByRole('heading', { name: 'Choose your model source' }),
     ).toBeTruthy();
-    expect(screen.getByRole('radio', { name: /OpenDesign Hosted/i })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /Creator Studio Design Hosted/i })).toBeTruthy();
     expect(screen.getByRole('radio', { name: /Local Agent/i })).toBeTruthy();
     expect(screen.getByRole('radio', { name: /Bring Your Own Key/i })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'About you' })).toBeNull();
@@ -829,7 +845,7 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /Continue \(signed in\)/i }),
     );
-    const hosted = await screen.findByRole('radio', { name: /OpenDesign Hosted/i });
+    const hosted = await screen.findByRole('radio', { name: /Creator Studio Design Hosted/i });
     const local = screen.getByRole('radio', { name: /Local Agent/i });
     hosted.focus();
     fireEvent.keyDown(hosted, { key: 'ArrowDown' });
@@ -1498,7 +1514,7 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     ).toBe('true');
   });
 
-  it('does not auto-select OpenDesign AMR when the AMR runtime is unavailable', async () => {
+  it('does not auto-select Creator Studio Design AMR when the AMR runtime is unavailable', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({ loggedIn: false, profile: 'prod', user: null, configPath: '/x' }),
     ) as typeof fetch;
@@ -1507,43 +1523,43 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
       onRefreshAgents: vi.fn(() => [cliAgent()]),
     });
 
-    expect(await screen.findByRole('heading', { name: 'Welcome to OpenDesign' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Sign in to Creator Studio Design' })).toBeTruthy();
     expect(await findCloudSignInButton()).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /OpenDesign AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
 
     await waitFor(() => {
       expect(props.onAgentChange).not.toHaveBeenCalledWith('amr');
     });
     expect(
-      (screen.getByRole('button', { name: /Local AI/i }) as HTMLButtonElement).disabled,
+      (screen.getByRole('button', { name: /Local Agent/i }) as HTMLButtonElement).disabled,
     ).toBe(false);
     expect(
-      (screen.getByRole('button', { name: /API Key/i }) as HTMLButtonElement).disabled,
+      (screen.getByRole('button', { name: /Bring Your Own Key/i }) as HTMLButtonElement).disabled,
     ).toBe(false);
     expect(screen.queryByText('Sign in to continue')).toBeNull();
   });
 
-  it('shows OpenDesign Cloud as the default connect surface when AMR is available', async () => {
+  it('shows Creator Studio Design Cloud as the default connect surface when AMR is available', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({ loggedIn: false, profile: 'prod', user: null, configPath: '/x' }),
     ) as typeof fetch;
     renderOnboarding();
 
-    expect(screen.getByRole('heading', { name: 'Welcome to OpenDesign' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Sign in to Creator Studio Design' })).toBeTruthy();
     expect(await findCloudSignInButton()).toBeTruthy();
     // No runtime card, no AMR version text, no "Sign in to continue" CTA.
-    expect(screen.queryByRole('button', { name: /OpenDesign AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(screen.queryByText('AMR v0.1.0')).toBeNull();
     expect(screen.queryByRole('button', { name: /Sign in to continue/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /Authorize AMR/i })).toBeNull();
     // Cloud stays primary while identity-independent setup paths remain available.
     expect(
-      (screen.getByRole('button', { name: /Local AI/i }) as HTMLButtonElement).disabled,
+      (screen.getByRole('button', { name: /Local Agent/i }) as HTMLButtonElement).disabled,
     ).toBe(false);
     expect(
-      (screen.getByRole('button', { name: /API Key/i }) as HTMLButtonElement).disabled,
+      (screen.getByRole('button', { name: /Bring Your Own Key/i }) as HTMLButtonElement).disabled,
     ).toBe(false);
-    expect(screen.queryByRole('button', { name: /OpenDesign AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /Authorize AMR/i })).toBeNull();
     expect(screen.queryByText('Not signed in')).toBeNull();
     expect(screen.queryByRole('button', { name: /^Sign in$/i })).toBeNull();
@@ -1578,7 +1594,7 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
       }),
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /Local AI/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Local Agent/i }));
     expect(await screen.findByText('Local CLI')).toBeTruthy();
 
     await act(async () => {
@@ -1796,8 +1812,8 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     await act(async () => {});
     expect(screen.getByText('Signing in…')).toBeTruthy();
     expect(signIn.hasAttribute('disabled')).toBe(true);
-    expect(screen.queryByRole('button', { name: /Local AI/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /API Key/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Local Agent/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Bring Your Own Key/i })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Cancel sign-in/i }));
     await act(async () => {});
@@ -1805,14 +1821,14 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     expect(screen.queryByText('Signing in…')).toBeNull();
     // The landing CTA returns to its signed-out copy and is enabled again.
     const cloudButton = await screen.findByRole('button', {
-      name: /Sign in \/ Sign up/i,
+      name: /Sign in to Creator Studio Design/i,
     });
     expect(cloudButton.hasAttribute('disabled')).toBe(false);
     expect(
-      (screen.getByRole('button', { name: /Local AI/i }) as HTMLButtonElement).disabled,
+      (screen.getByRole('button', { name: /Local Agent/i }) as HTMLButtonElement).disabled,
     ).toBe(false);
     expect(
-      (screen.getByRole('button', { name: /API Key/i }) as HTMLButtonElement).disabled,
+      (screen.getByRole('button', { name: /Bring Your Own Key/i }) as HTMLButtonElement).disabled,
     ).toBe(false);
 
     fireEvent.click(cloudButton);
@@ -1986,7 +2002,7 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     expect(screen.queryByText('Signing in…')).toBeNull();
     expect(
       screen
-        .getByRole('button', { name: /Sign in \/ Sign up/i })
+        .getByRole('button', { name: /Sign in to Creator Studio Design/i })
         .hasAttribute('disabled'),
     ).toBe(false);
     expect(props.onCompleteOnboarding).not.toHaveBeenCalled();
@@ -2036,7 +2052,7 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     // (the two other places a sign-in completes), which fire all three
     // workspace-refresh notifications. That gap left workspaceContext stale
     // until finishOnboarding fired it later, so Home's rail briefly rendered
-    // in its signed-out shape (still showing "Sign in to use OpenDesign
+    // in its signed-out shape (still showing "Sign in to use Creator Studio Design
     // Cloud") right after a successful onboarding sign-in.
     const { WORKSPACE_CONTEXT_REFRESH_EVENT, WORKSPACE_BILLING_REFRESH_EVENT, TEAM_PROJECTS_CHANGED_EVENT } =
       await import('../../src/collab/useWorkspaceContext');
@@ -2133,7 +2149,7 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     });
   });
 
-  it('continues normally when OpenDesign AMR is signed in', async () => {
+  it('continues normally when Creator Studio Design AMR is signed in', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({
         loggedIn: true,
@@ -2486,18 +2502,18 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
       onRefreshAgents: vi.fn(() => [cliAgent()]),
     });
 
-    expect(screen.getByRole('heading', { name: 'Welcome to OpenDesign' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Sign in to Creator Studio Design' })).toBeTruthy();
     const primary = screen.getByRole('button', { name: /Loading/i });
     expect(primary).toBeTruthy();
     expect(primary.getAttribute('aria-busy')).toBe('true');
     expect((primary as HTMLButtonElement).disabled).toBe(true);
     expect(document.querySelector('.onboarding-view__card--skeleton')).toBeNull();
-    expect(screen.queryByRole('button', { name: /OpenDesign AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(
-      (screen.getByRole('button', { name: /Local AI/i }) as HTMLButtonElement).disabled,
+      (screen.getByRole('button', { name: /Local Agent/i }) as HTMLButtonElement).disabled,
     ).toBe(false);
     expect(
-      (screen.getByRole('button', { name: /API Key/i }) as HTMLButtonElement).disabled,
+      (screen.getByRole('button', { name: /Bring Your Own Key/i }) as HTMLButtonElement).disabled,
     ).toBe(false);
   });
 
@@ -2508,7 +2524,7 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     renderOnboarding({ agentsLoading: false });
 
     expect(await findCloudSignInButton()).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /OpenDesign AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(document.querySelector('.onboarding-view__card--skeleton')).toBeNull();
   });
 
@@ -2523,9 +2539,9 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     });
 
     expect(
-      await screen.findByRole('button', { name: /Sign in \/ Sign up/i }),
+      await screen.findByRole('button', { name: /Sign in to Creator Studio Design/i }),
     ).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /OpenDesign AMR/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Creator Studio Design AMR/i })).toBeNull();
     expect(document.querySelector('.onboarding-view__card--skeleton')).toBeNull();
   });
 
@@ -2548,5 +2564,81 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
       .filter((payload) => payload.element === 'skip');
     expect(skipClicks).toHaveLength(0);
     expect(trackedEvents('onboarding_complete_result')).toHaveLength(0);
+  });
+});
+
+describe('EntryShell Creator Studio Design onboarding', () => {
+  it('shows only Claude Code and Codex as supported coding agents', async () => {
+    globalThis.fetch = vi.fn(async () => jsonResponse({})) as typeof fetch;
+    renderOnboarding({
+      agents: [
+        creatorStudioAgent('claude'),
+        creatorStudioAgent('codex'),
+        amrAgent(),
+        cliAgent(),
+      ],
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Creator Studio Design' }),
+    ).toBeTruthy();
+    expect(screen.getByText(/subscription already signed in on this computer/i)).toBeTruthy();
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    expect(screen.getByRole('radio', { name: /Claude Code/i })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /Codex/i })).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: /AMR/i })).toBeNull();
+    expect(screen.queryByText(/Bring Your Own Key/i)).toBeNull();
+  });
+
+  it('persists the available agent and completes setup without app authentication', async () => {
+    globalThis.fetch = vi.fn(async () => jsonResponse({})) as typeof fetch;
+    const props = renderOnboarding({
+      agents: [
+        creatorStudioAgent('claude', false),
+        creatorStudioAgent('codex'),
+      ],
+    });
+
+    const claude = await screen.findByRole('radio', { name: /Claude Code/i });
+    const codex = screen.getByRole('radio', { name: /Codex/i });
+    expect((claude as HTMLButtonElement).disabled).toBe(true);
+    expect(codex.getAttribute('aria-checked')).toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: /^Continue$/i }));
+
+    await waitFor(() => {
+      expect(props.onModeChange).toHaveBeenCalledWith('daemon');
+      expect(props.onAgentChange).toHaveBeenCalledWith('codex');
+      expect(props.onConfigPersist).toHaveBeenCalledWith(
+        expect.objectContaining({ mode: 'daemon', agentId: 'codex' }),
+      );
+      expect(props.onCompleteOnboarding).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByText(/sign in to Creator Studio Design/i)).toBeNull();
+  });
+
+  it('explains what to install when neither supported agent is detected', async () => {
+    globalThis.fetch = vi.fn(async () => jsonResponse({})) as typeof fetch;
+    renderOnboarding({
+      agents: [amrAgent(), cliAgent()],
+      agentsLoading: false,
+    });
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent(/Claude Code and Codex were not detected/i);
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect((screen.getByRole('button', { name: /^Continue$/i }) as HTMLButtonElement).disabled)
+      .toBe(true);
+  });
+
+  it('rescans the installed coding agents on demand', async () => {
+    globalThis.fetch = vi.fn(async () => jsonResponse({})) as typeof fetch;
+    const onRefreshAgents = vi.fn(() => [creatorStudioAgent('claude')]);
+    renderOnboarding({ agents: [], onRefreshAgents });
+
+    fireEvent.click(await screen.findByRole('button', { name: /^Rescan$/i }));
+
+    await waitFor(() => expect(onRefreshAgents).toHaveBeenCalledTimes(1));
   });
 });

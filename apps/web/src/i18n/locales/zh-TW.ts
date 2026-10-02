@@ -360,6 +360,11 @@ export const zhTW: Dict = {
     "在信箱裡收到產品更新、新模版、設計系統與大使活動。選填——可以跳過。",
   "settings.onboardingConnectTitle": "選擇執行方式",
   "settings.onboardingConnectBody": "",
+  "settings.onboardingFreeCredits": "Free Credits",
+  "settings.onboardingFreeCreditsHint": "New users get free starter credits to try DeepSeek V4.1 Flash.",
+  "settings.onboardingOwnAi": "Or use your own AI",
+  "settings.onboardingLocalAi": "Local AI",
+  "settings.onboardingApiKey": "API Key",
   "settings.onboardingCloudTitle": "登入 Creator Studio Design",
   "settings.onboardingCloudBody":
     "登入後可直接用雲端 AI 開始設計，無需任何複雜設定。",

@@ -488,8 +488,8 @@ async function main(): Promise<void> {
         if (splash != null && !splash.window.isDestroyed()) splash.window.destroy();
         splash = null;
         dialog.showErrorBox(
-          "Open Design",
-          "Open Design could not open its window. Quit Open Design from the Dock and open it again.",
+          "Creator Studio Design",
+          "Creator Studio Design could not open its window. Quit Creator Studio Design from the Dock and open it again.",
         );
       },
       stopHeadless: async () => { await sidecars.close(); },
