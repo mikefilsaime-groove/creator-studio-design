@@ -62,7 +62,38 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build packaging control plane
         run: pnpm --filter @open-design/tools-pack build
-      - name: Build unsigned installer
+      - name: Require Apple notarization credentials
+        env:
+          APPLE_SIGNING_CERTIFICATE_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_BASE64 }}
+          APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for name in \
+            APPLE_SIGNING_CERTIFICATE_BASE64 \
+            APPLE_SIGNING_CERTIFICATE_PASSWORD \
+            APPLE_ID \
+            APPLE_APP_SPECIFIC_PASSWORD \
+            APPLE_TEAM_ID
+          do
+            if [ -z "${!name:-}" ]; then
+              missing+=("$name")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "macOS Gatekeeper treats this unsigned download as malware and only offers Move to Trash." >&2
+            echo "Set these GitHub Actions secrets before a Creator Studio Design Mac release: ${missing[*]}" >&2
+            echo "APPLE_SIGNING_CERTIFICATE_BASE64 is the base64 of a Developer ID Application .p12 (not a development or Mac App Store certificate)." >&2
+            echo "APPLE_SIGNING_CERTIFICATE_PASSWORD is that .p12 password." >&2
+            echo "APPLE_ID is the Apple ID on the Developer ID team." >&2
+            echo "APPLE_APP_SPECIFIC_PASSWORD is an app-specific password from appleid.apple.com for that Apple ID." >&2
+            echo "APPLE_TEAM_ID is the 10-character Apple Developer Team ID." >&2
+            exit 1
+          fi
+      - name: Build signed and notarized installer
         env:
           BUILD_JSON_PATH: ${{ runner.temp }}/creator-studio-build/build.json
           BUILD_LOG_PATH: ${{ runner.temp }}/creator-studio-build/build.log
@@ -72,14 +103,31 @@ jobs:
           RELEASE_NAMESPACE: ${{ matrix.namespace }}
           RELEASE_OUTPUTS_PATH: ${{ runner.temp }}/creator-studio-build/outputs.json
           RELEASE_REPORT_DIR: ${{ runner.temp }}/creator-studio-report
-          RELEASE_SIGN_MODE: no
+          RELEASE_SIGN_MODE: notarize
           RELEASE_SMOKE_MODE: skip
           RELEASE_TARGET: mac_${{ matrix.arch }}
           RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
           RELEASE_WORK_DIR: ${{ runner.temp }}/creator-studio-work
           TOOLS_PACK_CACHE_DIR: ${{ runner.temp }}/creator-studio-cache
           TOOLS_PACK_DIR: ${{ runner.temp }}/creator-studio-pack
+          APPLE_SIGNING_CERTIFICATE_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_BASE64 }}
+          APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: bash tools/release/scripts/build-platform.sh
+      - name: Verify Gatekeeper accepts the notarized DMG
+        env:
+          BUILD_JSON_PATH: ${{ runner.temp }}/creator-studio-build/build.json
+        run: |
+          set -euo pipefail
+          dmg_path="$(node -p "JSON.parse(require('fs').readFileSync(process.env.BUILD_JSON_PATH)).dmgPath")"
+          zip_path="$(node -p "JSON.parse(require('fs').readFileSync(process.env.BUILD_JSON_PATH)).zipPath")"
+          payload_path="$(node -p "JSON.parse(require('fs').readFileSync(process.env.BUILD_JSON_PATH)).payloadPath")"
+          xcrun stapler validate "$dmg_path"
+          spctl -a -vv -t install "$dmg_path"
+          xcrun stapler validate "$zip_path"
+          xcrun stapler validate "$payload_path"
       - name: Prepare release assets
         env:
           BUILD_JSON_PATH: ${{ runner.temp }}/creator-studio-build/build.json
@@ -284,7 +332,7 @@ jobs:
               --latest \
               --target "$GITHUB_SHA" \
               --title "Creator Studio Design ${RELEASE_VERSION}" \
-              --notes "Unsigned community build. On macOS, Control-click the installed app and choose Open on first launch if Gatekeeper warns. On Windows, choose More info and Run anyway if SmartScreen warns." \
+              --notes "macOS disk images are Developer ID signed and notarized. Windows installers are unsigned; choose More info and Run anyway if SmartScreen warns." \
               --generate-notes \
               --repo "$GITHUB_REPOSITORY"
           fi

@@ -33,14 +33,22 @@ Use `pnpm tools-dev inspect desktop status` to inspect the Electron runtime. Do 
 
 The `Creator Studio Design release` GitHub Action builds:
 
-- unsigned macOS Apple Silicon and Intel installers;
+- Developer ID signed and notarized macOS Apple Silicon and Intel disk images;
 - unsigned Windows installer and portable archive;
 - Linux AppImage;
 - launcher payloads and checksummed updater metadata.
 
 Run the workflow in GitHub with a stable `x.y.z` version. A validation run can leave the assets as a workflow artifact; enabling `publish` creates the latest GitHub Release and makes it available to the in-app updater.
 
-These community installers do not require paid Apple or Windows developer certificates. On first launch, macOS users may need to Control-click the app and choose **Open**; Windows users may need to choose **More info** and **Run anyway** if SmartScreen warns.
+Current macOS treats an unsigned or unnotarized download as malware and only offers **Move to Trash**. The Mac jobs therefore refuse to build unless these repository Actions secrets are set:
+
+- `APPLE_SIGNING_CERTIFICATE_BASE64` — base64 of a **Developer ID Application** `.p12` (not a development or Mac App Store certificate)
+- `APPLE_SIGNING_CERTIFICATE_PASSWORD` — password for that `.p12`
+- `APPLE_ID` — Apple ID on the Developer ID team
+- `APPLE_APP_SPECIFIC_PASSWORD` — app-specific password for that Apple ID, from appleid.apple.com
+- `APPLE_TEAM_ID` — 10-character Apple Developer Team ID
+
+Windows builds stay unsigned. On first launch, Windows users may need to choose **More info** and **Run anyway** if SmartScreen warns.
 
 The `Sync upstream Creator Studio Design base` workflow brings the newest upstream base into a review branch so product identity, open-access behavior, execution restrictions, and packaging checks can be validated before merging.
 

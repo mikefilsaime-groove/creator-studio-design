@@ -177,12 +177,13 @@ const SKIP_CHAIN_BREAKERS = ["always(", "cancelled(", "failure("];
 
 describe("release workflows", () => {
   it("publishes the Creator Studio Design fork through GitHub Releases without Vela", async () => {
-    const [workflow, upstreamSync, macApp, winResources, linuxPack] = await Promise.all([
+    const [workflow, upstreamSync, macApp, winResources, linuxPack, buildPlatform] = await Promise.all([
       readFile(new URL("../../../.github/workflows/creator-studio-design-release.yml", import.meta.url), "utf8"),
       readFile(new URL("../../../.github/workflows/sync-upstream.yml", import.meta.url), "utf8"),
       readFile(new URL("../src/mac/app.ts", import.meta.url), "utf8"),
       readFile(new URL("../src/win/resources.ts", import.meta.url), "utf8"),
       readFile(new URL("../src/linux.ts", import.meta.url), "utf8"),
+      readFile(new URL("../../../tools/release/scripts/build-platform.sh", import.meta.url), "utf8"),
     ]);
 
     expect(workflow).toContain("name: Creator Studio Design release");
@@ -204,17 +205,30 @@ describe("release workflows", () => {
     expect(workflow).toContain("releases/latest/download/metadata.json");
     expect(workflow).toContain("gh release create");
     expect(workflow).toContain("channel: 'stable'");
-    expect(workflow).toContain("Build unsigned installer");
-    expect(workflow).toContain("RELEASE_SIGN_MODE: no");
+    expect(workflow).toContain("Build signed and notarized installer");
+    expect(workflow).toContain("RELEASE_SIGN_MODE: notarize");
+    expect(workflow).not.toMatch(/RELEASE_SIGN_MODE:\s*no\b/);
     expect(workflow).toContain("runner: macos-15-intel");
-    expect(workflow).toContain("Unsigned community build");
+    expect(workflow).toContain("macOS disk images are Developer ID signed and notarized.");
+    expect(workflow).not.toContain("Unsigned community build");
+    expect(workflow).not.toContain("Control-click");
     expect(workflow).not.toContain("cache: pnpm");
-    expect(workflow).not.toContain("Require release signing credentials");
-    expect(workflow).not.toContain("APPLE_SIGNING_CERTIFICATE_BASE64");
+    expect(workflow).toContain("Require Apple notarization credentials");
+    expect(workflow).toContain("APPLE_SIGNING_CERTIFICATE_BASE64: ${{ secrets.APPLE_SIGNING_CERTIFICATE_BASE64 }}");
+    expect(workflow).toContain("APPLE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_SIGNING_CERTIFICATE_PASSWORD }}");
+    expect(workflow).toContain("APPLE_ID: ${{ secrets.APPLE_ID }}");
+    expect(workflow).toContain("APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}");
+    expect(workflow).toContain("APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}");
     expect(workflow).not.toContain("WINDOWS_SIGNING_CERTIFICATE_BASE64");
-    expect(workflow).not.toContain('xcrun stapler validate "$dmg_path"');
-    expect(workflow).not.toContain('spctl -a -vv -t install "$dmg_path"');
+    expect(workflow).toContain('xcrun stapler validate "$dmg_path"');
+    expect(workflow).toContain('spctl -a -vv -t install "$dmg_path"');
+    expect(workflow).toContain('xcrun stapler validate "$zip_path"');
+    expect(workflow).toContain('xcrun stapler validate "$payload_path"');
     expect(workflow).not.toContain("Get-AuthenticodeSignature $installerPath");
+    expect(buildPlatform).toContain("build_args+=(--notarize)");
+    expect(buildPlatform).toContain('measure_step "notarize mac dmg" notarize_mac_file');
+    expect(buildPlatform).toContain('measure_step "notarize mac zip" notarize_mac_file');
+    expect(buildPlatform).toContain('measure_step "notarize mac payload" notarize_mac_file');
     expect(workflow).not.toContain("--require-vela-cli");
     expect(workflow).not.toContain("nexu-io/open-design");
     expect(workflow).not.toContain("releases.open-design.ai");
