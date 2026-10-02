@@ -154,6 +154,14 @@
   line-height: 1.45;
 }
 
+.deviceCode {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-strong);
+  font-size: 28px;
+  letter-spacing: 0.08em;
+}
+
 .radio {
   position: relative;
   width: 17px;

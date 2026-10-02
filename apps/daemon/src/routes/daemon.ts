@@ -71,6 +71,20 @@ export function registerDaemonRoutes(app: Express, deps: RegisterDaemonRoutesDep
     }
   });
 
+  app.post('/api/agents/:agentId/device-login', requireLocalDaemonRequest, async (req, res) => {
+    const agentId = Array.isArray(req.params.agentId) ? req.params.agentId[0] : req.params.agentId;
+    const { startAgentDeviceLogin } = await import('../runtimes/device-login.js');
+    const result = await startAgentDeviceLogin(agentId ?? '');
+    if (result.ok) {
+      return res.json({
+        ok: true,
+        userCode: result.userCode,
+        verificationUrl: result.verificationUrl,
+      });
+    }
+    return res.status(result.status).json({ ok: false, error: result.error });
+  });
+
   app.post('/api/agents/:agentId/oauth-launch', requireLocalDaemonRequest, async (req, res) => {
     const agentId = req.params.agentId;
     if (agentId !== 'antigravity') {

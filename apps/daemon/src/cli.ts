@@ -516,11 +516,17 @@ async function runStrategy(args) {
 }
 
 function printAgentHelp() {
-  console.log(`Usage: od agent setup deepseek-harness [options]
+  console.log(`Usage:
+  od agent setup deepseek-harness [options]
+  od agent device-login <claude|codex> [options]
 
-Install or repair Creator Studio Design's bundled connection component in the user's
-official DeepSeek Harness installation. The dsh CLI itself is not installed
-or upgraded by Creator Studio Design.
+setup deepseek-harness
+  Install or repair Creator Studio Design's bundled connection component in the user's
+  official DeepSeek Harness installation. The dsh CLI itself is not installed
+  or upgraded by Creator Studio Design.
+
+device-login <claude|codex>
+  Start that agent's device sign-in and print the one-time code to enter.
 
 Options:
   --json                  Print a machine-readable result.
@@ -538,6 +544,33 @@ async function runAgent(args) {
   const positional = positionalArgs(args, AGENT_STRING_FLAGS);
   if (flags.help || flags.h || positional[0] === 'help') {
     printAgentHelp();
+    return;
+  }
+  if (positional[0] === 'device-login') {
+    const agentId = positional[1];
+    if (agentId !== 'claude' && agentId !== 'codex') {
+      printAgentHelp();
+      process.exit(2);
+    }
+    const base = await cliDaemonBaseUrl(flags);
+    let response;
+    try {
+      response = await fetch(`${base}/api/agents/${agentId}/device-login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      });
+    } catch (error) {
+      surfaceFetchError(error, base);
+      process.exit(3);
+    }
+    if (!response.ok) return structuredHttpFailure(response, 'daemon-not-running');
+    const result = await response.json();
+    if (flags.json) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return;
+    }
+    console.log(`Code\t${result.userCode}`);
     return;
   }
   if (positional[0] !== 'setup' || positional[1] !== 'deepseek-harness') {
