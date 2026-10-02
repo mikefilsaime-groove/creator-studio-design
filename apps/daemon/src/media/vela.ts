@@ -8,6 +8,7 @@ import {
   velaCommandStdout,
   velaWorkspaceCommandOptions,
 } from '../integrations/vela-command.js';
+import { MEDIA_ASPECTS } from './models.js';
 
 type VelaCommandRunner = typeof runVelaCommand;
 type ProgressFn = (message: string) => void;
@@ -299,6 +300,46 @@ async function fetchPublishedImageCapabilities(
  * pricing decision: the model's own default tier is the only choice that keeps
  * an unqualified request costing what an unqualified request costs.
  */
+function aspectRatioValue(aspect: string): number | null {
+  const match = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(aspect.trim());
+  if (!match) return null;
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || height === 0) return null;
+  return width / height;
+}
+
+/**
+ * A curated template can name a shape the product does not offer (the
+ * Infographic poster ships `2:3`). That request must still render: pick the
+ * published shape whose ratio is closest, so the job produces an image
+ * instead of failing before the provider is called.
+ *
+ * A shape the product does offer (`MEDIA_ASPECTS`) that this model does not
+ * publish stays a hard error. The caller asked for a real choice, and
+ * substituting a different one would hide that the model cannot make it.
+ */
+function nearestPublishedAspect(
+  requested: string,
+  profiles: readonly VelaImageOutputProfile[],
+): string | undefined {
+  const published = [...new Set(profiles.map((profile) => profile.aspectRatio))];
+  const target = aspectRatioValue(requested);
+  if (target == null) return published[0];
+  let best: string | undefined;
+  let bestDistance = Infinity;
+  for (const aspect of published) {
+    const value = aspectRatioValue(aspect);
+    if (value == null) continue;
+    const distance = Math.abs(value - target);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = aspect;
+    }
+  }
+  return best ?? published[0];
+}
+
 function selectImageOutputProfile(
   published: VelaPublishedImageCapabilities | null,
   aspect: string | undefined,
@@ -314,6 +355,12 @@ function selectImageOutputProfile(
   const matching = published.profiles.filter((profile) => profile.aspectRatio === aspect);
   if (matching.length === 0) {
     const supported = [...new Set(published.profiles.map((profile) => profile.aspectRatio))];
+    if (!(MEDIA_ASPECTS as readonly string[]).includes(aspect)) {
+      const snapped = nearestPublishedAspect(aspect, published.profiles);
+      if (snapped && snapped !== aspect) {
+        return selectImageOutputProfile(published, snapped, requestedResolution, wireModel);
+      }
+    }
     throw new Error(
       `Vela model ${wireModel} does not publish aspect ${aspect}; supported: ${supported.join(', ')}`,
     );
@@ -365,12 +412,20 @@ export async function renderVelaImage(
   const published = input.aspect?.trim() || requestedQuality
     ? await fetchPublishedImageCapabilities(input, edits, wireModel, runCommand)
     : null;
+  const requestedAspect = input.aspect?.trim() || undefined;
   const profile = selectImageOutputProfile(
     published,
-    input.aspect?.trim() || undefined,
+    requestedAspect,
     input.resolution?.trim() || undefined,
     wireModel,
   );
+  const aspectNote = profile
+    ? `${profile.aspectRatio} ${profile.resolution}${
+      requestedAspect && requestedAspect !== profile.aspectRatio
+        ? ` (requested ${requestedAspect})`
+        : ''
+    }`
+    : 'model default profile';
   const quality = requestedQuality && published
     ? qualityArgs(requestedQuality, published, wireModel)
     : [];
@@ -460,9 +515,7 @@ export async function renderVelaImage(
       bytes,
       // The tier is part of what the user was charged for, so name it when it
       // was chosen and say so plainly when the server's default decided.
-      providerNote: `vela/${wireModel} · ${
-        profile ? `${profile.aspectRatio} ${profile.resolution}` : 'model default profile'
-      } · ${requestedQuality ?? 'model default quality'} · ${bytes.length} bytes`,
+      providerNote: `vela/${wireModel} · ${aspectNote} · ${requestedQuality ?? 'model default quality'} · ${bytes.length} bytes`,
       suggestedExt: extensionForImageMime(mime),
     };
   } finally {

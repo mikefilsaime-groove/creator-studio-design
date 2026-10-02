@@ -993,6 +993,19 @@ function contextPluginLines(
   return out;
 }
 
+const REQUESTABLE_MEDIA_ASPECTS = ['1:1', '16:9', '9:16', '4:3', '3:4'] as const;
+
+/**
+ * Template files can name a ratio the dispatcher will not accept (`2:3` on
+ * the Infographic poster). Only echo a ratio the media contract allows, so
+ * the agent does not turn that file into a failing `--aspect` flag.
+ */
+function requestableMediaAspect(aspect: string | undefined): string | null {
+  if (!aspect) return null;
+  const trimmed = aspect.trim();
+  return (REQUESTABLE_MEDIA_ASPECTS as readonly string[]).includes(trimmed) ? trimmed : null;
+}
+
 function promptTemplateReferenceLines(
   metadata: ProjectMetadata,
 ): string[] {
@@ -1014,7 +1027,8 @@ function promptTemplateReferenceLines(
         ? 'vela/gpt-image-2'
         : tpl.model;
     if (suggestedModel) meta.push(`suggested model: ${suggestedModel}`);
-    if (tpl.aspect) meta.push(`aspect: ${tpl.aspect}`);
+    const requestableAspect = requestableMediaAspect(tpl.aspect);
+    if (requestableAspect) meta.push(`aspect: ${requestableAspect}`);
     if (tpl.tags && tpl.tags.length > 0) {
       meta.push(`tags: ${tpl.tags.join(', ')}`);
     }
@@ -1027,6 +1041,11 @@ function promptTemplateReferenceLines(
     out.push(
       'The user picked this template as inspiration. Treat it as a structural and stylistic reference: borrow composition, palette cues, lighting language, lens/motion direction, and the level of detail. Adapt the wording to the user\'s actual subject and brief — do NOT generate the template subject verbatim. If a field above is unknown the user wants you to follow the template\'s defaults.',
     );
+    if (tpl.aspect && !requestableAspect) {
+      out.push(
+        `The template names aspect ${tpl.aspect}, which is not a requestable ratio (allowed: 1:1, 16:9, 9:16, 4:3, 3:4). Omit \`--aspect\`. Do not rewrite that ratio into another flag value. The dispatcher selects a published shape.`,
+      );
+    }
     // Escape triple-backticks so a user who pastes ``` into the editable
     // template body can't break out of the markdown fence below and inject
     // free-form instructions into the agent's system prompt. Zero-width

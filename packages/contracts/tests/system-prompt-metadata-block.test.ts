@@ -77,6 +77,22 @@ describe('renderMetadataBlock (characterization via composeSystemPrompt chat-mod
     expect(block).toMatchSnapshot();
   });
 
+  it('does not teach an infographic template ratio the dispatcher cannot request', () => {
+    const block = metadataBlock({
+      kind: 'image',
+      imageModel: 'vela/gpt-image-2',
+      promptTemplate: {
+        title: 'Infographic poster',
+        prompt: 'A vertical poster of the pasted brief.',
+        aspect: '2:3',
+      },
+    } as unknown as ProjectMetadata);
+    expect(block).not.toContain('aspect: 2:3');
+    expect(block).toContain('The template names aspect 2:3, which is not a requestable ratio');
+    expect(block).toContain('Omit `--aspect`');
+    expect(block).toContain('Do not rewrite that ratio into another flag value');
+  });
+
   it('video kind with the hyperframes-html special case', () => {
     const block = metadataBlock({
       kind: 'video',

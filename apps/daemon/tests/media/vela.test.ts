@@ -467,6 +467,26 @@ describe('Vela media provider', () => {
     expect(runVelaCommandMock.mock.calls.every(([args]) => args[0] !== 'image')).toBe(true);
   });
 
+  // The Infographic poster template advertises 2:3, which is not a product
+  // aspect and which gpt-image-2 does not publish. The render must still
+  // produce an image on the nearest published shape (1:1 is closer than 16:9).
+  it('renders an unpublished template aspect by using the nearest published shape', async () => {
+    mockReadyImage();
+
+    const result = await generateMedia({
+      ...baseArgs(),
+      surface: 'image',
+      model: 'vela/gpt-image-2',
+      aspect: '2:3',
+      output: 'infographic.png',
+    });
+
+    const [args] = imageCall();
+    expect(valueAfter(args, '--aspect-ratio')).toBe('1:1');
+    expect(valueAfter(args, '--resolution')).toBe('2K');
+    expect(result.providerNote).toContain('1:1 2K (requested 2:3)');
+  });
+
   it('names the published aspect ratios when the requested one is not one of them', async () => {
     mockReadyImage();
 

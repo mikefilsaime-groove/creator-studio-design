@@ -111,6 +111,25 @@ describe('composeSystemPrompt — metadata.promptTemplate', () => {
     expect(out).not.toContain('1:1 (default');
   });
 
+  it('does not teach an infographic template ratio the dispatcher cannot request', () => {
+    const out = composeSystemPrompt({
+      metadata: {
+        kind: 'image',
+        imageModel: 'vela/gpt-image-2',
+        promptTemplate: {
+          ...baseSummary,
+          aspect: '2:3',
+          title: 'Infographic poster',
+        },
+      },
+    });
+
+    expect(out).not.toContain('aspect: 2:3');
+    expect(out).toContain('The template names aspect 2:3, which is not a requestable ratio');
+    expect(out).toContain('Omit `--aspect`');
+    expect(out).toContain('Do not rewrite that ratio into another flag value');
+  });
+
   it('normalizes a legacy template recommendation to Cloud when no image model is explicit', () => {
     const out = composeSystemPrompt({
       metadata: {
