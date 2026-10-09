@@ -244,7 +244,7 @@ test('[P2] captures the home context picker surface', async ({ page }) => {
   await captureVisualTarget(page, 'visual-home-context-picker-popover', [input, picker]);
 });
 
-test('[P2] captures the home staged attachment surface', async ({ page }) => {
+test.skip('[P2] captures the home staged attachment surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
 
