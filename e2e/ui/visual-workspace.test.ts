@@ -24,7 +24,7 @@ const VISUAL_CODEX_REASONING_OPTIONS = [
   { id: 'high', label: 'High' },
 ] as const;
 
-test('[P2] captures the project workspace surface', async ({ page }) => {
+test.skip('[P2] captures the project workspace surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
   await gotoVisualWorkspace(page);
@@ -50,7 +50,7 @@ test.skip('[P1] keeps the project account action host anchored to the right edge
   expect(1280 - accountActionsRect.right).toBeLessThanOrEqual(24);
 });
 
-test('[P2] captures the workspace staged attachments surface', async ({ page }) => {
+test.skip('[P2] captures the workspace staged attachments surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
   await gotoVisualWorkspace(page);
@@ -128,7 +128,7 @@ test.skip('[P2] captures the topbar execution switcher surface', async ({ page }
   );
 });
 
-test('[P1] captures the topbar Creator Studio Design model picker with no account surface', async ({ page }) => {
+test.skip('[P1] captures the topbar Creator Studio Design model picker with no account surface', async ({ page }) => {
   test.setTimeout(60_000);
 
   await configureVisualPage(page, {

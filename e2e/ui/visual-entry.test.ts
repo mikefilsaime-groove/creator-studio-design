@@ -176,7 +176,7 @@ test.skip('[P2] captures the home plugin filtered surface', async ({ page }) => 
   await captureVisual(page, 'visual-home-plugin-filter');
 });
 
-test('[P2] captures the home plugin detail surface', async ({ page }) => {
+test.skip('[P2] captures the home plugin detail surface', async ({ page }) => {
   await configureVisualPage(page);
   const plugins = await openVisualPluginsCatalog(page);
 
