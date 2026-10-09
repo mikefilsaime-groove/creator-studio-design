@@ -161,7 +161,7 @@ describe("processCommandExactlyRunsExecutable", () => {
 
   it("compares Windows executable paths case-insensitively", () => {
     expect(processCommandExactlyRunsExecutable(
-      '"C:\\PROGRAM FILES\\OPEN DESIGN\\OPEN DESIGN.EXE"',
+      '"C:\\PROGRAM FILES\\CREATOR STUDIO DESIGN\\CREATOR STUDIO DESIGN.EXE"',
       "c:\\Program Files\\Creator Studio Design\\Creator Studio Design.exe",
       "win32",
     )).toBe(true);
