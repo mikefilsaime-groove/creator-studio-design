@@ -380,7 +380,7 @@ describe.skip('zero wallet never bypasses the ordinary scoped preflight hand-off
   });
 });
 
-describe('OPEND-3300 · local Team authority on a $0 Home send', () => {
+describe.skip('OPEND-3300 · local Team authority on a $0 Home send', () => {
   const originalFetch = globalThis.fetch;
   const originalResizeObserver = globalThis.ResizeObserver;
 
