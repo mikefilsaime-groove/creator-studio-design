@@ -1921,7 +1921,7 @@ process.stdin.on("end", () => {
       grep: String.raw`\[P0\]`,
       files: ["ui/app-restoration.test.ts", "ui/critical-smoke.test.ts"],
     });
-    expect(uiP0Groups["entry-settings"].files).toContain("ui/home-hero-rail.test.ts");
+    expect(uiP0Groups["entry-settings"].files).toEqual(["ui/entry-settings-disabled.test.ts"]);
     expect(workflow).not.toContain("  ui_p0_smoke:");
     expect(uiP0).toContain("run-ui-group critical-extras");
     expect(uiP0).toContain("Preserve project-runtime domain artifact");
