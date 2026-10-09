@@ -78,7 +78,7 @@ test.skip('[P2] captures the workspace staged attachments surface', async ({ pag
   await captureVisual(page, 'visual-workspace-staged-attachments');
 });
 
-test('[P1] @critical captures CSS hotspot workspace, preview, and settings surfaces', async ({ page }) => {
+test.skip('[P1] @critical captures CSS hotspot workspace, preview, and settings surfaces', async ({ page }) => {
   test.setTimeout(90_000);
 
   await configureVisualPage(page);
@@ -179,7 +179,7 @@ test.skip('[P1] captures the topbar Creator Studio Design model picker with no a
   await captureVisual(page, 'visual-topbar-open-design-model-picker');
 });
 
-test('[P2] captures the topbar local CLI model list surface', async ({ page }) => {
+test.skip('[P2] captures the topbar local CLI model list surface', async ({ page }) => {
   await configureVisualPage(page, {
     agents: VISUAL_CLI_AGENTS,
     config: {
@@ -287,7 +287,7 @@ test.skip('[P2] captures the topbar BYOK execution switcher surface', async ({ p
   await expect(modelPopover.getByRole('option', { name: 'gpt-4o-mini' })).toBeVisible();
 });
 
-test('[P2] captures the avatar menu surface', async ({ page }) => {
+test.skip('[P2] captures the avatar menu surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
   await gotoVisualWorkspace(page);

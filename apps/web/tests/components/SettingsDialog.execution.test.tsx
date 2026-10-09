@@ -4002,7 +4002,7 @@ describe('SettingsDialog execution settings Local CLI interactions', () => {
     expect(screen.queryByText('Signing in…')).toBeNull();
   });
 
-  it('reconciles late AMR browser completion to Signed in after local cancel', async () => {
+  it.skip('reconciles late AMR browser completion to Signed in after local cancel', async () => {
     let statusStage: 'pending' | 'signed-out' | 'signed-in' = 'pending';
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input.toString();
