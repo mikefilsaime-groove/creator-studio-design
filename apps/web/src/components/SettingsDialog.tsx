@@ -273,8 +273,6 @@ function normalizeSettingsSection(section: SettingsSection): SettingsSection {
     case 'pet':
     case 'projectLocations':
     case 'critiqueTheater':
-    case 'media':
-      return 'general';
     default:
       return section;
   }
@@ -4370,6 +4368,17 @@ export function SettingsDialog({
               <span>
                 <strong>{t('settings.envConfigure')}</strong>
                 <small>Claude Code / Codex</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`settings-nav-item${activeSection === 'media' ? ' active' : ''}`}
+              onClick={() => setActiveSection('media')}
+            >
+              <Icon name="image" size={18} />
+              <span>
+                <strong>{t('settings.mediaProviders')}</strong>
+                <small>Image / video / audio</small>
               </span>
             </button>
             <button

@@ -268,7 +268,11 @@ async function writeFakeVelaBin(root: string): Promise<string> {
 const PROMPT = 'Reply: HELLO';
 const ASSISTANT_TEXT = 'AMR-E2E-OK';
 
-describe('AMR chat-run end-to-end', () => {
+// Creator Studio Design intentionally exposes only Claude Code and Codex in
+// its public agent catalog. The AMR runtime remains in the daemon for
+// upstream-compatible internal paths, but this upstream public-catalog E2E
+// scenario is not a supported fork surface.
+describe.skip('AMR chat-run end-to-end (upstream-only runtime)', () => {
   test('drives /api/runs against vela ACP and the assistant message captures the fake stream', async () => {
     // tools-dev daemon boot + chat run lifecycle needs the same headroom
     // as the dialog/* smoke specs (~3 minutes for cold spawn + run).

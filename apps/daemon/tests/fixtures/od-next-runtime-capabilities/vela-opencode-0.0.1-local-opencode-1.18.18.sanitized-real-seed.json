@@ -5,7 +5,7 @@
   "velaCommit": "c833b74e82e31c89414b7eaf01edabab1e2d0b06",
   "openCodeVersion": "1.18.18",
   "model": "gpt-5.6-terra",
-  "recordingDigest": "sha256:6fe49f1e0946b2220052b2239494786879c03c972b5be12dee30a7973872f6aa",
+  "recordingDigest": "sha256:b4d6fd992204206df2f695f1da3f9f5a7462df2ad0d13cc06a1c06a3507ffd24",
   "anonymizationVersion": "od-runtime-evidence/v1",
   "evidenceReview": "open_design_best_effort",
   "note": "Creator Studio Design-local provider-backed replay of the unpublished Vela candidate. Identifiers are anonymized, Prompt bodies are excluded, and this evidence does not make the candidate a published production tuple.",
