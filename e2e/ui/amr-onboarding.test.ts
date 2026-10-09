@@ -18,6 +18,10 @@ import {
 } from '@/playwright/mock-factory';
 import { T } from '@/timeouts';
 
+// Creator Studio Design exposes the local open-access entry and does not ship
+// the upstream AMR Cloud onboarding/account flow.
+test.describe.skip('upstream AMR onboarding journeys', () => {
+
 type OnboardingConfig = {
   mode: 'daemon' | 'api';
   apiKey: string;
@@ -1563,3 +1567,4 @@ async function selectOnboardingOption(root: OnboardingLocatorRoot, label: string
 async function fillInlineField(page: Page, label: string, value: string) {
   await onboardingField(page, label).locator('input').fill(value);
 }
+});
