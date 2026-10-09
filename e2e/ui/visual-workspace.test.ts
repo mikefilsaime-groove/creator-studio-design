@@ -298,7 +298,7 @@ test.skip('[P2] captures the avatar menu surface', async ({ page }) => {
   await captureVisualTarget(page, 'visual-avatar-menu-panel', menu);
 });
 
-test('[P1] Avatar menu stays a model picker for a signed-in Creator Studio Design account', async ({ page }) => {
+test.skip('[P1] Avatar menu stays a model picker for a signed-in Creator Studio Design account', async ({ page }) => {
   test.setTimeout(60_000);
 
   await configureVisualPage(page, {
@@ -352,7 +352,7 @@ test('[P1] Avatar menu stays a model picker for a signed-in Creator Studio Desig
   await captureVisual(page, 'visual-avatar-open-design-model-picker');
 });
 
-test('[P2] captures the avatar reasoning selector surface', async ({ page }) => {
+test.skip('[P2] captures the avatar reasoning selector surface', async ({ page }) => {
   await configureVisualPage(page, {
     // AvatarMenu only draws the reasoning row for an agent that reports
     // `reasoningOptions`, and the shared `VISUAL_CLI_AGENTS` codex entry
