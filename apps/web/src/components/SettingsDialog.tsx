@@ -151,6 +151,7 @@ import {
   clearUpdaterCache,
   deriveUpdaterModel,
   downloadUpdaterUpdate,
+  isUpdaterDownloadFailure,
   openUpdaterInstaller,
   quitAfterUpdaterInstallerOpen,
   readUpdaterStatus,
@@ -418,7 +419,9 @@ export function deriveAboutUpdateControl(
         primaryAction,
         primaryLabelKey: 'settings.updateRetry',
         showReleaseLink: true,
-        statusKey: 'updater.failed',
+        statusKey: isUpdaterDownloadFailure(model.status)
+          ? 'updater.downloadFailedTitle'
+          : 'updater.failed',
         statusTone: 'error',
       };
     }

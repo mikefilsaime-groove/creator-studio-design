@@ -481,6 +481,7 @@ interface Props {
   skillsLoading?: boolean;
   designSystemsLoading?: boolean;
   projectsLoading?: boolean;
+  projectsLoadFailed?: boolean;
   // Execution / model-switching context. Threaded down from `App` so the
   // top-bar `InlineModelSwitcher` can render the active mode/agent/model
   // and persist changes through the same callbacks the project view uses.
@@ -638,6 +639,7 @@ export function EntryShell({
   skillsLoading = false,
   designSystemsLoading = false,
   projectsLoading = false,
+  projectsLoadFailed = false,
   config,
   providerModelsCache: sharedProviderModelsCache,
   onProviderModelsCacheChange,
@@ -2135,7 +2137,20 @@ export function EntryShell({
               // which has its own loading state and restarts from empty
               // whenever the entry shell remounts (e.g. returning from a
               // project); wait for BOTH reads before calling the page empty.
-              projectsLoading || (projectSearchProjects.length === 0 && teamProjects.loading) ? (
+              !projectsLoading && projectSearchProjects.length === 0 && (projectsLoadFailed || teamProjects.error) ? (
+                <div className="entry-section">
+                  <header className="entry-section__head">
+                    <h1 className="entry-section__title">{t('entry.navDrafts')}</h1>
+                  </header>
+                  <div className="entry-project-list-error" role="alert">
+                    <p>{t('entry.projectsLoadFailed')}</p>
+                    <Button onClick={() => {
+                      teamProjects.reload();
+                      void Promise.resolve(onProjectsRefresh?.()).catch(() => {});
+                    }}>{t('preview.retry')}</Button>
+                  </div>
+                </div>
+              ) : projectsLoading || (projectSearchProjects.length === 0 && teamProjects.loading) ? (
                 <div className="entry-section">
                   <CenteredLoader label={t('common.loading')} />
                 </div>
@@ -3861,7 +3876,7 @@ function LegacyOnboardingView({
               <div className="amr-login-activation onboarding-cloud__activation" role="group">
                 <span className="amr-login-activation__hint">
                   {amrStatus.browserOpenFailed
-                    ? t('settings.amrActivationBrowserFailed')
+                    ? t('settings.amrActivationBrowserFailedDescription')
                     : t('settings.amrActivationHint')}
                 </span>
                 <div className="amr-login-activation__actions">

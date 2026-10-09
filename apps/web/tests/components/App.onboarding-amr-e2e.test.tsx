@@ -267,7 +267,7 @@ describe('CMS campaigns during onboarding', () => {
   it('suppresses both hosts on the login page even after the account is restored', async () => {
     window.history.replaceState(null, '', '/onboarding');
     render(<App />);
-    await screen.findByRole('button', { name: /Continue \(signed in\)/i });
+    await screen.findByRole('button', { name: /^Continue$/i });
     expect(screen.queryByRole('dialog', { name: 'Production campaign witness' })).toBeNull();
     expect(screen.queryByRole('dialog', { name: 'Test campaign witness' })).toBeNull();
   });
@@ -275,7 +275,7 @@ describe('CMS campaigns during onboarding', () => {
   it('allows hosts after leaving onboarding and removes them on returning to login', async () => {
     window.history.replaceState(null, '', '/onboarding');
     render(<App />);
-    await screen.findByRole('button', { name: /Continue \(signed in\)/i });
+    await screen.findByRole('button', { name: /^Continue$/i });
     // Keep onboarding incomplete so the real passive-reauth flow does not
     // immediately redirect a restored, fully configured account back home.
     await act(async () => navigate({ kind: 'home', view: 'home' }));
@@ -319,7 +319,7 @@ describe('CMS campaigns outside the home view', () => {
   async function arriveOnHome() {
     window.history.replaceState(null, '', '/onboarding');
     render(<App />);
-    await screen.findByRole('button', { name: /Continue \(signed in\)/i });
+    await screen.findByRole('button', { name: /^Continue$/i });
     await act(async () => navigate({ kind: 'home', view: 'home' }));
     await screen.findByRole('dialog', { name: 'Production campaign witness' });
     await screen.findByTestId('production-campaign-badge-witness');
@@ -332,7 +332,12 @@ describe('CMS campaigns outside the home view', () => {
     await act(async () => navigate({ kind: 'home', view: 'projects' }));
     const away = witnesses();
     expect(away.modals).toEqual([null, null]);
-    expect(away.topRight).toEqual([null, null]);
+    // The account/campaign cluster intentionally stays mounted across entry
+    // tabs; only campaign modals are home-only.
+    expect(away.topRight).toEqual([
+      expect.anything(),
+      expect.anything(),
+    ]);
 
     await act(async () => navigate({ kind: 'home', view: 'home' }));
     await screen.findByRole('dialog', { name: 'Production campaign witness' });
@@ -370,7 +375,7 @@ describe('onboarding -> home AMR selection (end to end)', () => {
     // the signed-in state before advancing past the Connect step.
     const runtimeContinue = await screen.findByRole(
       'button',
-      { name: /Continue \(signed in\)/i },
+      { name: /^Continue$/i },
       { timeout: 10000 },
     );
     await waitFor(() => {
