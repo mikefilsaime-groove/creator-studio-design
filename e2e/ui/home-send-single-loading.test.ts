@@ -6,6 +6,8 @@ import { applyStandardMocks, routeAgents, routeSuccessfulRuns, suppressWhatsNew 
 import { mockSignedInVelaAccount } from '@/playwright/visual';
 import { T } from '@/timeouts';
 
+// These upstream Home/AMR hand-off journeys target a composer surface that is
+// not shipped in Creator Studio Design's open local entry.
 /*
  * OPEND-2170 · one loading state from the Home send to the running turn.
  *

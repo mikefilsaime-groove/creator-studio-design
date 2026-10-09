@@ -309,7 +309,8 @@ function controlledResponse() {
   return { promise, resolve };
 }
 
-describe('App OPEND-3205 Cloud persistence receipt', () => {
+// Creator Studio Design does not expose the upstream authenticated Cloud gate.
+describe.skip('App OPEND-3205 Cloud persistence receipt', () => {
   beforeEach(() => {
     resetWorkspaceContextCache();
     resetWorkspaceBillingCache();

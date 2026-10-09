@@ -18,6 +18,8 @@ import {
 } from '@/playwright/mock-factory';
 import { T } from '@/timeouts';
 
+// Creator Studio Design exposes the local open-access entry and does not ship
+// the upstream AMR Cloud onboarding/account flow.
 type OnboardingConfig = {
   mode: 'daemon' | 'api';
   apiKey: string;

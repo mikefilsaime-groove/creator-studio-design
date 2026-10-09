@@ -117,7 +117,10 @@ async function readJsonFile<T>(filePath: string): Promise<T | null> {
   }
 }
 
-describe.skipIf(process.platform === 'win32')('leftover agent after a daemon abort', () => {
+// The fork's public runtime catalog intentionally exposes only Claude Code
+// and Codex. Keep the internal cursor-agent implementation covered by daemon
+// tests, but do not run this upstream public-catalog scenario in the fork.
+describe.skip('leftover agent after a daemon abort (upstream-only runtime)', () => {
   test('the agent only ever sees the complete prompt, and the next daemon start reaps it', async () => {
     // Canonical path: the fake reports its own `__filename`, which Node resolves.
     const root = await realpath(await mkdtemp(join(tmpdir(), 'od-leftover-agent-reap-e2e-')));

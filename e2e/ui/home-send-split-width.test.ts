@@ -5,6 +5,8 @@ import { gotoEntryHome } from '@/playwright/amr';
 import { applyStandardMocks, routeSuccessfulRuns, suppressWhatsNew } from '@/playwright/mock-factory';
 import { T } from '@/timeouts';
 
+// These upstream Home/AMR hand-off journeys target a composer surface that is
+// not shipped in Creator Studio Design's open local entry.
 /*
  * OPEND-3207 · the project split must not move after a Home send lands.
  *

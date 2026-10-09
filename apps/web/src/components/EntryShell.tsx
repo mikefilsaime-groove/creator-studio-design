@@ -32,7 +32,6 @@ import {
   type RunContextSelection,
   type ProjectScenarioTaskProfile,
   type WorkspaceProjectSummary,
-  type AgentDeviceLoginResponse,
 } from '@open-design/contracts';
 import type { OpenDesignHostProjectImportSuccess } from '@open-design/host';
 import { useAnalytics } from '../analytics/provider';
@@ -482,6 +481,7 @@ interface Props {
   skillsLoading?: boolean;
   designSystemsLoading?: boolean;
   projectsLoading?: boolean;
+  projectsLoadFailed?: boolean;
   // Execution / model-switching context. Threaded down from `App` so the
   // top-bar `InlineModelSwitcher` can render the active mode/agent/model
   // and persist changes through the same callbacks the project view uses.
@@ -639,6 +639,7 @@ export function EntryShell({
   skillsLoading = false,
   designSystemsLoading = false,
   projectsLoading = false,
+  projectsLoadFailed = false,
   config,
   providerModelsCache: sharedProviderModelsCache,
   onProviderModelsCacheChange,
@@ -2136,7 +2137,20 @@ export function EntryShell({
               // which has its own loading state and restarts from empty
               // whenever the entry shell remounts (e.g. returning from a
               // project); wait for BOTH reads before calling the page empty.
-              projectsLoading || (projectSearchProjects.length === 0 && teamProjects.loading) ? (
+              !projectsLoading && projectSearchProjects.length === 0 && (projectsLoadFailed || teamProjects.error) ? (
+                <div className="entry-section">
+                  <header className="entry-section__head">
+                    <h1 className="entry-section__title">{t('entry.navDrafts')}</h1>
+                  </header>
+                  <div className="entry-project-list-error" role="alert">
+                    <p>{t('entry.projectsLoadFailed')}</p>
+                    <Button onClick={() => {
+                      teamProjects.reload();
+                      void Promise.resolve(onProjectsRefresh?.()).catch(() => {});
+                    }}>{t('preview.retry')}</Button>
+                  </div>
+                </div>
+              ) : projectsLoading || (projectSearchProjects.length === 0 && teamProjects.loading) ? (
                 <div className="entry-section">
                   <CenteredLoader label={t('common.loading')} />
                 </div>
@@ -2230,21 +2244,14 @@ function OnboardingView({
   const [refreshing, setRefreshing] = useState(false);
   const supportedAgents = agents.filter((agent) => agent.id === 'claude' || agent.id === 'codex');
   const availableAgents = supportedAgents.filter((agent) => agent.available);
-  const configuredAgent = supportedAgents.find((agent) => agent.id === config.agentId);
+  const configuredAgent = availableAgents.find((agent) => agent.id === config.agentId);
   const [selectedAgentId, setSelectedAgentId] = useState<string>(
-    configuredAgent?.id ?? availableAgents[0]?.id ?? supportedAgents[0]?.id ?? '',
+    configuredAgent?.id ?? availableAgents[0]?.id ?? '',
   );
-  const [deviceLogin, setDeviceLogin] = useState<
-    | { status: 'idle' }
-    | { status: 'pending'; agentId: string }
-    | { status: 'ready'; agentId: string; userCode: string; verificationUrl: string | null }
-    | { status: 'error'; agentId: string; message: string }
-  >({ status: 'idle' });
-  const deviceLoginGeneration = useRef(0);
 
   useEffect(() => {
-    if (supportedAgents.some((agent) => agent.id === selectedAgentId)) return;
-    setSelectedAgentId(availableAgents[0]?.id ?? supportedAgents[0]?.id ?? '');
+    if (availableAgents.some((agent) => agent.id === selectedAgentId)) return;
+    setSelectedAgentId(availableAgents[0]?.id ?? '');
   }, [agents, selectedAgentId]);
 
   const refreshAgents = async () => {
@@ -2252,56 +2259,14 @@ function OnboardingView({
     try {
       const nextAgents = await onRefreshAgents();
       const nextSupported = nextAgents.filter(
-        (agent) => agent.id === 'claude' || agent.id === 'codex',
+        (agent) => (agent.id === 'claude' || agent.id === 'codex') && agent.available,
       );
       if (!nextSupported.some((agent) => agent.id === selectedAgentId)) {
-        const nextAvailable = nextSupported.filter((agent) => agent.available);
-        setSelectedAgentId(nextAvailable[0]?.id ?? nextSupported[0]?.id ?? '');
+        setSelectedAgentId(nextSupported[0]?.id ?? '');
       }
     } finally {
       setRefreshing(false);
     }
-  };
-
-  const requestDeviceLogin = async (agentId: string) => {
-    const generation = deviceLoginGeneration.current + 1;
-    deviceLoginGeneration.current = generation;
-    setDeviceLogin({ status: 'pending', agentId });
-    try {
-      const response = await fetch(`/api/agents/${agentId}/device-login`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: '{}',
-      });
-      const body = await response.json().catch(() => null) as AgentDeviceLoginResponse | null;
-      if (generation !== deviceLoginGeneration.current) return;
-      if (!response.ok || !body || body.ok !== true) {
-        const message = body && body.ok === false && body.error
-          ? body.error
-          : 'Could not get a sign-in code.';
-        setDeviceLogin({ status: 'error', agentId, message });
-        return;
-      }
-      setDeviceLogin({
-        status: 'ready',
-        agentId,
-        userCode: body.userCode,
-        verificationUrl: body.verificationUrl,
-      });
-    } catch {
-      if (generation !== deviceLoginGeneration.current) return;
-      setDeviceLogin({ status: 'error', agentId, message: 'Could not get a sign-in code.' });
-    }
-  };
-
-  const chooseAgent = (agent: AgentInfo) => {
-    setSelectedAgentId(agent.id);
-    if (agent.authStatus === 'ok') {
-      deviceLoginGeneration.current += 1;
-      setDeviceLogin({ status: 'idle' });
-      return;
-    }
-    void requestDeviceLogin(agent.id);
   };
 
   const finish = async () => {
@@ -2335,10 +2300,11 @@ function OnboardingView({
                   variant="subtle"
                   role="radio"
                   aria-checked={selected}
+                  disabled={!agent.available}
                   className={`${onboardingSourceStyles.option} ${
                     selected ? onboardingSourceStyles.optionActive : ''
                   }`}
-                  onClick={() => chooseAgent(agent)}
+                  onClick={() => setSelectedAgentId(agent.id)}
                 >
                   <span className={onboardingSourceStyles.optionIcon}>
                     <AgentIcon id={agent.id} size={24} />
@@ -2346,9 +2312,7 @@ function OnboardingView({
                   <span className={onboardingSourceStyles.optionCopy}>
                     <strong className={onboardingSourceStyles.optionTitle}>{agent.name}</strong>
                     <span className={onboardingSourceStyles.optionBody}>
-                      {agent.available && agent.authStatus === 'ok'
-                        ? 'Ready to use'
-                        : 'Choose to get a sign-in code'}
+                      {agent.available ? 'Ready to use' : 'Install and sign in, then rescan'}
                     </span>
                   </span>
                   <span className={onboardingSourceStyles.radio} aria-hidden="true" />
@@ -2356,22 +2320,6 @@ function OnboardingView({
               );
             })}
           </div>
-          {deviceLogin.status === 'pending' ? (
-            <p role="status">Getting a sign-in code…</p>
-          ) : null}
-          {deviceLogin.status === 'ready' ? (
-            <p role="status">
-              {deviceLogin.agentId === 'codex'
-                ? 'Enter this code in Codex'
-                : 'Enter this code in Claude Code'}
-              <strong className={onboardingSourceStyles.deviceCode} data-testid="agent-device-code">
-                {deviceLogin.userCode}
-              </strong>
-            </p>
-          ) : null}
-          {deviceLogin.status === 'error' ? (
-            <p role="alert">{deviceLogin.message}</p>
-          ) : null}
           {!agentsLoading && supportedAgents.length === 0 ? (
             <p className="onboarding-cloud__error" role="alert">
               Claude Code and Codex were not detected. Install one of them, sign in, and rescan.
@@ -3928,7 +3876,7 @@ function LegacyOnboardingView({
               <div className="amr-login-activation onboarding-cloud__activation" role="group">
                 <span className="amr-login-activation__hint">
                   {amrStatus.browserOpenFailed
-                    ? t('settings.amrActivationBrowserFailed')
+                    ? t('settings.amrActivationBrowserFailedDescription')
                     : t('settings.amrActivationHint')}
                 </span>
                 <div className="amr-login-activation__actions">

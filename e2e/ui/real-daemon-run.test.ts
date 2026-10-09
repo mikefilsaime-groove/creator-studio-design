@@ -597,12 +597,12 @@ test('[P0] ACP handshake refusal is actionable, persists, and does not auto-retr
   const card = runErrorCard(page);
   await expect(card).toContainText('Agent version incompatible', { timeout: 15_000 });
   await expect(card.getByTestId('chat-run-error-description')).toHaveText(
-    'Open Design does not currently support this agent version. Please switch to a supported version and try again.',
+    'Creator Studio Design does not currently support this agent version. Please switch to a supported version and try again.',
   );
   await expect(card).not.toContainText(rawError);
   // OPEND-2807 / G16: a failed local CLI run has exactly these three actions.
   await expect(card.getByRole('button')).toHaveText([
-    'Contact us', 'Export logs', 'Switch to OpenDesign Cloud',
+    'Contact us', 'Export logs', 'Switch to Creator Studio Design Cloud',
   ]);
   await expect(card.getByRole('button', { name: /^Retry$/ })).toHaveCount(0);
   await expect.poll(() => countAcpRunSessionStarts(fakeAcpHandshakeRuntime.invocationLog)).toBe(1);
@@ -614,7 +614,7 @@ test('[P0] ACP handshake refusal is actionable, persists, and does not auto-retr
   await waitForLoadingToClear(page);
   await expect(runErrorCard(page)).toContainText('Agent version incompatible', { timeout: 15_000 });
   await expect(runErrorCard(page).getByTestId('chat-run-error-description')).toHaveText(
-    'Open Design does not currently support this agent version. Please switch to a supported version and try again.',
+    'Creator Studio Design does not currently support this agent version. Please switch to a supported version and try again.',
   );
   await expect.poll(() => countAcpRunSessionStarts(fakeAcpHandshakeRuntime.invocationLog)).toBe(1);
 });

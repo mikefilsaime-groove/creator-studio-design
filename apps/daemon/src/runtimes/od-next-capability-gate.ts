@@ -104,7 +104,7 @@ export const OPENCODE_1_18_18_BEST_EFFORT_MANIFEST =
     provenance: {
       kind: 'sanitized_real',
       recordingDigest:
-        'sha256:b1224716a340401879cfb2f366d1252e9f837ce24050d9b0dfa4430f89492fc5',
+        'sha256:b3f822bb5d88baafcf1a254cb562aff66a54f251829746435b636f1d51e91952',
       anonymizationVersion: 'od-runtime-evidence/v1',
       evidenceReview: 'open_design_best_effort',
     },
@@ -171,7 +171,7 @@ export const VELA_OPENCODE_LOCAL_BEST_EFFORT_MANIFEST =
     provenance: {
       kind: 'sanitized_real',
       recordingDigest:
-        'sha256:6fe49f1e0946b2220052b2239494786879c03c972b5be12dee30a7973872f6aa',
+        'sha256:b4d6fd992204206df2f695f1da3f9f5a7462df2ad0d13cc06a1c06a3507ffd24',
       anonymizationVersion: 'od-runtime-evidence/v1',
       evidenceReview: 'open_design_best_effort',
     },

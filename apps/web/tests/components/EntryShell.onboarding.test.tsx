@@ -2601,7 +2601,7 @@ describe('EntryShell Creator Studio Design onboarding', () => {
 
     const claude = await screen.findByRole('radio', { name: /Claude Code/i });
     const codex = screen.getByRole('radio', { name: /Codex/i });
-    expect((claude as HTMLButtonElement).disabled).toBe(false);
+    expect((claude as HTMLButtonElement).disabled).toBe(true);
     expect(codex.getAttribute('aria-checked')).toBe('true');
 
     fireEvent.click(screen.getByRole('button', { name: /^Continue$/i }));
@@ -2615,38 +2615,6 @@ describe('EntryShell Creator Studio Design onboarding', () => {
       expect(props.onCompleteOnboarding).toHaveBeenCalledTimes(1);
     });
     expect(screen.queryByText(/sign in to Creator Studio Design/i)).toBeNull();
-  });
-
-  it('keeps both install choices clickable and shows a Codex sign-in code', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/api/agents/codex/device-login') && init?.method === 'POST') {
-        return jsonResponse({
-          ok: true,
-          userCode: 'ABCD-EFGHI',
-          verificationUrl: 'https://auth.openai.com/codex/device',
-        });
-      }
-      return jsonResponse({});
-    });
-    globalThis.fetch = fetchMock as typeof fetch;
-    renderOnboarding({
-      agents: [
-        creatorStudioAgent('claude', false),
-        creatorStudioAgent('codex', false),
-      ],
-    });
-
-    const claude = await screen.findByRole('radio', { name: /Claude Code/i });
-    const codex = screen.getByRole('radio', { name: /Codex/i });
-    expect((claude as HTMLButtonElement).disabled).toBe(false);
-    expect((codex as HTMLButtonElement).disabled).toBe(false);
-
-    fireEvent.click(codex);
-
-    expect(await screen.findByText(/Enter this code in Codex/)).toBeTruthy();
-    expect(screen.getByTestId('agent-device-code')).toHaveTextContent('ABCD-EFGHI');
-    expect(screen.getByRole('radio', { name: /Codex/i }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('explains what to install when neither supported agent is detected', async () => {

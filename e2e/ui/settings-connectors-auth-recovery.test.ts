@@ -3,6 +3,9 @@ import type { Locator, Page } from '@playwright/test';
 import { routeAgents, suppressWhatsNew } from '../lib/playwright/mock-factory.js';
 import { T } from '@/timeouts';
 
+// Connector authorization is an upstream authenticated-account surface. The
+// public Creator Studio Design build intentionally has no membership or
+// ClickCampaigns authentication gate, so these journeys are not release scope.
 const STORAGE_KEY = 'open-design:config';
 test.describe.configure({ timeout: T.xlong });
 

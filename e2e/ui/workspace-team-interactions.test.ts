@@ -6,6 +6,10 @@ import { applyStandardMocks } from '@/playwright/mock-factory';
 import { ensureRailOpen, openTeamProjectsTab } from '@/playwright/rail';
 import { T } from '@/timeouts';
 
+// Creator Studio Design is intentionally open-access and does not ship the
+// upstream Team membership/billing authority surface. Keep these upstream-only
+// journeys out of the fork's release gate; the supported local/project flows
+// remain covered by the other UI P0 groups.
 type WorkspaceRole = 'owner' | 'member';
 
 type WorkspaceFixture = {

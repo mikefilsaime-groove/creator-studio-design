@@ -134,7 +134,7 @@ describe('connector memory extraction', () => {
     expect(result.attemptedLLM).toBe(true);
     expect(result.suggestions).toEqual([
       expect.objectContaining({
-        id: 'project_opendesign_design_memory_1',
+        id: 'project_creator_studio_design_design_memory_1',
         type: 'project',
         name: 'Creator Studio Design design memory',
         source: expect.objectContaining({
@@ -152,7 +152,7 @@ describe('connector memory extraction', () => {
       }),
     ]);
     await expect(
-      readMemoryEntry(dataDir, 'project_opendesign_design_memory'),
+      readMemoryEntry(dataDir, 'project_creator_studio_design_design_memory'),
     ).resolves.toBeNull();
     expect(listExtractions()[0]).toMatchObject({
       kind: 'connector',
@@ -1157,12 +1157,12 @@ process.stdout.write(JSON.stringify({
     ]);
     expect(result.changed).toHaveLength(1);
     expect(result.changed[0]).toMatchObject({
-      id: 'project_opendesign_design_memory',
+      id: 'project_creator_studio_design_design_memory',
       type: 'project',
       name: 'Creator Studio Design design memory',
     });
 
-    const stored = await readMemoryEntry(dataDir, 'project_opendesign_design_memory');
+    const stored = await readMemoryEntry(dataDir, 'project_creator_studio_design_design_memory');
     expect(stored?.body).toContain('design preferences');
     expect(listExtractions()[0]).toMatchObject({
       kind: 'connector',

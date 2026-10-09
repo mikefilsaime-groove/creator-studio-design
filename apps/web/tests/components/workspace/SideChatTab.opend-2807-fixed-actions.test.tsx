@@ -65,7 +65,7 @@ describe('OPEND-2807 actions in the real side-chat host', () => {
     // ChatPane and RunErrorCard are real: this catches missing callbacks in
     // SideChatTab that a ChatPane-only fixture supplying every callback hides.
     const card = screen.getByTestId('chat-run-error-card');
-    const primaryLabel = agentId === 'amr' ? '重试' : '切换到 OpenDesign Cloud';
+    const primaryLabel = agentId === 'amr' ? '重试' : '切换到 Creator Studio Design Cloud';
     expect(within(card).getAllByRole('button').map((button) => button.textContent?.trim()))
       .toEqual(['联系我们', '导出日志', primaryLabel]);
     const primary = within(card).getByRole('button', { name: primaryLabel }) as HTMLButtonElement;

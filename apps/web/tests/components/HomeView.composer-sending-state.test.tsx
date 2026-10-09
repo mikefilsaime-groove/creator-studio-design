@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { pickHomeTemplate } from '../helpers/home-template-picker';
 
 // Home composer send must show an in-flight state (#4082).
 //
@@ -181,9 +182,11 @@ describe('home composer sending state', () => {
     setHomeHeroPrompt('Keep this draft while the daemon reconnects');
     fireEvent.click(await screen.findByTestId('home-hero-submit'));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Local service connection interrupted. Recovering automatically…',
-    );
+    // OPEND-2849 S28a:标题 + 正文两行(错误块 `white-space: pre-line`)。
+    expect((await screen.findByRole('alert')).textContent?.split('\n')).toEqual([
+      'Local connection lost',
+      'Can’t reach the Creator Studio Design service on this computer right now. Please restart the app.',
+    ]);
     expect(screen.getByTestId('home-hero-input')).toHaveTextContent(
       'Keep this draft while the daemon reconnects',
     );
@@ -252,7 +255,7 @@ describe('home composer sending state', () => {
 
     // Seeding through a fallback prompt-example card is what arms the
     // examplePromptContext marker; the type comes from the row under the composer.
-    fireEvent.click(await screen.findByTestId('home-hero-type-pill-prototype'));
+    await pickHomeTemplate('prototype');
     const exampleCards = await screen.findAllByTestId('home-hero-prompt-example');
     fireEvent.click(exampleCards[0]!);
 

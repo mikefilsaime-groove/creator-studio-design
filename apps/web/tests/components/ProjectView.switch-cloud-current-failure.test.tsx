@@ -217,7 +217,9 @@ function insufficientWallet() {
   };
 }
 
-describe('OPEND-3205 new send owns the current failure presentation', () => {
+// Creator Studio Design is open-access and ships only local Claude Code/Codex
+// choices; the upstream Cloud handoff contract is intentionally not shipped.
+describe.skip('OPEND-3205 new send owns the current failure presentation', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     window.localStorage.clear();

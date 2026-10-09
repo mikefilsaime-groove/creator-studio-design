@@ -597,7 +597,7 @@ describe('ChatPane streaming state', () => {
       agentId: 'amr',
     });
 
-    expect(text).toMatch(/^json-rpc id 4: Connection reset by server\n\nOpenDesign run error diagnostics/);
+    expect(text).toMatch(/^json-rpc id 4: Connection reset by server\n\nCreator Studio Design run error diagnostics/);
     expect(text).not.toContain('raw_error:');
     expect(text).toContain('error_code: UPSTREAM_UNAVAILABLE');
     expect(text).not.toContain('\nerror:\n');
@@ -615,7 +615,7 @@ describe('ChatPane streaming state', () => {
       agentId: 'amr',
     });
 
-    expect(text).toMatch(/^Connection dropped\. Try again\.\n\nOpenDesign run error diagnostics/);
+    expect(text).toMatch(/^Connection dropped\. Try again\.\n\nCreator Studio Design run error diagnostics/);
     expect(text).not.toContain('raw_error:');
     expect(text).toContain('error_code: AGENT_CONNECTION_DROPPED');
     expect(text).not.toContain('\nerror:\n');
@@ -663,7 +663,7 @@ describe('ChatPane streaming state', () => {
 
     expect(text).not.toContain('agent_stderr_tail');
     expect(text).toMatch(
-      /^json-rpc id 4: Connection reset by server\n\nOpenDesign run error diagnostics/,
+      /^json-rpc id 4: Connection reset by server\n\nCreator Studio Design run error diagnostics/,
     );
   });
 

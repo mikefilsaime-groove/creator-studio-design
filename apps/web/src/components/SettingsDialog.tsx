@@ -151,6 +151,7 @@ import {
   clearUpdaterCache,
   deriveUpdaterModel,
   downloadUpdaterUpdate,
+  isUpdaterDownloadFailure,
   openUpdaterInstaller,
   quitAfterUpdaterInstallerOpen,
   readUpdaterStatus,
@@ -272,7 +273,6 @@ function normalizeSettingsSection(section: SettingsSection): SettingsSection {
     case 'pet':
     case 'projectLocations':
     case 'critiqueTheater':
-    case 'media':
       return 'general';
     default:
       return section;
@@ -418,7 +418,9 @@ export function deriveAboutUpdateControl(
         primaryAction,
         primaryLabelKey: 'settings.updateRetry',
         showReleaseLink: true,
-        statusKey: 'updater.failed',
+        statusKey: isUpdaterDownloadFailure(model.status)
+          ? 'updater.downloadFailedTitle'
+          : 'updater.failed',
         statusTone: 'error',
       };
     }
@@ -4367,6 +4369,17 @@ export function SettingsDialog({
               <span>
                 <strong>{t('settings.envConfigure')}</strong>
                 <small>Claude Code / Codex</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`settings-nav-item${activeSection === 'media' ? ' active' : ''}`}
+              onClick={() => setActiveSection('media')}
+            >
+              <Icon name="image" size={18} />
+              <span>
+                <strong>{t('settings.mediaProviders')}</strong>
+                <small>Image / video / audio</small>
               </span>
             </button>
             <button
