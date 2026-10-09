@@ -166,8 +166,8 @@ describe('Git Bash dependency failure keeps its run diagnosis without a recovery
     expect(screen.getByTestId('chat-run-error-description').textContent).toContain('安装完成后再试。');
     const card = screen.getByTestId('chat-run-error-card');
     expect(within(card).getAllByRole('button').map((button) => button.textContent?.trim()))
-      .toEqual(['联系我们', '导出日志', '切换到 OpenDesign Cloud']);
-    fireEvent.click(within(card).getByRole('button', { name: '切换到 OpenDesign Cloud' }));
+      .toEqual(['联系我们', '导出日志', '切换到 Creator Studio Design Cloud']);
+    fireEvent.click(within(card).getByRole('button', { name: '切换到 Creator Studio Design Cloud' }));
     expect(onSwitchToAmrAndRetry).toHaveBeenCalledOnce();
     expect(onSwitchToAmrAndRetry).toHaveBeenCalledWith(expect.objectContaining({
       id: message.id, agentId: 'claude', runId: 'failed-run',

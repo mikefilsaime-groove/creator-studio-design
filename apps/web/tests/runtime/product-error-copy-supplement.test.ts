@@ -78,7 +78,7 @@ const cases: ProductCase[] = [
   },
   {
     scenario: '智能体版本不兼容', code: 'AGENT_CLI_SESSION_REFUSED',
-    title: '智能体版本不兼容', body: 'Open Design 暂不支持当前智能体版本，请更换为支持的版本后再试。',
+    title: '智能体版本不兼容', body: 'Creator Studio Design 暂不支持当前智能体版本，请更换为支持的版本后再试。',
   },
   {
     // The table's old scenario label says busy, but its approved prose and the

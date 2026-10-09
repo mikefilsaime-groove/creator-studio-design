@@ -59,9 +59,9 @@ function renderPane(message:ChatMessage,extra:Partial<ComponentProps<typeof Chat
 function expectFixedActions(cloud:boolean){
  const card=screen.getByTestId('chat-run-error-card');
  const names=within(card).getAllByRole('button').map(button=>button.textContent?.trim());
- expect(names).toEqual(['联系我们','导出日志',cloud?'重试':'切换到 OpenDesign Cloud']);
+ expect(names).toEqual(['联系我们','导出日志',cloud?'重试':'切换到 Creator Studio Design Cloud']);
  expect(card.querySelectorAll('[data-run-error-action="primary"]')).toHaveLength(1);
- return within(card).getByRole('button',{name:cloud?'重试':'切换到 OpenDesign Cloud'});
+ return within(card).getByRole('button',{name:cloud?'重试':'切换到 Creator Studio Design Cloud'});
 }
 describe('OPEND-2807 fixed actions override the old recovery ladder',()=>{
  it.each(cases)('$name',({agentId,event,resumable})=>{

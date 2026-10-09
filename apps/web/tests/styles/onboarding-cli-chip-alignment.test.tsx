@@ -178,7 +178,9 @@ beforeEach(() => {
   }) as typeof fetch;
 });
 
-describe('onboarding Local CLI chip alignment', () => {
+// The fork's open-access onboarding enters the selected Claude Code/Codex
+// setup directly; the upstream signed-in Local AI step is not rendered.
+describe.skip('onboarding Local CLI chip alignment', () => {
   it('starts each detected CLI chip at the card start instead of centering it', async () => {
     loadGlobalStyles();
     renderOnboarding();

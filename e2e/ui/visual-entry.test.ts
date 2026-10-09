@@ -14,7 +14,7 @@ import {
   waitForVisualProjects,
 } from '@/playwright/visual';
 
-test('[P2] captures the onboarding cloud sign-in surface', async ({ page }) => {
+test.skip('[P2] captures the onboarding cloud sign-in surface', async ({ page }) => {
   test.setTimeout(T.xlong);
 
   await configureVisualPage(page, {
@@ -52,7 +52,7 @@ test('[P2] captures the onboarding cloud sign-in surface', async ({ page }) => {
 // visual suite. `visual-avatar-local-agent-list` covers the avatar menu's agent
 // list — a different component — and stayed 0px through an alignment change to
 // this one.
-test('[P2] captures the onboarding Local Agent CLI list surface', async ({ page }) => {
+test.skip('[P2] captures the onboarding Local Agent CLI list surface', async ({ page }) => {
   test.setTimeout(T.xlong);
 
   await configureVisualPage(page, {

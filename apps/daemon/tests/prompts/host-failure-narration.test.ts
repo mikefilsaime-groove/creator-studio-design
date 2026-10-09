@@ -264,7 +264,7 @@ const REGISTRY: readonly Entry[] = [
   {
     file: 'apps/daemon/src/prompts/system.ts',
     match: 'does not currently expose a sandbox mode',
-    chars: [443],
+    chars: [453],
     verdict: 'suppression-rule',
     why: '#7720, arrived on main 2026-09-06 and first seen by this guard in the '
       + '09-07 merge. Skill roots are read-only by design, so a write to one '

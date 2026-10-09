@@ -120,7 +120,12 @@ export function marketplaceRegistryIdFromUrl(url: string): string | null {
   const configuredId = registryIdFromBaseUrl(trimmed, marketplaceRegistryBaseUrl());
   if (configuredId) return configuredId;
 
-  const publicBases = [PUBLIC_MARKETPLACE_BASE_URL, PUBLIC_PLUGINS_BASE_URL];
+  const publicBases = [
+    PUBLIC_MARKETPLACE_BASE_URL,
+    PUBLIC_PLUGINS_BASE_URL,
+    'https://open-design.ai/marketplace',
+    'https://open-design.ai/plugins',
+  ];
   for (const base of publicBases) {
     if (trimmed === `${base}/open-design-marketplace.json`) return 'official';
     if (trimmed.startsWith(`${base}/`) && trimmed.endsWith('/open-design-marketplace.json')) {
@@ -139,7 +144,7 @@ export function marketplaceRegistryIdFromUrl(url: string): string | null {
     const parts = parsed.pathname.split('/').filter(Boolean);
     if (parts.length < 6) return null;
     const [owner, repo] = parts;
-    const allowedRepos = new Set([DEFAULT_MARKETPLACE_REPO, marketplaceRegistryRepo()]);
+    const allowedRepos = new Set([DEFAULT_MARKETPLACE_REPO, marketplaceRegistryRepo(), 'nexu-io/open-design']);
     if (!allowedRepos.has(`${owner}/${repo}`)) return null;
     const marker = parts.findIndex((part, index) =>
       part === 'plugins' && parts[index + 1] === 'registry',

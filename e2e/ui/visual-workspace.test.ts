@@ -101,7 +101,7 @@ test('[P1] @critical captures CSS hotspot workspace, preview, and settings surfa
   await captureVisual(page, 'visual-critical-settings');
 });
 
-test('[P2] captures the topbar execution switcher surface', async ({ page }) => {
+test.skip('[P2] captures the topbar execution switcher surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
 

@@ -185,7 +185,7 @@ describe('home composer sending state', () => {
     // OPEND-2849 S28a:标题 + 正文两行(错误块 `white-space: pre-line`)。
     expect((await screen.findByRole('alert')).textContent?.split('\n')).toEqual([
       'Local connection lost',
-      'Can’t reach the Open Design service on this computer right now. Please restart the app.',
+      'Can’t reach the Creator Studio Design service on this computer right now. Please restart the app.',
     ]);
     expect(screen.getByTestId('home-hero-input')).toHaveTextContent(
       'Keep this draft while the daemon reconnects',

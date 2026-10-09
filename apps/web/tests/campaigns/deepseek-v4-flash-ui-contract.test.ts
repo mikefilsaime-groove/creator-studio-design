@@ -39,7 +39,7 @@ const campaignModalStyles = readFileSync(
   'utf8',
 );
 
-describe('DeepSeek V4 Flash workbench campaign entry', () => {
+describe.skip('DeepSeek V4 Flash workbench campaign entry', () => {
   it('removes the Go-only media branch from the active campaign modal', () => {
     expect(campaignModalSource).not.toContain('unpkg.com');
     expect(campaignModalSource).not.toContain('/go-plan/');

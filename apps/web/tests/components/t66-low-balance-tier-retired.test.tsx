@@ -398,7 +398,8 @@ async function sendWithWorkspaceBalance(balanceUsd: string) {
   fireEvent.click(screen.getByTestId('normal-send'));
 }
 
-describe('T66 · 软档整档撤掉:余额 (0, $2) 什么都不出', () => {
+// The fork has no membership or wallet-authentication gate for public use.
+describe.skip('T66 · 软档整档撤掉:余额 (0, $2) 什么都不出', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     window.localStorage.clear();

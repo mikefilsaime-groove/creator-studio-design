@@ -273,6 +273,7 @@ function normalizeSettingsSection(section: SettingsSection): SettingsSection {
     case 'pet':
     case 'projectLocations':
     case 'critiqueTheater':
+      return 'general';
     default:
       return section;
   }

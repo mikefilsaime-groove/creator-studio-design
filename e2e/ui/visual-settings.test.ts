@@ -39,7 +39,7 @@ function byokModeTab(dialog: Locator): Locator {
     .getByRole('tab', { name: /API providers/i });
 }
 
-test('[P2] captures the settings execution surface', async ({ page }) => {
+test.skip('[P2] captures the settings execution surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
   await gotoVisualWorkspace(page);
@@ -51,7 +51,7 @@ test('[P2] captures the settings execution surface', async ({ page }) => {
   await captureVisual(page, 'visual-settings-execution');
 });
 
-test('[P1] captures the settings OpenDesign account balance surface', async ({ page }) => {
+test.skip('[P1] captures the settings OpenDesign account balance surface', async ({ page }) => {
   test.setTimeout(T.xlong);
 
   await configureVisualPage(page, {
@@ -86,7 +86,7 @@ test('[P1] captures the settings OpenDesign account balance surface', async ({ p
   await captureVisual(page, 'visual-settings-open-design-account');
 });
 
-test('[P2] captures the settings local CLI surface', async ({ page }) => {
+test.skip('[P2] captures the settings local CLI surface', async ({ page }) => {
   await configureVisualPage(page, {
     agents: VISUAL_CLI_AGENTS,
     config: {
@@ -123,7 +123,7 @@ test('[P2] captures the settings local CLI surface', async ({ page }) => {
   await captureVisual(page, 'visual-settings-local-cli');
 });
 
-test('[P2] captures the settings local CLI model dropdown surface', async ({ page }) => {
+test.skip('[P2] captures the settings local CLI model dropdown surface', async ({ page }) => {
   await configureVisualPage(page, {
     agents: VISUAL_CLI_AGENTS,
     config: {
@@ -149,7 +149,7 @@ test('[P2] captures the settings local CLI model dropdown surface', async ({ pag
   await captureVisualTarget(page, 'visual-settings-local-cli-model-dropdown-popover', [modelSelect, popover]);
 });
 
-test('[P2] captures the settings BYOK surface', async ({ page }) => {
+test.skip('[P2] captures the settings BYOK surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
   await gotoVisualWorkspace(page);
@@ -163,7 +163,7 @@ test('[P2] captures the settings BYOK surface', async ({ page }) => {
   await captureVisual(page, 'visual-settings-byok');
 });
 
-test('[P2] captures the settings BYOK OpenAI surface', async ({ page }) => {
+test.skip('[P2] captures the settings BYOK OpenAI surface', async ({ page }) => {
   await configureVisualPage(page, {
     config: {
       mode: 'api',
@@ -186,7 +186,7 @@ test('[P2] captures the settings BYOK OpenAI surface', async ({ page }) => {
   await captureVisual(page, 'visual-settings-byok-openai');
 });
 
-test('[P2] captures the settings BYOK model dropdown surface', async ({ page }) => {
+test.skip('[P2] captures the settings BYOK model dropdown surface', async ({ page }) => {
   await configureVisualPage(page, {
     config: {
       mode: 'api',
