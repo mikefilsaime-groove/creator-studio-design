@@ -6,8 +6,6 @@ import { T } from '@/timeouts';
 // Connector authorization is an upstream authenticated-account surface. The
 // public Creator Studio Design build intentionally has no membership or
 // ClickCampaigns authentication gate, so these journeys are not release scope.
-test.describe.skip('upstream connector authorization recovery', () => {
-
 const STORAGE_KEY = 'open-design:config';
 test.describe.configure({ timeout: T.xlong });
 
@@ -373,5 +371,4 @@ test.describe('Settings connectors auth recovery', () => {
     await expect(githubCard.getByRole('button', { name: 'Disconnect' })).toHaveCount(0);
   });
 
-});
 });

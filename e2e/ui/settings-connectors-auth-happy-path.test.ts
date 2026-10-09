@@ -6,8 +6,6 @@ import { T } from '@/timeouts';
 // Connector authorization is an upstream authenticated-account surface. The
 // public Creator Studio Design build intentionally has no membership or
 // ClickCampaigns authentication gate, so these journeys are not release scope.
-test.describe.skip('upstream connector authorization happy path', () => {
-
 const STORAGE_KEY = 'open-design:config';
 test.describe.configure({ timeout: T.xlong });
 
@@ -391,5 +389,4 @@ test.describe('Settings connectors auth happy path', () => {
     await expect(drawer).not.toContainText('Authorization pending');
     await expect(drawer).not.toContainText("Couldn't cancel authorization");
   });
-});
 });

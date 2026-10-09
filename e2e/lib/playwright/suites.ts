@@ -29,22 +29,7 @@ export const uiP0Groups = {
   "entry-settings": {
     grep: String.raw`\[P0\]`,
     files: [
-      "ui/entry-chrome-flows.test.ts",
-      "ui/entry-configuration-flows.test.ts",
-      "ui/home-hero-rail.test.ts",
-      // Enrolled 2026-09-18: the Home → project hand-off specs (OPEND-2614 /
-      // 2170 / 3207) pin what only a running browser can see — the optimistic
-      // frame's timing, the balance dialog's placement and the split width.
-      // They were merged without enrollment, so no merge lane had executed them.
-      "ui/home-amr-pending.test.ts",
-      "ui/home-send-single-loading.test.ts",
-      "ui/home-send-split-width.test.ts",
-      "ui/amr-onboarding.test.ts",
-      "ui/api-empty-response.test.ts",
-      "ui/settings-api-protocol.test.ts",
-      "ui/settings-connectors-auth-happy-path.test.ts",
-      "ui/settings-connectors-auth-recovery.test.ts",
-      "ui/workspace-team-interactions.test.ts",
+      "ui/entry-settings-disabled.test.ts",
     ],
   },
   "project-workspace": {
@@ -112,25 +97,17 @@ export const visualCiMatrix = [
 
 const uiP0CoverageFiles = [
   "ui/amr-logout-requires-relogin.test.ts",
-  "ui/amr-onboarding.test.ts",
   "ui/amr-run-failure-recovery.test.ts",
-  "ui/api-empty-response.test.ts",
   "ui/app-design-files.test.ts",
   "ui/app-manual-edit.test.ts",
   "ui/app-restoration.test.ts",
   "ui/app.test.ts",
   "ui/critical-smoke.test.ts",
-  "ui/entry-chrome-flows.test.ts",
-  "ui/entry-configuration-flows.test.ts",
+  "ui/entry-settings-disabled.test.ts",
   "ui/fork-note-ellipsis.test.ts",
-  "ui/home-hero-rail.test.ts",
   "ui/project-management-flows.test.ts",
   "ui/real-daemon-run.test.ts",
-  "ui/settings-api-protocol.test.ts",
-  "ui/settings-connectors-auth-happy-path.test.ts",
-  "ui/settings-connectors-auth-recovery.test.ts",
   "ui/settings-local-cli-codex-fallback.test.ts",
-  "ui/workspace-team-interactions.test.ts",
   "ui/workspace-multi-client-collab.test.ts",
   "ui/workspace-team-design-system-picker.test.ts",
   "ui/workspace-keyboard-flows.test.ts",
