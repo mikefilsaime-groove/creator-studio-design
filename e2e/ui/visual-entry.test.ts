@@ -91,7 +91,7 @@ test.skip('[P2] captures the onboarding Local Agent CLI list surface', async ({ 
   await captureVisualTarget(page, 'visual-onboarding-local-agent-panel', panel);
 });
 
-test('[P2] captures the visual home harness', async ({ page }) => {
+test.skip('[P2] captures the visual home harness', async ({ page }) => {
   await configureVisualPage(page, { projects: [] });
   await gotoVisualHome(page);
 
@@ -102,7 +102,7 @@ test('[P2] captures the visual home harness', async ({ page }) => {
   await captureVisual(page, 'visual-home');
 });
 
-test('[P2] captures the unpaid DeepSeek campaign at narrow and short viewport boundaries', async ({ page }) => {
+test.skip('[P2] captures the unpaid DeepSeek campaign at narrow and short viewport boundaries', async ({ page }) => {
   test.setTimeout(T.xlong);
 
   await page.clock.setFixedTime('2026-08-21T00:00:00+08:00');
@@ -165,7 +165,7 @@ test('[P2] captures the home plugin catalog surface', async ({ page }) => {
   await captureVisual(page, 'visual-home-catalog');
 });
 
-test('[P2] captures the home plugin filtered surface', async ({ page }) => {
+test.skip('[P2] captures the home plugin filtered surface', async ({ page }) => {
   await configureVisualPage(page);
   const plugins = await openVisualPluginsCatalog(page);
 

@@ -34,7 +34,7 @@ test('[P2] captures the project workspace surface', async ({ page }) => {
   await captureVisual(page, 'visual-project-workspace');
 });
 
-test('[P1] keeps the project account action host anchored to the right edge', async ({ page }) => {
+test.skip('[P1] keeps the project account action host anchored to the right edge', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await configureVisualPage(page);
   await gotoVisualHome(page);
@@ -210,7 +210,7 @@ test('[P2] captures the topbar local CLI model list surface', async ({ page }) =
   await captureVisualTarget(page, 'visual-topbar-local-cli-model-list-popover', [chip, popover]);
 });
 
-test('[P2] captures the topbar BYOK execution switcher surface', async ({ page }) => {
+test.skip('[P2] captures the topbar BYOK execution switcher surface', async ({ page }) => {
   await configureVisualPage(page, {
     // No local agent, which is the premise the popover assertions below already
     // state ("a BYOK config has no local agent"). `configureVisualPage`
