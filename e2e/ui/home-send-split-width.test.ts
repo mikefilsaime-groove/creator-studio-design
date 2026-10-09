@@ -5,6 +5,10 @@ import { gotoEntryHome } from '@/playwright/amr';
 import { applyStandardMocks, routeSuccessfulRuns, suppressWhatsNew } from '@/playwright/mock-factory';
 import { T } from '@/timeouts';
 
+// These upstream Home/AMR hand-off journeys target a composer surface that is
+// not shipped in Creator Studio Design's open local entry.
+test.describe.skip('upstream Home send split journeys', () => {
+
 /*
  * OPEND-3207 · the project split must not move after a Home send lands.
  *
@@ -112,4 +116,5 @@ test('[P0] a Home send with a saved chat width shows that width from the hand-of
   await gotoEntryHome(page);
   await sendFromHome(page, 'Gamified habit app: draft the streak screen.');
   await expectStableSplitWidth(page, 380);
+});
 });
