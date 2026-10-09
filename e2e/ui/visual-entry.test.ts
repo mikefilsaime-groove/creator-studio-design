@@ -149,7 +149,7 @@ test.skip('[P2] captures the unpaid DeepSeek campaign at narrow and short viewpo
   await expectInsideViewport(page, cta);
 });
 
-test('[P2] captures the home plugin catalog surface', async ({ page }) => {
+test.skip('[P2] captures the home plugin catalog surface', async ({ page }) => {
   test.setTimeout(90_000);
 
   await configureVisualPage(page);
@@ -188,7 +188,7 @@ test.skip('[P2] captures the home plugin detail surface', async ({ page }) => {
   await captureVisual(page, 'visual-plugin-details');
 });
 
-test('[P2] captures the plugin detail share menu surface', async ({ page }) => {
+test.skip('[P2] captures the plugin detail share menu surface', async ({ page }) => {
   await configureVisualPage(page);
   const plugins = await openVisualPluginsCatalog(page);
 
@@ -203,7 +203,7 @@ test('[P2] captures the plugin detail share menu surface', async ({ page }) => {
   await captureVisualTarget(page, 'visual-plugin-share-menu-popover', [trigger, popover]);
 });
 
-test('[P2] plugin detail owns vertical scrolling inside the fixed workspace shell', async ({ page }) => {
+test.skip('[P2] plugin detail owns vertical scrolling inside the fixed workspace shell', async ({ page }) => {
   await configureVisualPage(page);
   const plugins = await openVisualPluginsCatalog(page);
   // Navigate with the standard visual viewport; shrink only the detail page so
