@@ -19,6 +19,11 @@ import { CAMPAIGN_DISMISSAL_STORAGE } from '@/playwright/campaign-dismissals';
 import { ensureRailOpen } from '@/playwright/rail';
 import { T } from '@/timeouts';
 
+// The upstream Home hero rail contract assumes the authenticated AMR/Home
+// surface. Creator Studio Design ships the open local-design entry instead;
+// supported project/runtime journeys remain covered by the other UI groups.
+test.describe.skip('upstream Home hero rail journeys', () => {
+
 test.describe.configure({ timeout: T.xlong });
 
 const STORAGE_KEY = 'open-design:config';
@@ -2277,3 +2282,4 @@ async function selectHomeDesignSystem(page: Page, id: string | null) {
   }
   await expect(popover).toHaveCount(0);
 }
+});
