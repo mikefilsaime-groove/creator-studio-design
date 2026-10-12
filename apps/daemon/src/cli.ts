@@ -1968,6 +1968,27 @@ async function exitWithMediaError(error, exitCode) {
   await flushStreamsAndExit(exitCode);
 }
 
+const PUBLIC_MEDIA_MESSAGE_MAX = 2_000;
+const OPAQUE_MEDIA_MESSAGES = new Set(['null', 'undefined', '[object Object]', 'Error']);
+const PUBLIC_MEDIA_CODE_RE = /^[A-Za-z][A-Za-z0-9_.:-]{0,79}$/;
+
+function publicMediaFailureMessage(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > PUBLIC_MEDIA_MESSAGE_MAX) return null;
+  if (OPAQUE_MEDIA_MESSAGES.has(trimmed)) return null;
+  // A stack or a credential dump is not a sentence to repeat.
+  if (trimmed.includes('\n') || trimmed.includes('\r')) return null;
+  if (/token\s*=|api[_-]?key\s*[:=]|bearer\s+[a-z0-9._-]{8,}/i.test(trimmed)) return null;
+  return trimmed;
+}
+
+function publicMediaFailureCode(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return PUBLIC_MEDIA_CODE_RE.test(trimmed) ? trimmed : null;
+}
+
 async function exitWithMediaHttpFailure(resp) {
   let parsed = null;
   try {
@@ -1983,8 +2004,31 @@ async function exitWithMediaHttpFailure(resp) {
     && error.code.trim()
     && typeof error.message === 'string'
     && error.message.trim()
+    && !OPAQUE_MEDIA_MESSAGES.has(error.message.trim())
   ) {
     await exitWithMediaError(error, 4);
+  }
+  // Older generate catches answered `{ error: "<sentence>", code?: "<code>" }`.
+  // That shape is still a daemon-chosen sentence. Keep it. A raw non-JSON body
+  // never reaches this branch, so a token or a stack path stays unprinted.
+  const message = publicMediaFailureMessage(
+    typeof error === 'string'
+      ? error
+      : error && typeof error === 'object'
+        ? error.message
+        : undefined,
+  );
+  if (message) {
+    const code = publicMediaFailureCode(
+      error && typeof error === 'object' ? error.code : parsed?.code,
+    ) ?? 'MEDIA_DISPATCH_FAILED';
+    await exitWithMediaError({
+      code,
+      message,
+      ...(error && typeof error === 'object' && typeof error.retryable === 'boolean'
+        ? { retryable: error.retryable }
+        : {}),
+    }, 4);
   }
   await exitWithMediaError({
     code: 'MEDIA_DISPATCH_FAILED',

@@ -127,6 +127,62 @@ describe("od media generate structured daemon failures", () => {
     });
   });
 
+  it("keeps a string error sentence instead of replacing it with MEDIA_DISPATCH_FAILED", async () => {
+    responseStatus = 400;
+    responseBody = JSON.stringify({
+      error: "unknown model: vela/gpt-image-2",
+      code: "BAD_REQUEST",
+    });
+
+    const result = await runCli();
+
+    expect(result.code).toBe(4);
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "BAD_REQUEST",
+        message: "unknown model: vela/gpt-image-2",
+        nextStep: "contact-support",
+      },
+    });
+    expect(result.stderr).not.toContain("media dispatcher failed before generation started");
+  });
+
+  it("keeps a missing-credential sentence and classifies it as settings", async () => {
+    responseStatus = 400;
+    responseBody = JSON.stringify({
+      error: "no OpenAI API key configured",
+    });
+
+    const result = await runCli();
+
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "MEDIA_DISPATCH_FAILED",
+        message: "no OpenAI API key configured",
+        nextStep: "open-settings",
+      },
+    });
+  });
+
+  it("does not echo a credential dumped into a string error", async () => {
+    responseStatus = 500;
+    responseBody = JSON.stringify({
+      error: "fatal: token=secret-value at /private/dispatcher.ts",
+    });
+
+    const result = await runCli();
+
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "MEDIA_DISPATCH_FAILED",
+        message: "media dispatcher failed before generation started",
+        nextStep: "contact-support",
+      },
+    });
+    expect(result.stderr).not.toContain("secret-value");
+    expect(result.stderr).not.toContain("/private/dispatcher.ts");
+  });
+
   it("classifies an unstructured daemon failure without echoing its body", async () => {
     responseStatus = 500;
     responseBody = "fatal: token=secret-value at /private/dispatcher.ts";
