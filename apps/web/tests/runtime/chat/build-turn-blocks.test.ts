@@ -753,6 +753,44 @@ describe('生图落行(D3 的唯一例外)', () => {
     expect(nth(rows, 0).thumbs).toEqual(['a.png', 'b.png']);
   });
 
+  it('失败的生图把 daemon 的句子交给界面,不把错误代码当原因', () => {
+    const blocks = buildTurnBlocks({
+      events: call('g1', 'Bash', {
+        command: 'od media generate --surface image --model vela/gpt-image-2 --prompt "a poster"',
+      }, {
+        content: JSON.stringify({
+          taskId: 'm1',
+          status: 'failed',
+          error: {
+            code: 'MEDIA_DISPATCH_FAILED',
+            message: 'unknown model: vela/gpt-image-2',
+          },
+        }),
+        isError: true,
+      }),
+      ...done('failed'),
+    });
+    const row = nth(images(nth(shells(blocks), 0).items), 0);
+    expect(row.failureDetail).toBe('unknown model: vela/gpt-image-2');
+    expect(row.failureDetail).not.toContain('MEDIA_DISPATCH_FAILED');
+  });
+
+  it('只有错误代码、没有句子时不编一条原因', () => {
+    const blocks = buildTurnBlocks({
+      events: call('g1', 'Bash', { command: 'od media generate --surface image --prompt "a"' }, {
+        content: JSON.stringify({
+          status: 'failed',
+          error: { code: 'ENOENT', message: 'ENOENT' },
+        }),
+        isError: true,
+      }),
+      ...done('failed'),
+    });
+    const row = nth(images(nth(shells(blocks), 0).items), 0);
+    expect(row.failed).toBe(1);
+    expect(row.failureDetail).toBeUndefined();
+  });
+
   it('一条状态都读不出来:命令报错就整组算失败', () => {
     const blocks = buildTurnBlocks({
       events: call('g1', 'Bash', { command: 'od media generate a && od media generate b' },

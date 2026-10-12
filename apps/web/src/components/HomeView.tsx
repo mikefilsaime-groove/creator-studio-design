@@ -109,6 +109,7 @@ import {
 import { homeHeroChipLabel } from './home-hero/chip-labels';
 import type { PlaceholderScenario } from './home-hero/placeholderScenarios';
 import { consumePendingHomeChip, hasPendingHomeChip, HOME_CHIP_INTENT_EVENT } from '../runtime/home-intent';
+import { createFailureCopy } from '../runtime/create-failure-copy';
 import { navigate } from '../router';
 import { setPendingDesignSystemCreateEntry } from '../analytics/ds-create-entry';
 import { workspaceContextLinkedDirs } from './workspace-context';
@@ -3081,9 +3082,10 @@ export function HomeView({
               : undefined,
           ));
         } else {
-          setError(err instanceof Error && err.message.trim()
-            ? err.message
-            : t('home.createFailed'));
+          setError(createFailureCopy(
+            err instanceof Error ? err.message : null,
+            t('home.createFailed'),
+          ));
         }
       }
     } finally {

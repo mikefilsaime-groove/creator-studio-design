@@ -242,6 +242,7 @@ export function ImageRow({ row, onRetry, onOpenImage, imageSrc, running = false 
           );
         })}
       </div>
+      {row.failureDetail ? <p className={styles.failDetail}>{row.failureDetail}</p> : null}
     </>
   );
 }
