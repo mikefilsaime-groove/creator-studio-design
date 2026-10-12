@@ -1968,15 +1968,20 @@ async function exitWithMediaError(error, exitCode) {
   await flushStreamsAndExit(exitCode);
 }
 
-const PUBLIC_MEDIA_MESSAGE_MAX = 2_000;
-const OPAQUE_MEDIA_MESSAGES = new Set(['null', 'undefined', '[object Object]', 'Error']);
-const PUBLIC_MEDIA_CODE_RE = /^[A-Za-z][A-Za-z0-9_.:-]{0,79}$/;
+function opaqueMediaMessage(value) {
+  return value === 'null'
+    || value === 'undefined'
+    || value === '[object Object]'
+    || value === 'Error';
+}
 
 function publicMediaFailureMessage(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
-  if (!trimmed || trimmed.length > PUBLIC_MEDIA_MESSAGE_MAX) return null;
-  if (OPAQUE_MEDIA_MESSAGES.has(trimmed)) return null;
+  // Bound the legacy string shape. A structured `{ error: { message } }` is
+  // kept above, including the multi-megabyte provider body the flush test covers.
+  if (!trimmed || trimmed.length > 2_000) return null;
+  if (opaqueMediaMessage(trimmed)) return null;
   // A stack or a credential dump is not a sentence to repeat.
   if (trimmed.includes('\n') || trimmed.includes('\r')) return null;
   if (/token\s*=|api[_-]?key\s*[:=]|bearer\s+[a-z0-9._-]{8,}/i.test(trimmed)) return null;
@@ -1986,7 +1991,7 @@ function publicMediaFailureMessage(value) {
 function publicMediaFailureCode(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
-  return PUBLIC_MEDIA_CODE_RE.test(trimmed) ? trimmed : null;
+  return /^[A-Za-z][A-Za-z0-9_.:-]{0,79}$/.test(trimmed) ? trimmed : null;
 }
 
 async function exitWithMediaHttpFailure(resp) {
@@ -2004,7 +2009,7 @@ async function exitWithMediaHttpFailure(resp) {
     && error.code.trim()
     && typeof error.message === 'string'
     && error.message.trim()
-    && !OPAQUE_MEDIA_MESSAGES.has(error.message.trim())
+    && !opaqueMediaMessage(error.message.trim())
   ) {
     await exitWithMediaError(error, 4);
   }
