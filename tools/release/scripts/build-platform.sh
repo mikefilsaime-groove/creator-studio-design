@@ -62,8 +62,8 @@ notary_auth_args() {
   fi
 }
 
-notarize_mac_dmg_once() {
-  local dmg_path="$1"
+notarize_mac_file_once() {
+  local file_path="$1"
   local auth_args=()
   local s3_arg="--no-s3-acceleration"
   local status
@@ -74,8 +74,8 @@ notarize_mac_dmg_once() {
     auth_args+=("$arg")
   done < <(notary_auth_args)
 
-  echo "[release notarize] submitting $(basename "$dmg_path") ($(wc -c < "$dmg_path" | tr -d ' ') bytes) with $s3_arg"
-  xcrun notarytool submit "$dmg_path" \
+  echo "[release notarize] submitting $(basename "$file_path") ($(wc -c < "$file_path" | tr -d ' ') bytes) with $s3_arg"
+  xcrun notarytool submit "$file_path" \
     "${auth_args[@]}" \
     --wait \
     --output-format json \
@@ -84,21 +84,21 @@ notarize_mac_dmg_once() {
   if [ "$status" -ne 0 ]; then
     return "$status"
   fi
-  xcrun stapler staple "$dmg_path"
+  xcrun stapler staple "$file_path"
 }
 
-notarize_mac_dmg() {
-  local dmg_path="$1"
+notarize_mac_file() {
+  local file_path="$1"
   local attempts="${OPEN_DESIGN_NOTARIZE_ATTEMPTS:-8}"
   local retry_delay_ms="${OPEN_DESIGN_NOTARIZE_RETRY_DELAY_MS:-15000}"
   local attempt output status
-  if [ ! -f "$dmg_path" ]; then
-    echo "expected dmg not found for notarization: $dmg_path" >&2
+  if [ ! -f "$file_path" ]; then
+    echo "expected mac artifact not found for notarization: $file_path" >&2
     return 1
   fi
   for ((attempt = 1; attempt <= attempts; attempt += 1)); do
     set +e
-    output="$(notarize_mac_dmg_once "$dmg_path" 2>&1)"
+    output="$(notarize_mac_file_once "$file_path" 2>&1)"
     status=$?
     set -e
     printf '%s\n' "$output"
@@ -263,6 +263,9 @@ case "$RELEASE_TARGET" in
     if [ "$sign_mode" != "no" ]; then
       build_args+=(--signed)
     fi
+    if [ "$sign_mode" = "notarize" ]; then
+      build_args+=(--notarize)
+    fi
     ;;
   linux_x64)
     if [ "$RELEASE_BUILD_TARGET" != "appimage" ]; then
@@ -297,7 +300,25 @@ const build = JSON.parse(readFileSync(process.env.BUILD_JSON_PATH, "utf8"));
 process.stdout.write(build.dmgPath ?? "");
 NODE
 )"
-    measure_step "notarize mac dmg" notarize_mac_dmg "$dmg_path"
+    measure_step "notarize mac dmg" notarize_mac_file "$dmg_path"
+    zip_path="$(BUILD_JSON_PATH="$BUILD_JSON_PATH" node --input-type=module <<'NODE'
+import { readFileSync } from "node:fs";
+const build = JSON.parse(readFileSync(process.env.BUILD_JSON_PATH, "utf8"));
+process.stdout.write(build.zipPath ?? "");
+NODE
+)"
+    if [ -n "$zip_path" ]; then
+      measure_step "notarize mac zip" notarize_mac_file "$zip_path"
+    fi
+    payload_path="$(BUILD_JSON_PATH="$BUILD_JSON_PATH" node --input-type=module <<'NODE'
+import { readFileSync } from "node:fs";
+const build = JSON.parse(readFileSync(process.env.BUILD_JSON_PATH, "utf8"));
+process.stdout.write(build.payloadPath ?? "");
+NODE
+)"
+    if [ -n "$payload_path" ]; then
+      measure_step "notarize mac payload" notarize_mac_file "$payload_path"
+    fi
   fi
   BUILD_JSON_PATH="$BUILD_JSON_PATH" RELEASE_TIMINGS_JSON="[$release_timings_json]" node --input-type=module <<'NODE'
 import { readFileSync, writeFileSync } from "node:fs";
