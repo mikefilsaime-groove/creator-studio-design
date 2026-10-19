@@ -146,6 +146,12 @@ export interface ImageRow {
     status: 'pending' | 'done' | 'failed';
     path?: string;
   }>;
+  /**
+   * One sentence from the failed generation (`error.message`). Absent when the
+   * only thing we have is an internal code. The cell label stays 「失败」;
+   * this is the reason under the row.
+   */
+  failureDetail?: string;
   /** 还有调用没回来 */
   pending: boolean;
   elapsedMs: number | null;

@@ -160,6 +160,15 @@ describe('生图失败格 · 轮次已结束', () => {
     expect(onRetry).toHaveBeenCalledWith(expect.objectContaining({ kind: 'image' }), 1);
   });
 
+  it('失败格下面给出 daemon 的句子,格子本身仍只说「失败」', () => {
+    const { container } = render(
+      <ImageRow row={liveRow({ failureDetail: 'unknown model: vela/gpt-image-2' })} running />,
+    );
+    expect(failedCell(container).textContent).toBe('失败');
+    expect(container.textContent).toContain('unknown model: vela/gpt-image-2');
+    expect(container.textContent).not.toContain('MEDIA_DISPATCH_FAILED');
+  });
+
   it('没接回调时不摆空按钮,退回那条状态说明', () => {
     const { container } = render(<ImageRow row={settledRow()} />);
     const cell = failedCell(container);

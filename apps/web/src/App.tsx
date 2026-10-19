@@ -196,6 +196,7 @@ import {
   amrBalanceGateScopesMatch,
   type AmrBalanceGateScope,
 } from './runtime/amr-balance-gate';
+import { createFailureCopy } from './runtime/create-failure-copy';
 import {
   AMR_AUTH_RETRY_CONTINUATION_TTL_MS,
   amrAuthRetryMatchesRouteContext,
@@ -930,7 +931,7 @@ export async function hydrateReadyTeamProject(
  */
 function homeCreateFailureNotice(
   err: unknown,
-  t: (key: 'home.createTimedOut' | 'home.daemonRecovering' | 'entry.authExpiredBody') => string,
+  t: (key: 'home.createTimedOut' | 'home.daemonRecovering' | 'entry.authExpiredBody' | 'home.createFailed') => string,
   fallback: string,
 ): string {
   if (err instanceof ProjectCreateError && err.code === 'PROJECT_CREATE_PREPARATION_TIMEOUT') {
@@ -942,7 +943,7 @@ function homeCreateFailureNotice(
   if (err instanceof ProjectCreateError && err.code === 'AMR_AUTH_REQUIRED') {
     return t('entry.authExpiredBody');
   }
-  return fallback;
+  return createFailureCopy(fallback, t('home.createFailed'));
 }
 
 export function App() {
@@ -3585,7 +3586,7 @@ function AppInner() {
         const errorCode =
           err instanceof Error && err.message.trim() ? err.message : 'PROJECT_SETUP_FAILED';
         console.warn('Failed to finish setting up new project', project.id, err);
-        setProjectCreateError(errorCode);
+        setProjectCreateError(createFailureCopy(errorCode, t('home.createFailed')));
       } finally {
         // Whatever happened to the uploads — answered, failed, or threw before
         // they started — nothing may be left holding an object URL for the

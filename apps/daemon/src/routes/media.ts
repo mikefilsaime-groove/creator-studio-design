@@ -37,7 +37,7 @@ import {
 import { associateLateRunProducedFile } from '../runtimes/run-produced-files.js';
 import { scaffoldHyperFramesComposition } from '../media/hyperframes-scaffold.js';
 import { assignMediaTaskBatches } from '../media/task-batches.js';
-import { mediaTaskErrorFromFailure } from '../media/task-error.js';
+import { mediaGenerateFailureBody, mediaTaskErrorFromFailure } from '../media/task-error.js';
 import { normalizePersistedAutomationWorkspaceScope } from '../automations/workspace-scope.js';
 
 const LONG_MEDIA_PROXY_TIMEOUT_MS = 10 * 60 * 1000;
@@ -1080,12 +1080,9 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
         );
       }
       await handleGenerate(req, res, { projectId: req.params.id, grant: grantDecision.grant });
-    } catch (err: any) {
-      const status = typeof err?.status === 'number' ? err.status : 400;
-      const code = err?.code;
-      const body: any = { error: String(err && err.message ? err.message : err) };
-      if (code) body.code = code;
-      res.status(status).json(body);
+    } catch (err: unknown) {
+      const failure = mediaGenerateFailureBody(err);
+      res.status(failure.status).json(failure.body);
     }
   });
 
@@ -1099,12 +1096,9 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
         { mode: 'write', capability: 'writeFiles' },
       )) return;
       await handleGenerate(req, res, { projectId: grant.projectId, grant });
-    } catch (err: any) {
-      const status = typeof err?.status === 'number' ? err.status : 400;
-      const code = err?.code;
-      const body: any = { error: String(err && err.message ? err.message : err) };
-      if (code) body.code = code;
-      res.status(status).json(body);
+    } catch (err: unknown) {
+      const failure = mediaGenerateFailureBody(err);
+      res.status(failure.status).json(failure.body);
     }
   });
 

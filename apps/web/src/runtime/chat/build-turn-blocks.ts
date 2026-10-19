@@ -39,6 +39,10 @@ import type {
   ImageRow,
   TurnBlock,
 } from './contract';
+import {
+  mediaFailureDetailFromToolOutput,
+  visibleMediaFailureDetail,
+} from './media-failure-detail';
 import { maskChatProtocolPayloads } from '../../artifacts/chat-protocol-context';
 import { createArtifactParser } from '../../artifacts/parser';
 import { readQuestionFormPayloadAt } from '../../artifacts/question-form';
@@ -1143,6 +1147,7 @@ export function buildTurnBlocks(input: BuildTurnInput): TurnBlock[] {
         if (shot.cells) last.cells = [...(last.cells ?? []), ...shot.cells];
         last.pending = last.pending || shot.pending;
         if (shot.elapsedMs != null) last.elapsedMs = (last.elapsedMs ?? 0) + shot.elapsedMs;
+        if (!last.failureDetail && shot.failureDetail) last.failureDetail = shot.failureDetail;
         target = last;
       } else {
         arr.push(shot);
@@ -2015,6 +2020,7 @@ function readImageCall(
     const elapsedMs = terminalEnds.length === tasks.length
       ? Math.max(...terminalEnds) - startedAt
       : null;
+    const failureDetail = failed > 0 ? imageFailureDetail(tasks, result?.content) : null;
     return {
       kind: 'image',
       id: event.id,
@@ -2024,6 +2030,7 @@ function readImageCall(
       failed,
       thumbs,
       cells,
+      ...(failureDetail ? { failureDetail } : {}),
       pending: cells.some((cell) => cell.status === 'pending'),
       elapsedMs: elapsedMs != null && elapsedMs >= UNKNOWN_ELAPSED_BELOW_MS ? elapsedMs : null,
     };
@@ -2096,6 +2103,7 @@ function readImageCall(
     if (d >= UNKNOWN_ELAPSED_BELOW_MS) elapsedMs = d;
   }
 
+  const failureDetail = failed > 0 ? imageFailureDetail(tasks, result?.content) : null;
   return {
     kind: 'image',
     id: event.id,
@@ -2105,9 +2113,21 @@ function readImageCall(
     failed,
     thumbs,
     ...(replayCells ? { cells: replayCells } : {}),
+    ...(failureDetail ? { failureDetail } : {}),
     pending: !result,
     elapsedMs,
   };
+}
+
+function imageFailureDetail(
+  tasks: ProjectMediaTask[],
+  content: string | undefined,
+): string | null {
+  for (const task of tasks) {
+    const detail = visibleMediaFailureDetail(task.error?.message);
+    if (detail) return detail;
+  }
+  return mediaFailureDetailFromToolOutput(content);
 }
 
 /* ── 工具行 ─────────────────────────────────────────────────── */

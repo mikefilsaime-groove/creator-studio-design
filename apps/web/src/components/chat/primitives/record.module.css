@@ -1350,6 +1350,16 @@
 }
 .shot.fail .failNote svg { width: 14px; height: 14px; }
 
+/* The failed cell stays 「失败」/「重试」. The daemon's sentence sits under the
+   row so a code inside the tool JSON is not the only thing a person can read. */
+.failDetail {
+  margin: 6px 0 0;
+  max-width: 36rem;
+  font-size: var(--chat-t-cap);
+  line-height: 1.4;
+  color: var(--chat-text-muted);
+}
+
 .strip {
   display: flex;
   align-items: center;

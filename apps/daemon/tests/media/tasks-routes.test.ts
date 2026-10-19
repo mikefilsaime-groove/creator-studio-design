@@ -559,10 +559,15 @@ describe('media task route recovery', () => {
           output: 'proxy-failure.png',
         }),
       });
-      const body = await response.json() as { error?: string };
+      const body = await response.json() as {
+        error?: { code?: string; message?: string };
+      };
 
       expect(response.status).toBe(400);
-      expect(body.error).toBeTruthy();
+      expect(typeof body.error?.message).toBe('string');
+      expect(body.error?.message?.trim()).toBeTruthy();
+      expect(body.error?.message).not.toBe('media dispatcher failed before generation started');
+      expect(body.error?.code).not.toMatch(/^\d+$/);
       const failedTasks = listMediaTasksByProject(db, projectId, { includeTerminal: true });
       expect(failedTasks).toMatchObject([
         {
