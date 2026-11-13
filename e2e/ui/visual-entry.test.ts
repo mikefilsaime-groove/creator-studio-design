@@ -14,7 +14,7 @@ import {
   waitForVisualProjects,
 } from '@/playwright/visual';
 
-test.skip('[P2] captures the onboarding cloud sign-in surface', async ({ page }) => {
+test('[P2] captures the onboarding cloud sign-in surface', async ({ page }) => {
   test.setTimeout(T.xlong);
 
   await configureVisualPage(page, {
@@ -27,20 +27,20 @@ test.skip('[P2] captures the onboarding cloud sign-in surface', async ({ page })
   });
 
   await page.goto('/onboarding', { waitUntil: 'domcontentloaded' });
-  await page.getByText('Loading Creator Studio Design…').waitFor({ state: 'hidden', timeout: T.long });
+  await page.getByText('Loading OpenDesign…').waitFor({ state: 'hidden', timeout: T.long });
   // Cloud stays primary while identity-independent Local Agent and BYOK setup
   // remain available directly from the signed-out landing.
   await expect(
-    page.getByRole('heading', { name: /Sign in to Creator Studio Design|登录 Creator Studio Design/i }),
+    page.getByRole('heading', { name: /Welcome to OpenDesign|欢迎使用 OpenDesign/i }),
   ).toBeVisible({ timeout: T.medium });
   await expect(
-    page.getByRole('button', { name: /Sign in to Creator Studio Design|登录 Creator Studio Design/i }),
+    page.getByRole('button', { name: /Sign up \/ Log in|登录 \/ 注册/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: /Local (coding )?agent|本地 (Coding )?Agent/i }),
+    page.getByRole('button', { name: /Local AI|本地 AI/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: /Bring your own key|使用自己的 Key|自己的模型 Key/i }),
+    page.getByRole('button', { name: /API Key|API 密钥/i }),
   ).toBeVisible();
   await waitForVisualFonts(page);
 
@@ -52,7 +52,7 @@ test.skip('[P2] captures the onboarding cloud sign-in surface', async ({ page })
 // visual suite. `visual-avatar-local-agent-list` covers the avatar menu's agent
 // list — a different component — and stayed 0px through an alignment change to
 // this one.
-test.skip('[P2] captures the onboarding Local Agent CLI list surface', async ({ page }) => {
+test('[P2] captures the onboarding Local Agent CLI list surface', async ({ page }) => {
   test.setTimeout(T.xlong);
 
   await configureVisualPage(page, {
@@ -65,7 +65,7 @@ test.skip('[P2] captures the onboarding Local Agent CLI list surface', async ({ 
   await mockSignedInVelaAccount(page);
 
   await page.goto('/onboarding', { waitUntil: 'domcontentloaded' });
-  await page.getByText('Loading Creator Studio Design…').waitFor({ state: 'hidden', timeout: T.long });
+  await page.getByText('Loading OpenDesign…').waitFor({ state: 'hidden', timeout: T.long });
 
   await expect(
     page.getByRole('button', { name: /Continue \(signed in\)|继续（已登录）/i }),
@@ -91,7 +91,7 @@ test.skip('[P2] captures the onboarding Local Agent CLI list surface', async ({ 
   await captureVisualTarget(page, 'visual-onboarding-local-agent-panel', panel);
 });
 
-test.skip('[P2] captures the visual home harness', async ({ page }) => {
+test('[P2] captures the visual home harness', async ({ page }) => {
   await configureVisualPage(page, { projects: [] });
   await gotoVisualHome(page);
 
@@ -102,7 +102,7 @@ test.skip('[P2] captures the visual home harness', async ({ page }) => {
   await captureVisual(page, 'visual-home');
 });
 
-test.skip('[P2] captures the unpaid DeepSeek campaign at narrow and short viewport boundaries', async ({ page }) => {
+test('[P2] captures the unpaid DeepSeek campaign at narrow and short viewport boundaries', async ({ page }) => {
   test.setTimeout(T.xlong);
 
   await page.clock.setFixedTime('2026-08-21T00:00:00+08:00');
@@ -149,7 +149,7 @@ test.skip('[P2] captures the unpaid DeepSeek campaign at narrow and short viewpo
   await expectInsideViewport(page, cta);
 });
 
-test.skip('[P2] captures the home plugin catalog surface', async ({ page }) => {
+test('[P2] captures the home plugin catalog surface', async ({ page }) => {
   test.setTimeout(90_000);
 
   await configureVisualPage(page);
@@ -165,7 +165,7 @@ test.skip('[P2] captures the home plugin catalog surface', async ({ page }) => {
   await captureVisual(page, 'visual-home-catalog');
 });
 
-test.skip('[P2] captures the home plugin filtered surface', async ({ page }) => {
+test('[P2] captures the home plugin filtered surface', async ({ page }) => {
   await configureVisualPage(page);
   const plugins = await openVisualPluginsCatalog(page);
 
@@ -176,7 +176,7 @@ test.skip('[P2] captures the home plugin filtered surface', async ({ page }) => 
   await captureVisual(page, 'visual-home-plugin-filter');
 });
 
-test.skip('[P2] captures the home plugin detail surface', async ({ page }) => {
+test('[P2] captures the home plugin detail surface', async ({ page }) => {
   await configureVisualPage(page);
   const plugins = await openVisualPluginsCatalog(page);
 
@@ -188,7 +188,7 @@ test.skip('[P2] captures the home plugin detail surface', async ({ page }) => {
   await captureVisual(page, 'visual-plugin-details');
 });
 
-test.skip('[P2] captures the plugin detail share menu surface', async ({ page }) => {
+test('[P2] captures the plugin detail share menu surface', async ({ page }) => {
   await configureVisualPage(page);
   const plugins = await openVisualPluginsCatalog(page);
 
@@ -203,7 +203,7 @@ test.skip('[P2] captures the plugin detail share menu surface', async ({ page })
   await captureVisualTarget(page, 'visual-plugin-share-menu-popover', [trigger, popover]);
 });
 
-test.skip('[P2] plugin detail owns vertical scrolling inside the fixed workspace shell', async ({ page }) => {
+test('[P2] plugin detail owns vertical scrolling inside the fixed workspace shell', async ({ page }) => {
   await configureVisualPage(page);
   const plugins = await openVisualPluginsCatalog(page);
   // Navigate with the standard visual viewport; shrink only the detail page so
@@ -244,7 +244,7 @@ test('[P2] captures the home context picker surface', async ({ page }) => {
   await captureVisualTarget(page, 'visual-home-context-picker-popover', [input, picker]);
 });
 
-test.skip('[P2] captures the home staged attachment surface', async ({ page }) => {
+test('[P2] captures the home staged attachment surface', async ({ page }) => {
   await configureVisualPage(page);
   await gotoVisualHome(page);
 
