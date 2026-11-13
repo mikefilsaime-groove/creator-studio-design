@@ -25,7 +25,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { existsSync, realpathSync } from 'node:fs';
-import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -117,10 +117,17 @@ async function readJsonFile<T>(filePath: string): Promise<T | null> {
   }
 }
 
-// The fork's public runtime catalog intentionally exposes only Claude Code
-// and Codex. Keep the internal cursor-agent implementation covered by daemon
-// tests, but do not run this upstream public-catalog scenario in the fork.
-describe.skip('leftover agent after a daemon abort (upstream-only runtime)', () => {
+/** Restore owner write access to frozen directories only during fixture teardown. */
+async function makeFixtureDirectoriesWritable(target: string): Promise<void> {
+  const stat = await lstat(target);
+  if (stat.isSymbolicLink() || !stat.isDirectory()) return;
+  await chmod(target, 0o700);
+  for (const entry of await readdir(target)) {
+    await makeFixtureDirectoriesWritable(join(target, entry));
+  }
+}
+
+describe.skipIf(process.platform === 'win32')('leftover agent after a daemon abort', () => {
   test('the agent only ever sees the complete prompt, and the next daemon start reaps it', async () => {
     // Canonical path: the fake reports its own `__filename`, which Node resolves.
     const root = await realpath(await mkdtemp(join(tmpdir(), 'od-leftover-agent-reap-e2e-')));
@@ -287,6 +294,9 @@ describe.skip('leftover agent after a daemon abort (upstream-only runtime)', () 
         try { process.kill(-spawned.marker.pid, 'SIGKILL'); } catch { /* gone */ }
         try { process.kill(spawned.marker.grandchildPid, 'SIGKILL'); } catch { /* gone */ }
       }
+      // OD Next freezes Run input directories as 0555. Both daemons are now
+      // stopped; unfreeze our owned fixture tree before recursive removal.
+      await makeFixtureDirectoriesWritable(root);
       await rm(root, { force: true, recursive: true });
     }
 
@@ -307,7 +317,9 @@ describe.skip('leftover agent after a daemon abort (upstream-only runtime)', () 
       runningAfterDaemonDied: wholeAgentGroup,
       runningAtRestart: wholeAgentGroup,
       runningAfterRestart: [],
-      run: { status: 'failed', errorCode: 'DAEMON_RESTARTED', messageRunStatus: 'failed' },
+      // P0-24 Q5: a run the dead daemon left behind is recorded as stopped,
+      // with the restart kept as its reason.
+      run: { status: 'canceled', errorCode: 'DAEMON_RESTARTED', messageRunStatus: 'canceled' },
     });
   }, 480_000);
 });

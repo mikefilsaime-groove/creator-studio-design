@@ -78,7 +78,7 @@ concurrency:
 jobs:
   card:
     name: Track prerelease on one Feishu card
-    if: github.repository == 'nexu-io/open-design'
+    if: github.repository == 'mikefilsaime-groove/creator-studio-design'
     runs-on: ubuntu-latest
     # Long enough to outlive the slowest lane it watches (mac Intel build ~33
     # min, P0 Functional E2E, then the packaged smoke after publish), with the
@@ -210,7 +210,7 @@ jobs:
     if: >-
       ${{
         always() && !cancelled() &&
-        github.repository == 'nexu-io/open-design' &&
+        github.repository == 'mikefilsaime-groove/creator-studio-design' &&
         !(needs.card.result == 'success' && needs.card.outputs.delivered == 'true')
       }}
     runs-on: ubuntu-latest
