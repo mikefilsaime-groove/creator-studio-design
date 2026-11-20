@@ -2,7 +2,7 @@
 
 // 2026-09-14 incident, at the daemon HTTP boundary.
 //
-// The daemon spawned cursor-agent (`--print --force`: file edits auto-approved)
+// The daemon spawned an agent process
 // for a new run and died of a V8 out-of-memory abort two seconds later. The
 // agent led its own process group, so it survived; only the first 64 KiB of
 // its prompt had reached the kernel pipe, and the transcript-first prompt was
@@ -11,8 +11,8 @@
 //
 // The chosen design: an agent may outlive an abruptly dead daemon until the
 // next daemon start, which terminates it. This spec replays the incident
-// through the production HTTP API. A real cursor-agent run starts a fake CLI (a
-// CommonJS script behind a `cursor-agent` shim placed FIRST on PATH; the spec
+// through the production HTTP API. A real Codex run starts a fake CLI (a
+// CommonJS script behind a `codex` shim placed FIRST on PATH; the spec
 // checks the daemon resolved exactly that shim before it starts the run, so a
 // real agent CLI is never launched). The daemon is SIGABRTed right after the
 // spawn, before the agent reads its stdin, and then:
@@ -46,21 +46,20 @@ type AgentMarker = { pid: number; grandchildPid: number; script: string; argv: s
 type StdinResult = { bytes: number; stdinIsFile: boolean };
 
 /**
- * The fake cursor-agent. Its run invocation ignores SIGTERM (as does the
+ * The fake Codex CLI. Its run invocation ignores SIGTERM (as does the
  * grandchild it starts in its process group), so only a group SIGKILL ends it.
  * It reads its stdin only once the spec says so — after the daemon is dead —
  * and never writes to stdout/stderr again: their reader is that daemon.
  */
-function fakeCursorAgentSource(paths: { marker: string; go: string; result: string; body: string }): string {
+function fakeCodexSource(paths: { marker: string; go: string; result: string; body: string }): string {
   return `
 const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const args = process.argv.slice(2);
-if (args[0] === '--version') { console.log('2026.09.14-fake'); process.exit(0); }
-if (args[0] === '--help') { console.log('Usage: cursor-agent [options] --print --output-format <format>'); process.exit(0); }
-if (args[0] === 'status') { console.log('Logged in as fake@example.test'); process.exit(0); }
-if (args[0] === 'models') { console.log('auto - Auto'); process.exit(0); }
-if (!args.includes('--print')) process.exit(0);
+if (args.includes('--version')) { console.log('codex-cli 2026.09.14-fake'); process.exit(0); }
+if (args.includes('--help')) { console.log('Usage: codex exec [options]'); process.exit(0); }
+if (args[0] === 'login' && args[1] === 'status') { console.log('Logged in using ChatGPT'); process.exit(0); }
+if (args[0] !== 'exec') process.exit(0);
 process.on('SIGTERM', () => {});
 const grandchild = spawn(process.execPath, ['-e', "process.on('SIGTERM',()=>{});setInterval(()=>{},1000)"], { stdio: 'ignore' });
 fs.writeFileSync(${JSON.stringify(paths.marker)}, JSON.stringify({
@@ -140,9 +139,9 @@ describe.skipIf(process.platform === 'win32')('leftover agent after a daemon abo
       marker: join(root, 'marker.json'),
       result: join(root, 'stdin-result.json'),
     };
-    const script = join(root, 'fake-cursor-agent.cjs');
-    await writeFile(script, fakeCursorAgentSource(paths), 'utf8');
-    const bin = join(fakeBinDir, 'cursor-agent');
+    const script = join(root, 'fake-codex.cjs');
+    await writeFile(script, fakeCodexSource(paths), 'utf8');
+    const bin = join(fakeBinDir, 'codex');
     await writeFile(bin, `#!/bin/sh\nexec ${JSON.stringify(process.execPath)} ${JSON.stringify(script)} "$@"\n`, 'utf8');
     await chmod(bin, 0o755);
 
@@ -176,8 +175,8 @@ describe.skipIf(process.platform === 'win32')('leftover agent after a daemon abo
 
         await requestJson(daemonUrl!, '/api/app-config', {
           body: {
-            agentId: 'cursor-agent',
-            agentModels: { 'cursor-agent': { model: 'default', reasoning: 'default' } },
+            agentId: 'codex',
+            agentModels: { codex: { model: 'default', reasoning: 'default' } },
             designSystemId: null,
             onboardingCompleted: true,
             skillId: null,
@@ -185,12 +184,12 @@ describe.skipIf(process.platform === 'win32')('leftover agent after a daemon abo
           },
           method: 'PUT',
         });
-        // Precondition: the daemon resolves cursor-agent to the fake, never to
+        // Precondition: the daemon resolves Codex to the fake, never to
         // a real CLI installed on this machine.
         const agents = await requestJson<AgentsResponse>(daemonUrl!, '/api/agents');
-        const cursorAgent = agents.agents.find((agent) => agent.id === 'cursor-agent');
-        expect(cursorAgent?.available, 'the fake cursor-agent is detected').toBe(true);
-        expect(realpathSync(cursorAgent?.path ?? '/nonexistent-cursor-agent'), 'resolved cursor-agent binary')
+        const codex = agents.agents.find((agent) => agent.id === 'codex');
+        expect(codex?.available, 'the fake Codex CLI is detected').toBe(true);
+        expect(realpathSync(codex?.path ?? '/nonexistent-codex'), 'resolved Codex binary')
           .toBe(bin);
 
         const project = await requestJson<ProjectResponse>(daemonUrl!, '/api/projects', {
@@ -215,8 +214,8 @@ describe.skipIf(process.platform === 'win32')('leftover agent after a daemon abo
           role: 'user',
         });
         await saveMessage(daemonUrl!, projectId, conversationId, {
-          agentId: 'cursor-agent',
-          agentName: 'Cursor Agent',
+          agentId: 'codex',
+          agentName: 'Codex',
           content: '',
           createdAt: startedAt,
           events: [],
@@ -226,7 +225,7 @@ describe.skipIf(process.platform === 'win32')('leftover agent after a daemon abo
           startedAt,
         });
         ({ runId } = await startRun(daemonUrl!, {
-          agentId: 'cursor-agent',
+          agentId: 'codex',
           assistantMessageId,
           clientRequestId: `req-leftover-${startedAt}`,
           conversationId,
@@ -239,11 +238,11 @@ describe.skipIf(process.platform === 'win32')('leftover agent after a daemon abo
           userMessageId,
         }));
 
-        const marker = await waitFor(() => readJsonFile<AgentMarker>(paths.marker), 60_000, 'the fake cursor-agent run invocation');
+        const marker = await waitFor(() => readJsonFile<AgentMarker>(paths.marker), 60_000, 'the fake Codex run invocation');
         spawned.marker = marker;
-        // The daemon launched OUR fake through the cursor-agent runtime.
+        // The daemon launched OUR fake through the supported Codex runtime.
         expect(marker.script).toBe(script);
-        expect(marker.argv).toContain('--print');
+        expect(marker.argv).toContain('exec');
 
         // The daemon dies the way it did in production: abort, no JS handlers.
         process.kill(daemonPid!, 'SIGABRT');
@@ -259,7 +258,7 @@ describe.skipIf(process.platform === 'win32')('leftover agent after a daemon abo
       }, { skipFatalLogCheck: true }));
 
       const leftover = spawned.marker;
-      if (!leftover) throw new Error('the fake cursor-agent never started');
+      if (!leftover) throw new Error('the fake Codex CLI never started');
       observed.runningAtRestart = leftoverProcesses(leftover);
 
       const restarted = await createSmokeSuite('leftover-agent-reap-restarted', { dataDir: sharedDataDir });

@@ -110,6 +110,6 @@ describe('EntryNavRail sign-out (recvqbkcLqIFH7)', () => {
     );
 
     expect(screen.getByTestId('entry-cloud-signin-tip')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'OpenDesign Cloud 版' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Creator Studio Design Cloud 版' })).toBeTruthy();
   });
 });

@@ -108,7 +108,7 @@ it('S0 login success returns to the first-share panel without automatically gene
   const route = publishedRoute({ noPublication: true, amrAuthenticated: true });
   const view = render(<CollabProvider value={{ ...collab, workspaceContext: null }}><FileViewer {...props} /></CollabProvider>);
   fireEvent.click(await screen.findByRole('button', { name: /^share$/i }));
-  expect(screen.getByText('Sign in to Open Design to create a share link and invite others to view and comment.')).toBeVisible();
+  expect(screen.getByText('Sign in to Creator Studio Design to create a share link and invite others to view and comment.')).toBeVisible();
   await act(async () => fireEvent.click(screen.getByTestId('share-cloud-signin')));
   view.rerender(<CollabProvider value={collab}><FileViewer {...props} /></CollabProvider>);
   await waitFor(() => expect(screen.getByRole('menuitem', { name: /generate and copy link/i })).toBeEnabled());

@@ -338,7 +338,7 @@ const LIVE_ARTIFACT_IMAGE_TEMPLATE_PLUGIN = {
 const AUTHORING_DEFAULT_SCENARIO_INPUTS = {
   artifactKind: 'Creator Studio Design plugin',
   audience: 'Creator Studio Design plugin authors',
-  topic: 'packaging a reusable workflow as an Creator Studio Design plugin',
+  topic: 'packaging a reusable workflow as a Creator Studio Design plugin',
 };
 
 const REFLY_DESIGN_SYSTEM = {
@@ -1042,7 +1042,7 @@ describe('HomeView prompt handoff', () => {
       inputs: {
         artifactKind: 'Creator Studio Design plugin',
         audience: 'Creator Studio Design plugin authors',
-        topic: 'packaging a reusable workflow as an Creator Studio Design plugin',
+        topic: 'packaging a reusable workflow as a Creator Studio Design plugin',
       },
     });
     await waitFor(() => {
@@ -1052,17 +1052,17 @@ describe('HomeView prompt handoff', () => {
     fireEvent.click(screen.getByTestId('home-hero-submit'));
 
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
       prompt: PLUGIN_AUTHORING_PROMPT,
       pluginId: 'od-new-generation',
       appliedPluginSnapshotId: 'snap-default',
       pluginInputs: {
         artifactKind: 'Creator Studio Design plugin',
         audience: 'Creator Studio Design plugin authors',
-        topic: 'packaging a reusable workflow as an Creator Studio Design plugin',
+        topic: 'packaging a reusable workflow as a Creator Studio Design plugin',
       },
       projectKind: 'other',
-    }));
+    })));
   });
 
   it('hands the Home rail Prototype chip entirely to OD Next on submit', async () => {

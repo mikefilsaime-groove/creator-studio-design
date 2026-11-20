@@ -1915,7 +1915,9 @@ test('[P1] OPEND-4606 keeps the Italian model menu settings label inside the men
   await expect(settingsSurface(page).getByTestId('settings-nav-execution')).toBeVisible();
 });
 
-test('[P0] @critical project detail composer opens Execution settings where BYOK model choice persists', async ({ page }) => {
+// Creator Studio Design exposes Claude Code and Codex as its public agent
+// choices. The upstream BYOK execution-settings flow is not a public surface.
+test.skip('[P0] @critical project detail composer opens Execution settings where BYOK model choice persists', async ({ page }) => {
   test.setTimeout(60_000);
   let config = {
     mode: 'daemon',
@@ -1993,7 +1995,7 @@ test('[P0] @critical project detail composer opens Execution settings where BYOK
   });
 });
 
-test('[P0] @critical project detail composer keeps Local CLI and BYOK model choices isolated', async ({ page }) => {
+test.skip('[P0] @critical project detail composer keeps Local CLI and BYOK model choices isolated', async ({ page }) => {
   test.setTimeout(60_000);
   const config = {
     mode: 'daemon',

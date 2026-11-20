@@ -446,7 +446,7 @@ describe('OPEND-2614 · funded Home handoff precedes the remaining AMR sign-in g
         finish(response);
       });
       if (result === 'insufficient') await screen.findByTestId('amr-balance-dialog');
-      else await screen.findByText("Couldn't confirm your OpenDesign Cloud balance. Try sending again.");
+      else await screen.findByText("Couldn't confirm your Creator Studio Design Cloud balance. Try sending again.");
       expect(h.onBeginProjectCreation).not.toHaveBeenCalled();
       expect(h.onCreateProject).not.toHaveBeenCalled();
       expect(screen.getByTestId('home-hero-input')).toHaveTextContent('Keep this draft until this click has valid funds.');
@@ -636,7 +636,7 @@ describe('OPEND-2614 · funded Home handoff precedes the remaining AMR sign-in g
       await vi.advanceTimersByTimeAsync(2_000);
       await waitFor(() => expect(h.rollback).toHaveBeenCalledTimes(1));
       expect(h.rollback.mock.calls[0]?.[0]?.notice).toBe(
-        "Couldn't confirm your OpenDesign Cloud balance. Try sending again.",
+        "Couldn't confirm your Creator Studio Design Cloud balance. Try sending again.",
       );
       expect(h.onCreateProject).not.toHaveBeenCalled();
       expect(mockedCheckAmrBalanceGate).toHaveBeenCalledTimes(3);

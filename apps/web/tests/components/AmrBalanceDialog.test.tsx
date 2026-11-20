@@ -476,6 +476,23 @@ describe('AmrBalanceDialog', () => {
         recoveryReads.push(url);
         const observedAt = new Date().toISOString();
         return new Response(JSON.stringify({
+          preflight: {
+            schemaVersion: 1,
+            workspaceId: actualWorkspace,
+            workspaceMemberId: 'wm-home',
+            modelId: 'model',
+            generatedAt: observedAt,
+            balanceUsd: '10',
+            modelCovered: false,
+            funding: 'wallet',
+            codingPlan: {
+              workspaceId: actualWorkspace,
+              generatedAt: observedAt,
+              eligible: false,
+              tier: null,
+              windows: [],
+            },
+          },
           workspaceBalance: { billingScopeVersion: 2, workspaceId: actualWorkspace, workspaceMemberId: 'wm-home', balanceUsd: '10', updatedAt: observedAt },
           workspaceRuntime: { workspaceId: actualWorkspace, workspaceMemberId: 'wm-home', status: 'fresh', observedAt, hardExpiresAt: new Date(Date.now() + 60_000).toISOString() },
           authoritativeWorkspaceRead: { workspaceId: actualWorkspace, workspaceMemberId: 'wm-home', observedAt },

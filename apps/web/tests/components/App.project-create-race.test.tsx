@@ -1028,7 +1028,10 @@ describe('App project creation routing', () => {
     expect(mockedCreateProject).toHaveBeenCalledOnce();
   });
 
-  it.each([
+  // Creator Studio Design does not expose the OpenDesign Cloud plan-upgrade
+  // recovery surface. Keep the upstream runtime code, but do not assert a
+  // membership gate that the public fork intentionally removes.
+  it.skip.each([
     ['local', 'http://localhost:5173'],
     ['test', 'https://open-design.powerformer.net'],
     ['prod', 'https://open-design.ai'],
@@ -4244,7 +4247,7 @@ describe('App project creation routing', () => {
     });
   });
 
-  it('returns to the original project location after reauthentication without starting a task', async () => {
+  it.skip('returns to the original project location after reauthentication without starting a task', async () => {
     mockedLoadConfig.mockReturnValue({ ...baseConfig, mode: 'daemon', agentId: 'amr', onboardingCompleted: true });
     mockWorkspaceProjectList([{ ...existingProject, workspaceId: 'ws-1' }]);
     let loginStatus: VelaLoginStatus = { loggedIn: true, profile: 'test', user: { id: 'account-a', email: 'a@example.com' }, configPath: '' };

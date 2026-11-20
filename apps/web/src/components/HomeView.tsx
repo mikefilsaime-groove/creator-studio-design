@@ -262,9 +262,9 @@ interface PendingPluginUseHandoff {
 }
 
 const AUTHORING_DEFAULT_SCENARIO_INPUTS = {
-  artifactKind: 'OpenDesign plugin',
-  audience: 'OpenDesign plugin authors',
-  topic: 'packaging a reusable workflow as an OpenDesign plugin',
+  artifactKind: 'Creator Studio Design plugin',
+  audience: 'Creator Studio Design plugin authors',
+  topic: 'packaging a reusable workflow as a Creator Studio Design plugin',
 };
 
 

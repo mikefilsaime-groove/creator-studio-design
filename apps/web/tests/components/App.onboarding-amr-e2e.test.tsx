@@ -389,18 +389,13 @@ describe('CMS campaigns outside the home view', () => {
     expect(probe.result.current?.isAuthorized() ?? false).toBe(false);
   });
 
-  it('withdraws every host on another entry view and restores them on home', async () => {
+  it('withdraws cloud campaign hosts away from Home and restores them only on Home', async () => {
     await arriveOnHome();
 
     await act(async () => navigate({ kind: 'home', view: 'projects' }));
     const away = witnesses();
     expect(away.modals).toEqual([null, null]);
-    // The account/campaign cluster intentionally stays mounted across entry
-    // tabs; only campaign modals are home-only.
-    expect(away.topRight).toEqual([
-      expect.anything(),
-      expect.anything(),
-    ]);
+    expect(away.topRight).toEqual([null, null]);
 
     await act(async () => navigate({ kind: 'home', view: 'home' }));
     await screen.findByRole('dialog', { name: 'Production campaign witness' });
