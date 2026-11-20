@@ -1951,7 +1951,21 @@ process.stdin.on("end", () => {
       grep: String.raw`\[P0\]`,
       files: ["ui/app-restoration.test.ts", "ui/critical-smoke.test.ts"],
     });
-    expect(uiP0Groups["entry-settings"].files).toEqual(["ui/entry-settings-disabled.test.ts"]);
+    expect(uiP0Groups["entry-settings"].files).toEqual([
+      "ui/entry-chrome-flows.test.ts",
+      "ui/entry-configuration-flows.test.ts",
+      "ui/home-hero-rail.test.ts",
+      "ui/home-amr-pending.test.ts",
+      "ui/home-send-single-loading.test.ts",
+      "ui/home-send-split-width.test.ts",
+      "ui/home-send-handoff-parity.test.ts",
+      "ui/amr-onboarding.test.ts",
+      "ui/api-empty-response.test.ts",
+      "ui/settings-api-protocol.test.ts",
+      "ui/settings-connectors-auth-happy-path.test.ts",
+      "ui/settings-connectors-auth-recovery.test.ts",
+      "ui/workspace-team-interactions.test.ts",
+    ]);
     expect(workflow).not.toContain("  ui_p0_smoke:");
     expect(uiP0).toContain("run-ui-group critical-extras");
     expect(uiP0).toContain("Preserve project-runtime domain artifact");
@@ -3220,7 +3234,9 @@ process.stdin.on("end", () => {
     expect(dispatchJob).toContain("tools/release/src/notifications/feishu-notice.ts");
     expect(dispatchJob).toContain("STAGE: dispatch");
     // `always()` so a dispatch that failed above still reaches the notifier.
-    expect(dispatchJob).toContain("always() && github.repository == 'nexu-io/open-design' &&");
+    expect(dispatchJob).toContain(
+      "always() && github.repository == 'mikefilsaime-groove/creator-studio-design' &&",
+    );
     expect(dispatchJob).toContain("steps.checkout.outcome == 'success'");
 
     // 3. Silent on a healthy release. A green watcher job is NOT proof of a
@@ -3649,7 +3665,7 @@ process.stdin.on("end", () => {
     const manifestDir = join(runnerTemp, "manifests");
     const outputsPath = join(runnerTemp, "outputs.json");
     const version = "1.2.3-prerelease.4";
-    const assetName = `open-design-${version}-mac-arm64.dmg`;
+    const assetName = `creator-studio-design-${version}-mac-arm64.dmg`;
     const objectKey = `prerelease/versions/${version}/${assetName}`;
     const firstBytes = Buffer.from("first signed dmg");
     const secondBytes = Buffer.from("different signed dmg");
@@ -3717,9 +3733,12 @@ process.stdin.on("end", () => {
     const writeMacAssets = async (arch: "arm64" | "x64") => {
       await rm(assetsDir, { force: true, recursive: true });
       await mkdir(assetsDir, { recursive: true });
-      await writeAsset(`open-design-${version}-mac-${arch}.dmg`, Buffer.from(`${arch} dmg`));
-      await writeAsset(`open-design-${version}-mac-${arch}-payload.zip`, Buffer.from(`${arch} payload`));
-      await writeAsset(`open-design-${version}-mac-${arch}.zip`, Buffer.from(`${arch} zip`));
+      await writeAsset(`creator-studio-design-${version}-mac-${arch}.dmg`, Buffer.from(`${arch} dmg`));
+      await writeAsset(
+        `creator-studio-design-${version}-mac-${arch}-payload.zip`,
+        Buffer.from(`${arch} payload`),
+      );
+      await writeAsset(`creator-studio-design-${version}-mac-${arch}.zip`, Buffer.from(`${arch} zip`));
       await writeFile(join(assetsDir, "latest-mac.yml"), `arch: ${arch}\n`);
     };
     const publish = (target: "mac_arm64" | "mac_x64") => execFileAsync(
