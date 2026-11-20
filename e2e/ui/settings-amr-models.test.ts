@@ -63,7 +63,9 @@ async function mockModelSettings(page: Page, previouslyFailed = false) {
   return { refreshCount: () => refreshes };
 }
 
-test('[P1] same-environment Rescan keeps the verified workspace model after scan completion @merge-extra', async ({ page }, testInfo) => {
+// Creator Studio Design exposes Claude Code and Codex as its public agent
+// choices. The upstream AMR workspace model surface is not public in this fork.
+test.skip('[P1] same-environment Rescan keeps the verified workspace model after scan completion @merge-extra', async ({ page }, testInfo) => {
   await mockModelSettings(page);
   await page.goto('/settings', { waitUntil: 'domcontentloaded' });
   const model = page.getByRole('combobox', { name: 'Model', exact: true });
@@ -83,7 +85,7 @@ test('[P1] same-environment Rescan keeps the verified workspace model after scan
   await page.screenshot({ path: testInfo.outputPath('settings-rescan-model-ready.png') });
 });
 
-test('[P1] Rescan recovers a stopped workspace model query through one scoped refresh @merge-extra', async ({ page }) => {
+test.skip('[P1] Rescan recovers a stopped workspace model query through one scoped refresh @merge-extra', async ({ page }) => {
   const models = await mockModelSettings(page, true);
   await page.goto('/settings', { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('settings-agent-model-loading-amr')).toBeVisible({ timeout: T.medium });
