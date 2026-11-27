@@ -11,6 +11,15 @@ import {
   resolveExclusiveSurface,
 } from '../../src/prompts/system.js';
 
+describe('comment identity host contract', () => {
+  it.each(['classic', 'slim'] as const)('carries the conditional edit rule in %s', (promptCoreVariant) => {
+    const prompt = composeSystemPrompt({ promptCoreVariant });
+    expect(prompt).toContain('Only when editing HTML that already contains data-od-comment-id');
+    expect(prompt).toContain('mint a fresh UUID for every copied or new node');
+    expect(prompt).toContain('never recycle a deleted identity');
+  });
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../../../..');
@@ -442,7 +451,7 @@ describe('composeSystemPrompt', () => {
         metadata: { kind: 'image', imageModel: 'vela/gpt-image-2' } as any,
       });
       expect(amrPrompt).toContain('Image model: `vela/gpt-image-2`');
-      expect(amrPrompt).toContain(
+      expect(amrPrompt).not.toContain(
         'Video model: `vela/doubao-seedance-2-0-260128`',
       );
       expect(amrPrompt).toContain('### Creator Studio Design Cloud media defaults');
@@ -482,9 +491,12 @@ describe('composeSystemPrompt', () => {
         '图片没生成出来,不是你的操作有误 —— 这次是 Creator Studio Design 自己的问题,我们已经记下了。重试一般能恢复;反复出现的话联系我们。',
       );
       expect(prototypePrompt).toContain('IMAGE_MODEL="vela/gpt-image-2"');
+      expect(prototypePrompt).toContain('od media models --cloud --json');
       expect(prototypePrompt).not.toContain(
         'For the best fal image model use `--model flux-pro-ultra`',
       );
+      expect(imagePrompt).toContain('media models --cloud --json');
+      expect(imagePrompt.replace(/\s+/g, ' ')).toContain('Never silently substitute');
     });
 
     // The classified-failure branch has to reach the prompt the DAEMON

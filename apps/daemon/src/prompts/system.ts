@@ -1,3 +1,4 @@
+import { COMMENT_IDENTITY_EDIT_DIRECTIVE } from '@open-design/contracts/prompts/comment-identity';
 /**
  * Prompt composer. The base is the OD-adapted "expert designer" system
  * prompt (see ./official-system.ts) — a full identity, workflow, and
@@ -173,6 +174,8 @@ type ProjectMetadata = {
   examplePromptBrief?: Record<string, string> | null;
   imageModel?: string | null;
   imageAspect?: string | null;
+  imageResolution?: string | null;
+  imageQuality?: string | null;
   imageStyle?: string | null;
   videoModel?: string | null;
   videoLength?: number | null;
@@ -517,10 +520,12 @@ function renderMediaDispatchModelGuidance(defaults?: ByokMediaDefaults): string 
   const imagePart = imageModel
     ? `For image generation prefer your configured model: \`${imageModel}\`.`
     : 'For the best fal image model use `--model flux-pro-ultra`.';
+  const cloudImagePart =
+    'For OpenDesign Cloud image generation, read the current account/workspace catalogue with `od media models --cloud --json` before reporting a model unavailable or choosing a default; never silently substitute an explicitly requested model or provider.';
   const videoPart = videoModel
     ? `For video prefer your configured model: \`${videoModel}\`.`
-    : 'For video use `--model veo-3-fal` or `--model wan-2.1-t2v`.';
-  return `${imagePart} ${videoPart} Always pass \`--surface\` explicitly (\`image\`, \`video\`, or \`audio\`). Any \`fal-ai/*\` path (e.g. \`fal-ai/flux/schnell\`, \`fal-ai/wan-i2v\`) is also a valid \`--model\` value for image/video — pass it through as-is without substitution.`;
+    : 'For cloud video, read the current account/workspace catalogue with `od media models --cloud --json` before choosing a default. If it has no available video model, report the capability gap; never silently substitute an explicitly requested model or provider.';
+  return `${imagePart} ${cloudImagePart} ${videoPart} Always pass \`--surface\` explicitly (\`image\`, \`video\`, or \`audio\`). Any \`fal-ai/*\` path (e.g. \`fal-ai/flux/schnell\`, \`fal-ai/wan-i2v\`) is also a valid \`--model\` value for image/video — pass it through as-is without substitution.`;
 }
 
 function renderMediaDispatchHint(
@@ -546,9 +551,7 @@ function mediaDefaultsForRuntime(
   return {
     ...defaults,
     imageModel: defaults?.imageModel?.trim() || 'vela/gpt-image-2',
-    videoModel:
-      defaults?.videoModel?.trim()
-      || 'vela/doubao-seedance-2-0-260128',
+    ...(defaults?.videoModel?.trim() ? { videoModel: defaults.videoModel.trim() } : {}),
   };
 }
 
@@ -1500,6 +1503,8 @@ export function composeSystemPrompt({
     "One consequence worth stating plainly: everything you write before the completion marker is filed away by default. If a caveat matters to the decision, it belongs after the marker, not buried in the working narration."
   );
 
+  parts.push(`\n\n---\n\n${COMMENT_IDENTITY_EDIT_DIRECTIVE}`);
+
   // Pinned LAST so recency bias reinforces the role-marker prohibition.
   // Slim uses the SP v2.0 translation; classic retains its existing wording.
   parts.push(
@@ -1868,6 +1873,12 @@ function renderMetadataBlock(
     lines.push(
       `- **aspectRatio**: ${metadata.imageAspect ?? '(not provided; common choices include 1:1, 16:9, or 9:16)'}`,
     );
+    if (metadata.imageResolution) {
+      lines.push(`- **resolution**: ${metadata.imageResolution}`);
+    }
+    if (metadata.imageQuality) {
+      lines.push(`- **quality**: ${metadata.imageQuality}`);
+    }
     if (metadata.imageStyle) {
       lines.push(`- **styleNotes**: ${metadata.imageStyle}`);
     }

@@ -51,9 +51,9 @@ function readFailureCode(err: unknown): string | undefined {
  * policy objected to, and `retryable` so the UI can stop inviting a retry that
  * cannot succeed. Absent fields stay absent rather than being defaulted —
  * `retryable: false` invented here would tell a user a transient outage is
- * permanent.
+ * permanent. A paid resubmission requires confirmation, so it is never retryable.
  *
- * `nextStep` is the one field this function derives rather than copies, and it
+ * This function derives `nextStep`, and it
  * is the field a reader is meant to act on. Everything else describes the
  * failure; only `nextStep` answers "so what now?". It is computed from the RAW
  * failure, before `status` is defaulted to 400, so a missing upstream status
@@ -72,6 +72,15 @@ export function mediaTaskErrorFromFailure(
   const retryable = err?.retryable;
   const code = readFailureCode(err);
   const message = readFailureMessage(err);
+  const normalizedRetryable = typeof retryable === 'boolean' ? retryable : undefined;
+  const nextStep = mediaFailureNextStep({
+    code,
+    status: typeof err?.status === 'number' ? err.status : undefined,
+    message,
+    retryable: normalizedRetryable,
+    model: context.model,
+  });
+  const taskRetryable = nextStep === 'confirm-paid-resubmission' ? false : normalizedRetryable;
   return {
     message,
     status: typeof err?.status === 'number' ? err.status : 400,
@@ -79,14 +88,8 @@ export function mediaTaskErrorFromFailure(
     ...(subject === 'prompt' || subject === 'input_image' || subject === 'output_image'
       ? { subject }
       : {}),
-    ...(typeof retryable === 'boolean' ? { retryable } : {}),
-    nextStep: mediaFailureNextStep({
-      code,
-      status: typeof err?.status === 'number' ? err.status : undefined,
-      message,
-      retryable: typeof retryable === 'boolean' ? retryable : undefined,
-      model: context.model,
-    }),
+    ...(taskRetryable !== undefined ? { retryable: taskRetryable } : {}),
+    nextStep,
   };
 }
 

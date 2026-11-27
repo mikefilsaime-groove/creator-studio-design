@@ -19,6 +19,10 @@ Creator Studio Design does not require a Creator Studio account, membership chec
 
 The app does not ask for model API keys and does not include hosted, BYOK, or local-model execution. Claude Code and Codex are the supported execution engines, so those tools still require their own normal sign-in.
 
+## Motion references
+
+Use the [OpenMotion template gallery](docs/motion-templates/README.md) to select a product video reference and copy an adaptation brief into Claude Code or Codex.
+
 ## Local development
 
 The workspace targets Node.js 24 and `pnpm@10.33.2`.
