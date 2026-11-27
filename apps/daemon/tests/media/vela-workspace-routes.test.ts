@@ -6,14 +6,16 @@ import {
   mediaTaskErrorFromFailure,
   registerMediaRoutes,
 } from '../../src/routes/media.js';
-import { fetchVelaVideoModels } from '../../src/media/vela.js';
-import { VIDEO_MODELS } from '../../src/media/models.js';
+import { fetchVelaImageModels, fetchVelaVideoModels } from '../../src/media/vela.js';
+import { IMAGE_MODELS, VIDEO_MODELS } from '../../src/media/models.js';
 
-vi.mock('../../src/media/vela.js', () => ({ fetchVelaVideoModels: vi.fn() }));
+vi.mock('../../src/media/vela.js', () => ({ fetchVelaVideoModels: vi.fn(), fetchVelaImageModels: vi.fn() }));
 
 const servers: http.Server[] = [];
 
 afterEach(async () => {
+  vi.mocked(fetchVelaVideoModels).mockReset();
+  vi.mocked(fetchVelaImageModels).mockReset();
   await Promise.all(servers.splice(0).map((server) => new Promise<void>((resolve) => {
     server.close(() => resolve());
   })));
@@ -85,6 +87,7 @@ async function startRouteServer(options: {
       requestProjectOverride: (left: string, right: string) => left !== right,
     }),
     media: functionProxy({
+      IMAGE_MODELS,
       VIDEO_MODELS,
       generateMedia: options.generateMedia,
       createMediaTask: task,
@@ -146,18 +149,36 @@ async function postGenerate(
 describe('Vela media route Workspace attribution', () => {
   it('filters the static catalogue using the same workspace as generation, including an empty catalogue', async () => {
     const catalogue = vi.mocked(fetchVelaVideoModels);
-    catalogue.mockResolvedValueOnce(['doubao-seedance-2-0-260128']).mockResolvedValueOnce([]);
+    const imageCatalogue = vi.mocked(fetchVelaImageModels);
+    catalogue.mockResolvedValueOnce([
+      'doubao-seedance-2-5-260628',
+      'doubao-seedance-2-5-flash-261115',
+      'wan-2.7',
+    ]).mockResolvedValueOnce([]);
+    imageCatalogue
+      .mockResolvedValueOnce([{ id: 'vela/gpt-image-2', label: 'gpt-image-2 (Cloud)', hint: 'Cloud', provider: 'vela', caps: ['t2i', 'i2i'], default: true }])
+      .mockResolvedValueOnce([]);
     const url = await startRouteServer({ generateMedia: vi.fn(), workspaceBinding: { workspaceId: 'workspace-from-database', visibility: 'personal' } });
     const first = await fetch(`${url}/api/media/models?cloud=true&projectId=team-project`);
     expect(first.status).toBe(200);
-    expect((await first.json() as { video: { id: string }[] }).video.map((m: { id: string }) => m.id)).toEqual(['vela/doubao-seedance-2-0-260128']);
+    const firstJson = await first.json() as { video: { id: string }[]; image?: { id: string }[] };
+    expect(firstJson.video.map((m) => m.id)).toEqual([
+      'vela/doubao-seedance-2-5-260628',
+      'vela/doubao-seedance-2-5-flash-261115',
+      'vela/wan-2.7',
+    ]);
+    expect(firstJson.image?.map((m) => m.id)).toEqual(['vela/gpt-image-2']);
     expect(catalogue).toHaveBeenLastCalledWith('workspace-from-database');
+    expect(imageCatalogue).toHaveBeenLastCalledWith('workspace-from-database');
     const empty = await fetch(`${url}/api/media/models?cloud=true&projectId=team-project`);
-    expect((await empty.json() as { video: unknown[] }).video).toEqual([]);
+    const emptyJson = await empty.json() as { video: unknown[]; image?: unknown[] };
+    expect(emptyJson.video).toEqual([]);
+    expect(emptyJson.image).toEqual([]);
   });
 
   it('reports a lookup failure separately from an empty catalogue and rejects denied project access', async () => {
     const catalogue = vi.mocked(fetchVelaVideoModels);
+    vi.mocked(fetchVelaImageModels).mockResolvedValue([]);
     catalogue.mockRejectedValueOnce(new Error('private upstream diagnostic'));
     const url = await startRouteServer({ generateMedia: vi.fn(), workspaceBinding: null });
     const failed = await fetch(`${url}/api/media/models?cloud=true&projectId=personal-project`);
