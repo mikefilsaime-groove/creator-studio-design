@@ -441,7 +441,7 @@ export async function generateMedia(args: {
       def = {
         id: model,
         label: model,
-        hint: 'OpenDesign Cloud',
+        hint: 'Creator Studio Design Cloud',
         provider: 'vela',
         caps: ['t2i', 'i2i'],
       };

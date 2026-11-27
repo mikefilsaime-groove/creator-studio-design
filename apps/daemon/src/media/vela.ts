@@ -904,7 +904,7 @@ export async function fetchVelaImageModels(
     models.push({
       id: known?.id ?? `vela/${wire}`,
       label: known?.label ?? `${wire} (Cloud)`,
-      hint: known?.hint ?? 'OpenDesign Cloud · managed image generation and editing',
+      hint: known?.hint ?? 'Creator Studio Design Cloud · managed image generation and editing',
       provider: 'vela',
       caps,
       ...(known?.default ? { default: true } : {}),
